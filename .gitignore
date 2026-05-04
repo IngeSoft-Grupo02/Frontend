@@ -1,0 +1,50 @@
+# Dependencias
+node_modules/
+.pnp/
+.pnp.js
+
+#Build & Cache
+.next/
+out/
+dist/
+.vite/
+.cache/
+
+#Variables de entorno (¡IMPORTANTE! Nunca subas claves reales)
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+
+#IDE & Editores
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+#Sistema Operativo
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+#Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+#Testing & Cobertura
+coverage/
+.nyc_output/
+
+#Misc
+*.local
+*.lock
+package-lock.json  # Opcional: si prefieres no versionarlo, pero es recomendado subirlo
