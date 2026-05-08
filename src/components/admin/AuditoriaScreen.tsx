@@ -2,61 +2,54 @@
 
 import { useState } from 'react';
 import { Button, Card, Badge, Input, Select } from '../UI';
-import { 
-  Search, 
-  Download, 
-  ShieldAlert, 
-  Info, 
-  AlertTriangle, 
-  CheckCircle, 
-  Filter 
-} from 'lucide-react';
+import { Search, Download, ShieldAlert, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import { MOCK_AUDIT } from '@/mockData';
 
-interface AuditLog {
-  time: string;
-  user: string;
-  role: string;
-  tenant: string;
-  action: string;
-  level: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
-}
+type NivelLog = 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+
+const NIVEL_LABEL: Record<NivelLog, string> = {
+  INFO:    'Info',
+  SUCCESS: 'Éxito',
+  WARNING: 'Alerta',
+  ERROR:   'Error',
+};
+
+const NIVEL_VARIANT: Record<NivelLog, string> = {
+  INFO:    'info',
+  SUCCESS: 'exito',
+  WARNING: 'alerta',
+  ERROR:   'error',
+};
 
 interface AuditoriaScreenProps {
   logs: typeof MOCK_AUDIT;
 }
 
 export function AuditoriaScreen({ logs }: AuditoriaScreenProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState('Todos');
-  const [filterDate, setFilterDate] = useState('Hoy');
+  const [searchTerm,   setSearchTerm]   = useState('');
+  const [filterLevel,  setFilterLevel]  = useState('Todos');
+  const [filterDate,   setFilterDate]   = useState('Hoy');
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch = 
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch =
+      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.tenant.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesLevel = filterLevel === 'Todos' || log.level === filterLevel;
-    
+
+    const matchesLevel =
+      filterLevel === 'Todos' ||
+      NIVEL_LABEL[log.level as NivelLog] === filterLevel ||
+      log.level === filterLevel;
+
     return matchesSearch && matchesLevel;
   });
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'ERROR': return 'error';
-      case 'WARNING': return 'warning';
-      case 'SUCCESS': return 'success';
-      default: return 'info';
-    }
-  };
-
   const getLevelIcon = (level: string) => {
     switch (level) {
-      case 'ERROR': return <ShieldAlert size={14} />;
+      case 'ERROR':   return <ShieldAlert size={14} />;
       case 'WARNING': return <AlertTriangle size={14} />;
       case 'SUCCESS': return <CheckCircle size={14} />;
-      default: return <Info size={14} />;
+      default:        return <Info size={14} />;
     }
   };
 
@@ -78,33 +71,25 @@ export function AuditoriaScreen({ logs }: AuditoriaScreenProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
         <div className="sm:col-span-2">
-          <Input 
-            label="Buscar evento" 
-            placeholder="Usuario, acción o tienda..." 
-            icon={Search} 
+          <Input
+            label="Buscar evento"
+            placeholder="Usuario, acción o tienda..."
+            icon={Search}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
         <div>
-          <Select 
-            label="Nivel" 
-            value={filterLevel}
-            onChange={(e) => setFilterLevel(e.target.value)}
-          >
+          <Select label="Nivel" value={filterLevel} onChange={e => setFilterLevel(e.target.value)}>
             <option>Todos</option>
-            <option>INFO</option>
-            <option>SUCCESS</option>
-            <option>WARNING</option>
-            <option>ERROR</option>
+            <option>Info</option>
+            <option>Éxito</option>
+            <option>Alerta</option>
+            <option>Error</option>
           </Select>
         </div>
         <div>
-          <Select 
-            label="Rango"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          >
+          <Select label="Rango" value={filterDate} onChange={e => setFilterDate(e.target.value)}>
             <option>Hoy</option>
             <option>Últimos 7 días</option>
             <option>Este mes</option>
@@ -115,14 +100,14 @@ export function AuditoriaScreen({ logs }: AuditoriaScreenProps) {
       <Card className="px-0 py-2 overflow-hidden">
         <div className="px-8 py-4 mb-2">
           <h3 className="text-[18px] font-display font-extrabold text-brand-black">
-            Timeline de actividad
+            Línea de tiempo de actividad
           </h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px]">
             <thead className="bg-[#f1ede4]">
               <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                <th className="py-4 px-8">Timestamp</th>
+                <th className="py-4 px-8">Fecha / Hora</th>
                 <th className="py-4 px-4">Usuario</th>
                 <th className="py-4 px-4">Tienda / Tenant</th>
                 <th className="py-4 px-4">Acción</th>
@@ -136,23 +121,19 @@ export function AuditoriaScreen({ logs }: AuditoriaScreenProps) {
                     {log.time}
                   </td>
                   <td className="py-4 px-4">
-                    <div>
-                      <p className="font-bold text-neutral-900">{log.user}</p>
-                      <p className="text-[10px] text-neutral-400">{log.role}</p>
-                    </div>
+                    <p className="font-bold text-neutral-900">{log.user}</p>
+                    <p className="text-[10px] text-neutral-400">{log.role}</p>
                   </td>
-                  <td className="py-4 px-4 font-medium text-neutral-600">
-                    {log.tenant}
-                  </td>
+                  <td className="py-4 px-4 font-medium text-neutral-600">{log.tenant}</td>
                   <td className="py-4 px-4 font-bold text-brand-black uppercase tracking-tight text-[11px]">
                     {log.action}
                   </td>
                   <td className="py-4 px-8 text-right">
-                    <Badge 
-                      variant={getLevelColor(log.level) as any}
-                      className="flex items-center justify-center gap-1 w-fit ml-auto"
+                    <Badge
+                      variant={NIVEL_VARIANT[log.level as NivelLog] as any}
+                      className="inline-flex items-center gap-1"
                     >
-                      {getLevelIcon(log.level)} {log.level}
+                      {getLevelIcon(log.level)} {NIVEL_LABEL[log.level as NivelLog]}
                     </Badge>
                   </td>
                 </tr>

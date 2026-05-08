@@ -118,8 +118,10 @@ export function RegistrarComercianteScreen() {
 
   const isFormValid = (): boolean => {
     const requiredFields = ['docNumber', 'name', 'lastNamePaterno', 'birthDate', 'phone', 'ruc', 'email', 'password'];
-    const currentErrors = requiredFields.map(f => validate(f, formData[f as keyof FormData]));
-    return requiredFields.every(f => formData[f as keyof FormData] && !currentErrors[requiredFields.indexOf(f)]);
+    return requiredFields.every(f => {
+      const value = formData[f as keyof FormData];
+      return value && value.toString().trim() !== '' && !validate(f, value.toString());
+    });
   };
 
   const handleSubmit = () => {
@@ -213,9 +215,17 @@ export function RegistrarComercianteScreen() {
             </div>
             
             <div className="mt-12 space-y-3">
-              <Button className="w-full h-14 rounded-2xl" onClick={handleSubmit} disabled={!isFormValid()}>
+              <button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid()}
+                  className={`w-full h-14 rounded-2xl font-bold text-[14px] transition-all ${
+                      isFormValid()
+                          ? 'bg-brand-black text-white hover:bg-neutral-800'
+                          : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+                  }`}
+              >
                 Crear comerciante
-              </Button>
+              </button>
               <Button variant="secondary" className="w-full h-14 rounded-2xl" onClick={() => router.back()}>Cancelar</Button>
             </div>
           </Card>

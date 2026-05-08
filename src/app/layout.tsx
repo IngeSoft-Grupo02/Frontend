@@ -6,20 +6,20 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Kingstore | Multi-tenant Admin",
-  description: "Panel de administración multi-tenant",
+    title: "Kingstore | Multi-tenant Admin",
+    description: "Panel de administración multi-tenant",
 };
 
 export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
+                                       children,
+                                   }: {
+    children: ReactNode;
 }) {
-  return (
-    <html lang="es">
-      <body className={inter.className}>
+    return (
+        <html lang="es">
+        <body className={inter.className}>
         {children}
-      </body>
-    </html>
-  );
+        </body>
+        </html>
+    );
 }

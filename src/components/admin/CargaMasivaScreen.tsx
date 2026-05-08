@@ -2,277 +2,374 @@
 
 import { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Badge, Input } from '../UI';
-import { 
-  UploadCloud, 
-  FileSpreadsheet, 
-  Download, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
-  Loader2 
+import { Button, Card, Badge } from '../UI';
+import {
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Users,
+  Store,
+  ImageIcon,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface UploadRow {
-  id: string;
-  name: string;
-  responsible: string;
-  ruc: string;
-  status: string;
-  errors: string[];
+interface UploadBlock {
+  key: 'merchants' | 'stores' | 'images';
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  accept: string;
+  templateName: string;
+  templateContent: string;
 }
+
+interface Incidence {
+  block: string;
+  row: number | string;
+  code: string;
+  type: 'ERROR' | 'WARNING';
+  detail: string;
+  origin: string;
+}
+
+interface BlockState {
+  file: File | null;
+  status: 'pending' | 'valid' | 'error';
+}
+
+const BLOCKS: UploadBlock[] = [
+  {
+    key: 'merchants',
+    label: 'Comerciantes',
+    description: 'Crea cuentas nuevas. Incluye código, nombres, correo, DNI y teléfono.',
+    icon: Users,
+    accept: '.xlsx,.xls,.csv',
+    templateName: 'plantilla_comerciantes.csv',
+    templateContent: 'codigo,nombres,correo,dni,telefono\nCOM001,Juan Pérez,juan@email.com,12345678,987654321',
+  },
+  {
+    key: 'stores',
+    label: 'Tiendas',
+    description: 'Crea tiendas nuevas. Usa codigo_comerciante_referencia. Puede apuntar a archivo actual o a BD.',
+    icon: Store,
+    accept: '.xlsx,.xls,.csv',
+    templateName: 'plantilla_tiendas.csv',
+    templateContent: 'nombre,codigo_comerciante,estado,paleta\nMi Tienda,COM001,Activa,CORESTREET',
+  },
+  {
+    key: 'images',
+    label: 'ZIP de imágenes',
+    description: 'Se usa si el Excel declara imágenes. Máximo 5 imágenes por variante. La primera será principal.',
+    icon: ImageIcon,
+    accept: '.zip',
+    templateName: 'instrucciones_imagenes.txt',
+    templateContent: 'Estructura del ZIP:\n/imagenes/[codigo_producto]/[1-5].jpg',
+  },
+];
+
+const MAX_SIZE_MB = 10;
 
 export function CargaMasivaScreen() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [previewData, setPreviewData] = useState<UploadRow[]>([]);
-  const [uploadComplete, setUploadComplete] = useState(false);
-
-  const MAX_SIZE_MB = 5;
-  const ALLOWED_TYPES = [
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/csv',
-    'application/csv'
-  ];
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
+  const fileRefs = {
+    merchants: useRef<HTMLInputElement>(null),
+    stores: useRef<HTMLInputElement>(null),
+    images: useRef<HTMLInputElement>(null),
   };
 
-  const handleDragLeave = () => setIsDragging(false);
+  const [blocks, setBlocks] = useState<Record<string, BlockState>>({
+    merchants: { file: null, status: 'pending' },
+    stores: { file: null, status: 'pending' },
+    images: { file: null, status: 'pending' },
+  });
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    validateAndSetFile(droppedFile);
-  };
+  const [executing, setExecuting] = useState(false);
+  const [executed, setExecuted] = useState(false);
+  const [incidences, setIncidences] = useState<Incidence[]>([]);
+  const [resolvedRefs, setResolvedRefs] = useState<{ label: string; count: number }[]>([]);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) validateAndSetFile(selectedFile);
-  };
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
-  const validateAndSetFile = (uploadedFile: File) => {
-    if (!ALLOWED_TYPES.includes(uploadedFile.type) && !uploadedFile.name.match(/\.(xlsx|xls|csv)$/i)) {
-      alert('Formato no válido. Usa .xlsx, .xls o .csv');
-      return;
-    }
-    if (uploadedFile.size > MAX_SIZE_MB * 1024 * 1024) {
+  const handleFileSelect = (key: string, file: File | null) => {
+    if (!file) return;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       alert(`El archivo excede el límite de ${MAX_SIZE_MB}MB`);
       return;
     }
-    setFile(uploadedFile);
-    setPreviewData([]);
-    setUploadComplete(false);
+    setBlocks(prev => ({ ...prev, [key]: { file, status: 'pending' } }));
+    setExecuted(false);
+    setIncidences([]);
+    setResolvedRefs([]);
   };
 
-  const simulateProcessing = () => {
-    if (!file) return;
-    setProcessing(true);
-
-    // 🔌 TODO: Reemplazar por llamada real a API
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // const response = await fetch('/api/stores/bulk-upload', { method: 'POST', body: formData });
-
-    setTimeout(() => {
-      const mockRows: UploadRow[] = [
-        { id: '1', name: 'Urban Style', responsible: 'admin@urban.com', ruc: '20123456789', status: 'Activa', errors: [] },
-        { id: '2', name: 'Core Lab', responsible: 'contacto@core.com', ruc: '20987654321', status: 'Activa', errors: [] },
-        { id: '3', name: 'Bad Data Store', responsible: 'invalid-email', ruc: '123', status: 'Pendiente', errors: ['Email inválido', 'RUC debe tener 11 dígitos'] },
-        { id: '4', name: '', responsible: 'missing@name.com', ruc: '20456789012', status: 'Activa', errors: ['Nombre de tienda obligatorio'] },
-        { id: '5', name: 'Duplicate Store', responsible: 'dup@dup.com', ruc: '20111222333', status: 'Suspendida', errors: ['Tienda ya registrada'] },
-      ];
-      setPreviewData(mockRows);
-      setProcessing(false);
-    }, 1500);
+  const handleDrop = (e: DragEvent<HTMLDivElement>, key: string) => {
+    e.preventDefault();
+    setDragOver(null);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFileSelect(key, f);
   };
 
-  const handleClear = () => {
-    setFile(null);
-    setPreviewData([]);
-    setUploadComplete(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleConfirmUpload = () => {
-    setUploadComplete(true);
-    setTimeout(() => {
-      router.push('/admin/tiendas');
-    }, 2000);
-  };
-
-  const downloadTemplate = () => {
-    // 🔌 TODO: Reemplazar por descarga real del backend o archivo estático
-    const csvContent = "Nombre,Responsable,RUC,Estado,Estilos,Prendas,Clientes,Paleta\nCanvas Lab,admin@canvas.com,20123456789,Activa,Casual;Street,Polo;Jean,Dama;Unisex,core-street";
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const downloadTemplate = (block: UploadBlock) => {
+    const blob = new Blob([block.templateContent], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'plantilla_tienda.csv';
+    link.download = block.templateName;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const validRows = previewData.filter(r => r.errors.length === 0).length;
-  const invalidRows = previewData.filter(r => r.errors.length > 0).length;
+  const handleExecute = () => {
+    const hasAny = Object.values(blocks).some(b => b.file !== null);
+    if (!hasAny) return;
+
+    setExecuting(true);
+
+    // 🔌 TODO: reemplazar por llamada real
+    // const fd = new FormData();
+    // if (blocks.merchants.file) fd.append('merchants', blocks.merchants.file);
+    // if (blocks.stores.file)   fd.append('stores',    blocks.stores.file);
+    // if (blocks.images.file)   fd.append('images',    blocks.images.file);
+    // const res = await fetch('/api/bulk-upload', { method: 'POST', body: fd });
+
+    setTimeout(() => {
+      // Simular resultado
+      const mockIncidences: Incidence[] = blocks.merchants.file
+        ? [
+            {
+              block: 'Comerciantes',
+              row: 3,
+              code: 'VAL_EMAIL',
+              type: 'ERROR',
+              detail: 'Formato de correo inválido',
+              origin: blocks.merchants.file.name,
+            },
+          ]
+        : [];
+
+      const mockResolved = [];
+      if (blocks.merchants.file) mockResolved.push({ label: 'Comerciantes procesados', count: 4 });
+      if (blocks.stores.file)    mockResolved.push({ label: 'Tiendas procesadas', count: 2 });
+      if (blocks.images.file)    mockResolved.push({ label: 'Imágenes procesadas', count: 12 });
+
+      // Actualizar estados de bloques
+      setBlocks(prev => {
+        const next = { ...prev };
+        if (next.merchants.file) next.merchants = { ...next.merchants, status: mockIncidences.length > 0 ? 'error' : 'valid' };
+        if (next.stores.file)    next.stores    = { ...next.stores,    status: 'valid' };
+        if (next.images.file)    next.images    = { ...next.images,    status: 'valid' };
+        return next;
+      });
+
+      setIncidences(mockIncidences);
+      setResolvedRefs(mockResolved);
+      setExecuting(false);
+      setExecuted(true);
+    }, 1800);
+  };
+
+  const merchantCount = blocks.merchants.file ? (executed ? (incidences.some(i => i.block === 'Comerciantes') ? '!' : '✓') : '—') : '—';
+  const storeCount    = blocks.stores.file    ? (executed ? '✓' : '—') : '—';
+  const imageCount    = blocks.images.file    ? (executed ? 12 : 0) : 0;
+  const errorCount    = executed ? incidences.length : 0;
+
+  const canExecute = Object.values(blocks).some(b => b.file !== null) && !executing;
 
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-[34px] font-display font-extrabold tracking-tight text-brand-black">Carga masiva de tiendas</h2>
-        <p className="text-[14px] font-medium text-neutral-400">Sube un archivo Excel o CSV para registrar múltiples tiendas de forma automática</p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-[34px] font-display font-extrabold tracking-tight text-brand-black">
+            Carga masiva
+          </h2>
+          <p className="text-[14px] font-medium text-neutral-400">
+            Sube uno o varios archivos en una misma operación.
+          </p>
+        </div>
+        <Button
+          onClick={handleExecute}
+          disabled={!canExecute}
+          className="rounded-xl h-12 px-8 flex items-center gap-2 shrink-0"
+        >
+          {executing
+            ? <><Loader2 size={16} className="animate-spin" /> Ejecutando...</>
+            : <><Play size={16} /> Ejecutar carga</>
+          }
+        </Button>
       </div>
 
-      {!file ? (
-        <Card 
-          className={`p-16 flex flex-col items-center justify-center border-2 border-dashed transition-colors cursor-pointer ${
-            isDragging ? 'border-brand-camel bg-brand-camel/5' : 'border-neutral-200 hover:border-neutral-300'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".xlsx,.xls,.csv" 
-            onChange={handleFileChange} 
-          />
-          <div className="w-20 h-20 bg-brand-camel/10 rounded-full flex items-center justify-center mb-6">
-            <UploadCloud size={32} className="text-brand-camel" />
-          </div>
-          <h3 className="text-[20px] font-bold text-brand-black mb-2">Arrastra tu archivo aquí</h3>
-          <p className="text-[14px] text-neutral-400 mb-6 text-center max-w-md">
-            o haz clic para seleccionar. Formatos aceptados: .xlsx, .xls, .csv (Máx. {MAX_SIZE_MB}MB)
-          </p>
-          <Button variant="secondary" className="rounded-full px-8">Seleccionar archivo</Button>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          <Card className="p-8 flex items-center justify-between bg-brand-camel/5 border-brand-camel/20">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-brand-camel rounded-xl flex items-center justify-center">
-                <FileSpreadsheet size={24} className="text-white" />
-              </div>
-              <div>
-                <p className="font-bold text-brand-black text-[16px]">{file.name}</p>
-                <p className="text-[12px] text-neutral-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="secondary" className="rounded-full px-6" onClick={handleClear}>
-                <Trash2 size={16} className="mr-2" /> Limpiar
-              </Button>
-              <Button 
-                className="rounded-full px-8" 
-                onClick={simulateProcessing} 
-                disabled={processing}
-              >
-                {processing ? <Loader2 size={18} className="mr-2 animate-spin" /> : <CheckCircle2 size={18} className="mr-2" />}
-                {processing ? 'Procesando...' : 'Validar archivo'}
-              </Button>
-            </div>
-          </Card>
+      {/* 3 bloques */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {BLOCKS.map((block) => {
+          const state = blocks[block.key];
+          const Icon = block.icon;
+          const isDrag = dragOver === block.key;
 
-          <AnimatePresence>
-            {previewData.length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h3 className="text-[20px] font-display font-extrabold text-brand-black">Vista previa de datos</h3>
-                    <p className="text-[14px] text-neutral-400">
-                      {validRows} registros válidos · {invalidRows} con errores
-                    </p>
-                  </div>
-                  <Button variant="secondary" className="rounded-full px-6" onClick={downloadTemplate}>
-                    <Download size={16} className="mr-2" /> Descargar plantilla
-                  </Button>
+          return (
+            <Card
+              key={block.key}
+              className={`p-6 flex flex-col gap-4 transition-all border-2 ${
+                isDrag ? 'border-brand-camel bg-brand-camel/5' : 'border-neutral-100'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(block.key); }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => handleDrop(e, block.key)}
+            >
+              {/* Título + icono */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-[18px] font-display font-extrabold text-brand-black">
+                    {block.label}
+                  </h3>
+                  <p className="text-[12px] text-neutral-400 mt-1 leading-relaxed">
+                    {block.description}
+                  </p>
                 </div>
+                <Icon size={20} className="text-neutral-300 shrink-0 mt-1" />
+              </div>
 
-                <Card className="px-0 py-2 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[900px]">
-                      <thead className="bg-[#f1ede4]">
-                        <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                          <th className="py-4 px-6">#</th>
-                          <th className="py-4 px-4">Tienda</th>
-                          <th className="py-4 px-4">Responsable</th>
-                          <th className="py-4 px-4">RUC</th>
-                          <th className="py-4 px-4">Estado</th>
-                          <th className="py-4 px-6">Validación</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {previewData.map((row, i) => (
-                          <tr key={row.id} className="text-[13px] hover:bg-neutral-50 transition-colors">
-                            <td className="py-4 px-6 font-medium text-neutral-400">{i + 1}</td>
-                            <td className="py-4 px-4 font-bold text-neutral-900">{row.name || <span className="text-red-400 italic">Vacío</span>}</td>
-                            <td className="py-4 px-4 font-mono text-[12px] text-neutral-600">{row.responsible}</td>
-                            <td className="py-4 px-4 font-mono text-[12px] text-neutral-600">{row.ruc}</td>
-                            <td className="py-4 px-4">
-                              <Badge variant={row.status === 'Activa' ? 'active' : 'warning'}>{row.status}</Badge>
-                            </td>
-                            <td className="py-4 px-6">
-                              {row.errors.length > 0 ? (
-                                <div className="flex flex-col gap-1">
-                                  {row.errors.map((err, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-[11px] font-bold text-red-500">
-                                      <AlertCircle size={12} /> {err}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-[11px] font-bold text-green-600">
-                                  <CheckCircle2 size={12} /> Válido
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              {/* Estado del archivo */}
+              <div>
+                {state.file ? (
+                  <div className="flex items-center gap-2">
+                    {state.status === 'valid' && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 flex items-center gap-1">
+                        <CheckCircle2 size={10} /> {state.file.name}
+                      </span>
+                    )}
+                    {state.status === 'error' && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 flex items-center gap-1">
+                        <AlertCircle size={10} /> {state.file.name}
+                      </span>
+                    )}
+                    {state.status === 'pending' && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-500">
+                        {state.file.name}
+                      </span>
+                    )}
                   </div>
-                </Card>
-
-                {invalidRows === 0 && (
-                  <div className="flex justify-end pt-4">
-                    <Button className="rounded-full px-10 h-14 text-[16px]" onClick={handleConfirmUpload}>
-                      Confirmar carga masiva
-                    </Button>
-                  </div>
+                ) : (
+                  <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-400">
+                    SIN ARCHIVO
+                  </span>
                 )}
+              </div>
 
-                {invalidRows > 0 && (
-                  <div className="bg-red-50 border border-red-100 rounded-2xl p-6 flex items-start gap-4">
-                    <AlertCircle size={24} className="text-red-500 mt-1 shrink-0" />
-                    <div>
-                      <p className="font-bold text-red-700 mb-1">No se puede completar la carga</p>
-                      <p className="text-[13px] text-red-600">
-                        Hay {invalidRows} fila(s) con errores. Corrige el archivo y vuelve a subirlo, o elimina las filas inválidas manualmente si el sistema lo permite.
-                      </p>
-                    </div>
-                  </div>
+              {/* Acciones */}
+              <div className="flex flex-col gap-2 mt-auto">
+                <button
+                  onClick={() => downloadTemplate(block)}
+                  className="w-full py-2.5 px-4 rounded-xl border border-neutral-200 bg-white text-[13px] font-bold text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  Descargar plantilla
+                </button>
+                <input
+                  type="file"
+                  ref={fileRefs[block.key as keyof typeof fileRefs]}
+                  className="hidden"
+                  accept={block.accept}
+                  onChange={(e) => handleFileSelect(block.key, e.target.files?.[0] || null)}
+                />
+                <button
+                  onClick={() => fileRefs[block.key as keyof typeof fileRefs].current?.click()}
+                  className="w-full py-2.5 px-4 rounded-xl bg-brand-beige text-[13px] font-bold text-brand-black hover:bg-brand-camel/20 transition-colors"
+                >
+                  Seleccionar archivo
+                </button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* 4 métricas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'COMERCIANTES', value: merchantCount, status: executed && blocks.merchants.file ? (incidences.some(i => i.block === 'Comerciantes') ? 'error' : 'ok') : 'pending' },
+          { label: 'TIENDAS',      value: storeCount,    status: executed && blocks.stores.file ? 'ok' : 'pending' },
+          { label: 'IMÁGENES',     value: imageCount,    status: executed && blocks.images.file ? 'ok' : 'pending' },
+          { label: 'ERRORES',      value: errorCount,    status: errorCount > 0 ? 'error' : 'pending' },
+        ].map((m) => (
+          <Card key={m.label} className="p-5">
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">{m.label}</p>
+            <p className="text-[32px] font-extrabold text-brand-black leading-none mb-3">{m.value}</p>
+            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              m.status === 'ok'      ? 'bg-green-100 text-green-700' :
+              m.status === 'error'   ? 'bg-red-100 text-red-700' :
+                                       'bg-neutral-100 text-neutral-500'
+            }`}>
+              {m.status === 'ok' ? 'COMPLETADO' : m.status === 'error' ? 'CON ERRORES' : 'PENDIENTE'}
+            </span>
+          </Card>
+        ))}
+      </div>
+
+      {/* Referencias resueltas */}
+      <div className="space-y-3">
+        <h3 className="text-[20px] font-display font-extrabold text-brand-black">Referencias resueltas</h3>
+        {resolvedRefs.length === 0 ? (
+          <p className="text-[14px] text-neutral-400">Aún no se han validado referencias.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {resolvedRefs.map((r, i) => (
+              <Card key={i} className="p-5 flex items-center justify-between">
+                <p className="text-[14px] font-bold text-neutral-700">{r.label}</p>
+                <span className="text-[24px] font-extrabold text-brand-black">{r.count}</span>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Incidencias detectadas */}
+      <div className="space-y-3">
+        <h3 className="text-[20px] font-display font-extrabold text-brand-black">Incidencias detectadas</h3>
+        <Card className="px-0 py-2 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[700px]">
+              <thead className="bg-[#f1ede4]">
+                <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                  <th className="py-4 px-6">Bloque</th>
+                  <th className="py-4 px-4">Fila</th>
+                  <th className="py-4 px-4">Código</th>
+                  <th className="py-4 px-4">Tipo</th>
+                  <th className="py-4 px-4">Detalle</th>
+                  <th className="py-4 px-6">Origen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {incidences.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-neutral-400 font-medium italic text-[14px]">
+                      {executed ? 'Sin incidencias detectadas.' : 'Todavía no se ejecutó validación'}
+                    </td>
+                  </tr>
+                ) : (
+                  incidences.map((inc, i) => (
+                    <tr key={i} className="text-[13px] hover:bg-neutral-50 transition-colors">
+                      <td className="py-4 px-6 font-bold text-neutral-900">{inc.block}</td>
+                      <td className="py-4 px-4 font-mono text-[12px] text-neutral-500">{inc.row}</td>
+                      <td className="py-4 px-4 font-mono text-[12px] text-neutral-600">{inc.code}</td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          inc.type === 'ERROR' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {inc.type}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-neutral-600">{inc.detail}</td>
+                      <td className="py-4 px-6 font-mono text-[11px] text-neutral-400">{inc.origin}</td>
+                    </tr>
+                  ))
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
