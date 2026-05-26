@@ -1,10 +1,10 @@
 'use client';
 
+import { MOCK_CATEGORIES, MOCK_STORES } from '@/lib/mockData';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Edit2, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, Badge, Input, Select } from '../UI';
-import { Plus, Search, X, Edit2, Trash2, Tag } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_CATEGORIES, MOCK_STORES } from '@/mockData';
+import { Badge, Button, Card, Input, Select } from '../UI';
 
 interface CategoriasScreenProps {
   categories: typeof MOCK_CATEGORIES;

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, Card, Badge, Input, Select } from '../UI';
+import { MOCK_STORES } from '@/lib/mockData';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Search, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_STORES } from '@/mockData';
+import { useState } from 'react';
+import { Badge, Button, Card, Input, Select } from '../UI';
 
 interface TiendasScreenProps {
   stores: typeof MOCK_STORES;

@@ -1,9 +1,9 @@
 'use client';
 
+import { MOCK_AUDIT } from '@/lib/mockData';
+import { AlertTriangle, CheckCircle, Download, Info, Search, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, Badge, Input, Select } from '../UI';
-import { Search, Download, ShieldAlert, Info, AlertTriangle, CheckCircle } from 'lucide-react';
-import { MOCK_AUDIT } from '@/mockData';
+import { Badge, Button, Card, Input, Select } from '../UI';
 
 type NivelLog = 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
 

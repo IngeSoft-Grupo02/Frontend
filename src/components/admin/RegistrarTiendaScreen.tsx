@@ -1,10 +1,10 @@
 'use client';
 
+import { MOCK_USERS } from '@/lib/mockData';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, ArrowLeft, ChevronRight, Save, Search, X } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, Badge, Input, Select } from '../UI';
-import { ArrowLeft, AlertCircle, X, Search, ChevronRight, Save } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_USERS } from '@/mockData';
+import { Badge, Button, Card, Input, Select } from '../UI';
 
 const COLOR_PALETTES = [
   { id: 'core-street',  name: 'Core Street',  primary: '#0F0F10', secondary: '#6E7F5D', accent: '#B89B72' },

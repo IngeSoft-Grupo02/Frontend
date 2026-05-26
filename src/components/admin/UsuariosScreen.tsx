@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, Card, Badge, Input, Select } from '../UI';
+import { MOCK_STORES, MOCK_USERS } from '@/lib/mockData';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_USERS, MOCK_STORES } from '@/mockData';
+import { useState } from 'react';
+import { Badge, Button, Card, Input, Select } from '../UI';
 
 interface User {
   name: string;

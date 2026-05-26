@@ -1,8 +1,8 @@
 'use client';
 
-import { Plus, Store, Users, Tag, ShieldCheck } from 'lucide-react';
-import { Button, Card, Badge } from '../UI';
-import { MOCK_STORES, MOCK_USERS, MOCK_AUDIT } from '@/mockData';
+import { MOCK_AUDIT, MOCK_STORES, MOCK_USERS } from '@/lib/mockData';
+import { Plus, ShieldCheck, Store, Tag, Users } from 'lucide-react';
+import { Badge, Button, Card } from '../UI';
 
 const NIVEL_ES: Record<string, string> = {
   INFO:    'Info',

@@ -1,15 +1,45 @@
-import { AdminSidebar } from '@/components/admin/Sidebar';
-import type { ReactNode } from 'react';
+'use client';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+import Sidebar from '@/components/admin/Sidebar';
+import TopBar from '@/components/admin/TopBar';
+import { useApp } from '@/context/AppContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { isLoggedIn } = useApp();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/login');
+    }
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) return null;
+
   return (
-    <div className="h-screen bg-brand-bg flex overflow-hidden">
-      <AdminSidebar />
-      <main className="flex-1 ml-[280px] p-6 lg:p-12 overflow-y-auto">
-        <div className="bg-white/50 backdrop-blur-3xl rounded-[40px] shadow-sm min-h-[90vh] py-8 lg:py-12 px-6 lg:px-12 border border-white/20">
-          {children}
+    <div className="flex min-h-screen bg-neutral-50">
+      {/* Sidebar - z-50 para estar siempre encima */}
+      <div className="z-50">
+        <Sidebar />
+      </div>
+      
+      {/* Wrapper del contenido principal */}
+      <div className="flex-1 flex flex-col pl-[280px] relative">
+        
+        {/* TopBar - z-40 para estar encima del contenido pero debajo del sidebar si se solapan */}
+        <div className="z-40">
+          <TopBar />
         </div>
-      </main>
+        
+        {/* Contenido - pt-24 (96px) para dar espacio suficiente debajo de la topbar (h-20 = 80px) */}
+        <main className="flex-1 pt-24 p-8">
+          <div className="max-w-[1400px] mx-auto min-h-[calc(100vh-8rem)]">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
