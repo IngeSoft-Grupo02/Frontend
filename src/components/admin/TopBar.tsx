@@ -1,39 +1,58 @@
 'use client';
 
-import { useApp } from '@/context/AppContext';
-import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useApp } from '@/context/AppContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { User, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function TopBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { currentUser, logout } = useApp();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Obtener título y subtítulo según la ruta
+  const getPageMeta = () => {
+    if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
+    if (pathname === '/admin/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname === '/admin/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
+    if (pathname === '/admin/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
+    if (pathname === '/admin/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
+    if (pathname === '/admin/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
+    if (pathname === '/admin/perfil') return { title: 'Configuración de cuenta', subtitle: 'Personaliza tu experiencia y seguridad' };
+    if (pathname === '/admin/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
+    return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
+  };
+
+  const { title, subtitle } = getPageMeta();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
   return (
-    // Aumentamos z-40 y aseguramos bg-white
-    <header className="h-20 fixed top-0 right-0 left-[280px] z-40 bg-white/90 backdrop-blur-md border-b border-neutral-200 px-8 flex items-center justify-between shadow-sm">
-      
-      {/* Espacio vacío a la izquierda para alineación, o puedes poner el título aquí si quieres */}
-      <div className="w-64" /> 
+    <header className="h-20 fixed top-0 right-0 left-[280px] z-40 bg-white/80 backdrop-blur-md border-b border-neutral-100 px-8 flex items-center justify-between shadow-sm">
+      <div>
+        <h1 className="text-[20px] font-display font-extrabold tracking-tight text-neutral-900 leading-tight">
+          {title}
+        </h1>
+        <p className="text-[12px] font-medium text-neutral-400">
+          {subtitle}
+        </p>
+      </div>
 
-      <div className="flex items-center gap-6 ml-auto">
-        {/* Buscador (Opcional, según prototipo) */}
-        {/* <div className="relative">
-           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-           <input className="pl-10 pr-4 h-9 bg-neutral-100 rounded-lg text-sm outline-none w-64" placeholder="Buscar..." />
-        </div> */}
-
-        <div className="h-8 w-px bg-neutral-200 mx-2"></div>
+      <div className="flex items-center gap-6">
+        <div className="h-8 w-px bg-neutral-100 mx-1"></div>
 
         <div className="relative">
           <button 
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-3 pl-2 pr-1 py-1.5 rounded-full hover:bg-neutral-50 transition-colors"
+            className="flex items-center gap-3 pl-2 pr-1 py-1.5 rounded-full hover:bg-neutral-50 transition-colors cursor-pointer"
           >
             <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-brand-beige-dark flex items-center justify-center overflow-hidden border border-neutral-200">
+              <div className="w-9 h-9 rounded-full bg-brand-beige-dark flex items-center justify-center overflow-hidden border border-neutral-100">
                 <User size={18} className="text-neutral-600" />
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
@@ -64,26 +83,22 @@ export default function TopBar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-neutral-200 shadow-xl z-40 overflow-hidden py-2"
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-neutral-100 shadow-xl z-40 overflow-hidden py-2"
                 >
                   <button 
-                    className="w-full px-4 py-2.5 text-[13px] font-bold text-neutral-700 flex items-center gap-3 hover:bg-neutral-50 transition-colors text-left"
                     onClick={() => {
                       setShowUserMenu(false);
                       router.push('/admin/perfil');
                     }}
+                    className="w-full px-4 py-2.5 text-[13px] font-bold text-neutral-700 flex items-center gap-3 hover:bg-neutral-50 transition-colors text-left cursor-pointer"
                   >
                     <Settings size={16} className="text-neutral-400" />
                     Mi cuenta
                   </button>
-                  <div className="h-px bg-neutral-100 mx-2 my-1" />
+                  <div className="h-px bg-neutral-50 mx-2 my-1" />
                   <button 
-                    className="w-full px-4 py-2.5 text-[13px] font-bold text-red-500 flex items-center gap-3 hover:bg-red-50 transition-colors text-left"
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      logout();
-                      router.push('/login');
-                    }}
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2.5 text-[13px] font-bold text-red-500 flex items-center gap-3 hover:bg-red-50 transition-colors text-left cursor-pointer"
                   >
                     <LogOut size={16} />
                     Cerrar sesión

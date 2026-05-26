@@ -107,7 +107,7 @@ export default function DashboardPage() {
                       <p className="text-[10px] text-neutral-400">{store.responsible}</p>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <Badge variant={store.status === 'Activa' ? 'activo' : 'suspendido'}>
+                      <Badge variant={store.status === 'Activa' ? 'active' : 'suspended'}>
                         {store.status}
                       </Badge>
                     </td>

@@ -1,70 +1,72 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Eye, EyeOff, LayoutDashboard } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useApp();
   
-  // Estados locales
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Validación simple de email
   const validateEmail = (value: string) => {
     setEmail(value);
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (value && !regex.test(value)) {
+    if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setEmailError('Ingresa un correo válido.');
     } else {
       setEmailError('');
     }
-    setError(''); // Limpiar error de login al escribir
+    setLoginError(null);
   };
 
-  // Manejar el login
   const handleLogin = () => {
     if (!email || !password) {
-      setError('No se pudo iniciar sesión. Verifica tus credenciales.');
+      setLoginError('No se pudo iniciar sesión. Verifica tus credenciales.');
       return;
     }
 
-    // Llamamos a la función del contexto
     const success = login(email, password);
     
     if (success) {
-      router.push('/admin'); // Redirigir al panel
+      router.push('/admin');
     } else {
-      setError('Credenciales incorrectas. (Prueba: admin@platform.com / admin123)');
+      if (email === 'user@platform.com') {
+        setLoginError('Acceso denegado. Tu cuenta no tiene rol de administrador.');
+      } else {
+        setLoginError('Credenciales incorrectas. (Prueba: admin@platform.com / admin123)');
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6 lg:p-10">
-      <div className="w-full max-w-[1200px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[650px]">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6 lg:p-10 overflow-hidden">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-0 md:gap-12 bg-white rounded-[40px] shadow-2xl overflow-hidden h-auto md:h-[750px]">
         
-        {/* --- Sección Izquierda: Branding --- */}
-        <div className="w-full lg:w-[450px] bg-brand-black p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden shrink-0">
-          
-          {/* Contenido */}
-          <div className="z-10 relative">
+        {/* Left Section - Branding */}
+        <div className="w-full md:w-[450px] bg-brand-black p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden shrink-0">
+          <div className="z-10">
             <h1 className="text-[48px] lg:text-[64px] font-display font-extrabold leading-none mb-8 tracking-tighter">
               Kingstore
             </h1>
             <p className="text-[16px] lg:text-[18px] text-neutral-400 font-medium max-w-[280px] leading-relaxed">
-              Gestiona tiendas, usuarios y límites globales desde un único panel centralizado.
+              Gestiona tiendas, usuarios, límites globales y trazabilidad operacional desde un único panel.
             </p>
           </div>
 
-          {/* Decoración de fondo */}
           <div className="absolute top-0 right-0 w-[800px] h-full opacity-10 pointer-events-none -mr-[300px] flex items-center justify-center">
-            <LayoutDashboard size={600} />
+            <LayoutDashboard size={800} />
           </div>
           
           <div className="z-10 mt-auto pt-12">
@@ -76,7 +78,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* --- Sección Derecha: Formulario --- */}
+        {/* Right Section - Login Form */}
         <div className="flex-1 p-10 lg:p-24 flex flex-col justify-center bg-white overflow-y-auto">
           <div className="max-w-md w-full mx-auto">
             
@@ -85,13 +87,13 @@ export default function LoginPage() {
                 Iniciar sesión
               </h2>
               <p className="text-[16px] text-neutral-400 font-medium">
-                Acceso restringido para administradores
+                Acceso restringido para administradores de la plataforma
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6" onKeyPress={handleKeyPress}>
               
-              {/* Input Email */}
+              {/* Email Input */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-neutral-500 ml-1 uppercase tracking-wide">
                   Correo electrónico
@@ -108,8 +110,8 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Input Password */}
-              <div className="space-y-1">
+              {/* Password Input */}
+              <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-neutral-500 ml-1 uppercase tracking-wide">
                   Contraseña
                 </label>
@@ -120,7 +122,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
-                      setError('');
+                      setLoginError(null);
                     }}
                     className="w-full px-5 py-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all pr-12"
                   />
@@ -132,32 +134,34 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <button 
+                  onClick={() => router.push('/recuperar-contrasena')}
+                  className="text-brand-camel font-bold text-[14px] hover:underline underline-offset-4 tracking-tight block"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </div>
 
-              {/* Error Global */}
-              {error && (
-                <div className="bg-red-50 text-red-700 p-4 rounded-xl text-[13px] font-bold border border-red-100 animate-in fade-in slide-in-from-top-2">
-                   {error}
+              {/* Remember Me */}
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" className="w-5 h-5 accent-brand-black rounded-lg" defaultChecked />
+                <span className="text-[14px] font-bold text-neutral-800">Mantener sesión abierta</span>
+              </label>
+
+              {/* Error Message */}
+              {loginError && (
+                <div className="bg-red-50 text-red-700 p-4 rounded-xl text-[14px] font-bold animate-in fade-in slide-in-from-top-2">
+                  {loginError}
                 </div>
               )}
 
-              {/* Botón Login */}
+              {/* Login Button */}
               <button
                 onClick={handleLogin}
-                className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-4 shadow-lg shadow-brand-black/20"
+                className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-8 shadow-lg shadow-brand-black/20"
               >
                 Ingresar al panel
               </button>
-
-              {/* Footer Links */}
-              <div className="flex justify-between items-center pt-4 px-2">
-                <button className="text-sm text-neutral-400 hover:text-brand-camel font-medium transition-colors">
-                  ¿Olvidaste tu contraseña?
-                </button>
-                <button className="text-sm text-neutral-400 hover:text-brand-camel font-medium transition-colors">
-                  Soporte
-                </button>
-              </div>
             </div>
           </div>
         </div>

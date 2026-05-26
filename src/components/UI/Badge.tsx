@@ -1,13 +1,12 @@
 import { ReactNode } from 'react';
-
-interface BadgeProps {
-  children: ReactNode;
-  variant?: 'activo' | 'suspendido' | 'error' | 'alerta' | 'exito' | 'pendiente' | 'seleccionado' | 'info';
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  children: React.ReactNode;
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'active' | 'suspended' | 'inactive' | 'pending' | 'alerta' | 'selected';
   className?: string;
   onClick?: () => void;
 }
 
-export function Badge({ children, variant = 'activo', className = '', onClick }: BadgeProps) {
+export function Badge({ children, variant = 'active', className = '', onClick }: BadgeProps) {
   const variants: Record<string, string> = {
     activo:       'bg-green-100 text-green-800',
     suspendido:   'bg-red-100 text-red-800',

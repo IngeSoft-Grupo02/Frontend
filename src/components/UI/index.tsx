@@ -39,7 +39,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'neutral', cla
 
 // Button
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'beige';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'beige' | 'danger' | 'active';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }
