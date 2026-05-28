@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Badge, Button, Card, Input, Select } from '@/components/UI';
 import { useApp } from '@/context/AppContext';
 import { Plus, UploadCloud, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Card, Badge, Button, Input, Select } from '@/components/UI';
+import { AnimatePresence, motion } from 'motion/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -178,7 +178,10 @@ export default function UsuariosPage() {
                     <div className="flex gap-3">
                       <Button 
                         className="flex-1 rounded-2xl h-14"
-                        onClick={handleEditUser}
+                        onClick={() => {
+                          router.push(`/admin/usuarios/${encodeURIComponent(showDetail.email)}/editar`);
+                          setShowDetail(null);
+                        }}
                       >
                         Editar usuario
                       </Button>

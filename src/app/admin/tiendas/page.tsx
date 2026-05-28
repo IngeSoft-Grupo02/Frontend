@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Badge, Button, Card, Input, Select } from '@/components/UI';
 import { useApp } from '@/context/AppContext';
-import { Plus, Search, UploadCloud, MoreVertical, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Card, Badge, Button, Input, Select } from '@/components/UI';
+import { Plus, Search, UploadCloud, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function TiendasPage() {
   const router = useRouter();
@@ -223,10 +223,13 @@ export default function TiendasPage() {
                     <Button 
                       variant="secondary" 
                       className="flex-1 rounded-2xl h-14"
-                      onClick={() => router.push(`/admin/tiendas/editar?id=${showDetail.id}`)}
-                    >
-                      Editar
-                    </Button>
+                      onClick={() => {
+                      router.push(`/admin/tiendas/${showDetail.id}/editar`);
+                      setShowDetail(null);
+                    }}
+                  >
+                    Editar
+                  </Button>
                   </div>
                   <Button 
                     variant="secondary"

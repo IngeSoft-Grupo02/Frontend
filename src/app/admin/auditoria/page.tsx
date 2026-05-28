@@ -1,11 +1,27 @@
 'use client';
 
-import { Card, Badge, Button, Select } from '@/components/UI';
+import { Badge, Button, Card, Input, Select } from '@/components/UI';
 import { useApp } from '@/context/AppContext';
+import { Search } from 'lucide-react';
+import { useState } from 'react';
 
 export default function AuditoriaPage() {
-  // Usamos los datos del contexto (o los mocks directamente si prefieres)
-  const { auditLogs } = useApp();
+  const { auditLogs, stores, users } = useApp();
+  
+  // Estados para los nuevos inputs de búsqueda
+  const [searchUser, setSearchUser] = useState('');
+  const [searchTenant, setSearchTenant] = useState('');
+  const [filterLevel, setFilterLevel] = useState('Todas');
+
+  // Filtrado combinado
+  const filteredLogs = auditLogs.filter(log => {
+    const matchesLevel = filterLevel === 'Todas' || log.level === filterLevel;
+    const matchesUser = log.user.toLowerCase().includes(searchUser.toLowerCase());
+    // Nota: MOCK_AUDIT usa 'tenant', en tu AppContext puede variar, ajustamos para que funcione
+    const matchesTenant = log.tenant.toLowerCase().includes(searchTenant.toLowerCase());
+    
+    return matchesLevel && matchesUser && matchesTenant;
+  });
 
   return (
     <div className="space-y-8">
@@ -20,31 +36,45 @@ export default function AuditoriaPage() {
         </Button>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros actualizados */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+        {/* Tipo (Select) */}
         <div>
-          <Select label="Tipo">
+          <Select 
+            label="Tipo" 
+            value={filterLevel}
+            onChange={(e) => setFilterLevel(e.target.value)}
+          >
             <option>Todas</option>
             <option>INFO</option>
             <option>ALERTA</option>
             <option>ERROR</option>
           </Select>
         </div>
+
+        {/* Usuario (Input de búsqueda) */}
         <div>
-          <Select label="Usuario">
-            <option>Todos</option>
-            <option>admin@platform.com</option>
-            <option>sys@platform</option>
-          </Select>
+          <Input 
+            label="Usuario" 
+            placeholder="Buscar por nombre o email..." 
+            icon={Search}
+            value={searchUser}
+            onChange={(e) => setSearchUser(e.target.value)}
+          />
         </div>
+
+        {/* Tienda (Input de búsqueda) */}
         <div>
-          <Select label="Tienda">
-            <option>Todas</option>
-            <option>Global</option>
-            <option>Canvas Lab</option>
-            <option>Street/Core</option>
-          </Select>
+          <Input 
+            label="Tienda" 
+            placeholder="Buscar por nombre de tienda..." 
+            icon={Search}
+            value={searchTenant}
+            onChange={(e) => setSearchTenant(e.target.value)}
+          />
         </div>
+
+        {/* Rango de fechas (Select) */}
         <div>
           <Select label="Rango de fechas">
             <option>Últimos 7 días</option>
@@ -72,11 +102,9 @@ export default function AuditoriaPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {auditLogs.map((log, i) => {
-                // Formateo de fecha simulado como en el prototipo
+              {filteredLogs.map((log, i) => {
                 const mockDate = `${log.time.includes('(') ? log.time.split(' ')[0] : log.time} 10/05/2026`;
                 
-                // Mapeo de variantes para el Badge
                 const variant = log.level === 'INFO' ? 'active' : 
                                log.level === 'ALERTA' ? 'warning' : 
                                log.level === 'ERROR' ? 'error' : 'neutral';
@@ -94,6 +122,13 @@ export default function AuditoriaPage() {
                   </tr>
                 );
               })}
+              {filteredLogs.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-neutral-400 font-medium italic">
+                    No se encontraron registros con los filtros aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

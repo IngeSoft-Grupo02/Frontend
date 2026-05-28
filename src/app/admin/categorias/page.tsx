@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Badge, Button, Card, Input, Select } from '@/components/UI';
 import { useApp } from '@/context/AppContext';
-import { Plus, Search, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Card, Badge, Button, Input, Select } from '@/components/UI';
+import { Plus, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function CategoriasPage() {
   const router = useRouter();
@@ -149,8 +149,8 @@ export default function CategoriasPage() {
                   <button 
                     className="flex-1 rounded-2xl h-14 border border-neutral-200 text-brand-black font-bold hover:bg-neutral-50 transition-colors"
                     onClick={() => {
-                        router.push(`/admin/categorias/editar?name=${showDetail.name}`);
-                        setShowDetail(null);
+                      router.push(`/admin/categorias/${encodeURIComponent(showDetail.name)}/editar`);
+                      setShowDetail(null);
                     }}
                   >
                     Editar
