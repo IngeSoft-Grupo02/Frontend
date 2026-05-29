@@ -47,7 +47,7 @@ interface AuditLog {
 interface AppContextType {
   isLoggedIn: boolean;
   currentUser: any;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string, userData?: any) => boolean;
   logout: () => void;
   stores: Store[];
   users: User[];
@@ -72,12 +72,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
   const [auditLogs] = useState<AuditLog[]>(MOCK_AUDIT);
 
-  const login = (email: string, password: string) => {
-    if (email === 'admin@platform.com' && password === 'admin123') {
+  const login = (email: string, password: string, userData?: any) => {
+    // Si viene userData del backend, úsalo directamente
+    // Si no, fallback al mock para desarrollo sin backend
+    if (userData || email === 'admin@platform.com' || email === 'admin@kingstore.com') {
       setIsLoggedIn(true);
-      setCurrentUser({
+      setCurrentUser(userData || {
         name: 'Admin Kingstore',
-        email: 'admin@plataforma.com',
+        email: email,
         phone: '987654321',
         role: 'Super admin'
       });
@@ -92,8 +94,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addStore = (store: any) => {
-    setStores((prev: Store[]) => [...prev, { 
-      ...store, 
+    setStores((prev: Store[]) => [...prev, {
+      ...store,
       id: `tenant-00${prev.length + 1}`,
       registrationDate: new Date().toLocaleDateString('es-PE')
     }]);
@@ -124,25 +126,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{
-      isLoggedIn,
-      currentUser,
-      login,
-      logout,
-      stores,
-      users,
-      categories,
-      auditLogs,
-      addStore,
-      updateStore,
-      addUser,
-      updateUser,
-      deleteUser,
-      addCategory,
-      updateCategory
-    }}>
-      {children}
-    </AppContext.Provider>
+      <AppContext.Provider value={{
+        isLoggedIn,
+        currentUser,
+        login,
+        logout,
+        stores,
+        users,
+        categories,
+        auditLogs,
+        addStore,
+        updateStore,
+        addUser,
+        updateUser,
+        deleteUser,
+        addCategory,
+        updateCategory
+      }}>
+        {children}
+      </AppContext.Provider>
   );
 }
 
