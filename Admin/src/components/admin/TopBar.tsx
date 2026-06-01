@@ -11,13 +11,13 @@ type TopBarProps = {
   subtitle?: string;
 };
 
-export default function TopBar({ title: titleProp, subtitle: subtitleProp }: TopBarProps) {
+export default function TopBar({ title, subtitle }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { currentUser, logout } = useApp();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Obtener título y subtítulo según la ruta
+  // Obtener título y subtítulo según la ruta cuando no se reciben por props
   const getPageMeta = () => {
     if (pathname === '/') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
     if (pathname === '/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
@@ -30,9 +30,9 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 
-  const fallbackMeta = getPageMeta();
-  const title = titleProp || fallbackMeta.title;
-  const subtitle = subtitleProp || fallbackMeta.subtitle;
+  const pageMeta = getPageMeta();
+  const finalTitle = title ?? pageMeta.title;
+  const finalSubtitle = subtitle ?? pageMeta.subtitle;
 
   const handleLogout = () => {
     logout();
@@ -43,18 +43,20 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
     <header className="h-20 fixed top-0 right-0 left-[280px] z-40 bg-white/80 backdrop-blur-md border-b border-neutral-100 px-8 flex items-center justify-between shadow-sm">
       <div>
         <h1 className="text-[20px] font-display font-extrabold tracking-tight text-neutral-900 leading-tight">
-          {title}
+          {finalTitle}
         </h1>
-        <p className="text-[12px] font-medium text-neutral-400">
-          {subtitle}
-        </p>
+        {finalSubtitle && (
+          <p className="text-[12px] font-medium text-neutral-400">
+            {finalSubtitle}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-6">
         <div className="h-8 w-px bg-neutral-100 mx-1"></div>
 
         <div className="relative">
-          <button 
+          <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-3 pl-2 pr-1 py-1.5 rounded-full hover:bg-neutral-50 transition-colors cursor-pointer"
           >
@@ -72,27 +74,27 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
                 {currentUser?.role || 'ADMINISTRADOR'}
               </p>
             </div>
-            <ChevronDown 
-              size={14} 
-              className={`text-neutral-400 ml-1 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} 
+            <ChevronDown
+              size={14}
+              className={`text-neutral-400 ml-1 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`}
             />
           </button>
 
           <AnimatePresence>
             {showUserMenu && (
               <>
-                <div 
-                  className="fixed inset-0 z-30" 
+                <div
+                  className="fixed inset-0 z-30"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-neutral-100 shadow-xl z-40 overflow-hidden py-2"
                 >
-                  <button 
+                  <button
                     onClick={() => {
                       setShowUserMenu(false);
                       router.push('/perfil');
@@ -103,7 +105,7 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
                     Mi cuenta
                   </button>
                   <div className="h-px bg-neutral-50 mx-2 my-1" />
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="w-full px-4 py-2.5 text-[13px] font-bold text-red-500 flex items-center gap-3 hover:bg-red-50 transition-colors text-left cursor-pointer"
                   >
