@@ -1,16 +1,30 @@
 {
-  "name": "kingstore-frontend",
+  "name": "kingstore-platform",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "description": "Scripts utilitarios para levantar Cliente, Admin, Comerciante y el gateway local",
+  "packageManager": "pnpm@11.1.0",
   "scripts": {
-    "dev:cliente": "pnpm -C Cliente dev",
-    "dev:admin": "pnpm -C Admin exec next dev -p 3001",
-    "dev:comerciante": "pnpm -C Comerciante exec next dev -p 3003",
-    "dev:gateway-server": "pnpm -C Gateway dev",
-    "dev:gateway": "concurrently -n cliente,admin,comerciante,gateway -c green,blue,yellow,magenta \"pnpm dev:cliente\" \"pnpm dev:admin\" \"pnpm dev:comerciante\" \"pnpm dev:gateway-server\""
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.14.0",
+    "motion": "^12.40.0",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "^25.9.3",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3"
   }
 }
