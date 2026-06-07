@@ -1,23 +1,26 @@
 # Dependencias
 node_modules/
+**/node_modules/
 .pnp/
 .pnp.js
 
-#Build & Cache
+# Build & Cache
 .next/
+**/.next/
 out/
 dist/
 .vite/
 .cache/
 
-#Variables de entorno (¡IMPORTANTE! Nunca subas claves reales)
+# Variables de entorno (IMPORTANTE: nunca subas claves reales)
 .env
 .env.local
 .env.*.local
+**/.env.local
 !.env.example
 !.env.local.example
 
-#IDE & Editores
+# IDE & Editores
 .vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
@@ -28,23 +31,23 @@ dist/
 *.swo
 *~
 
-#Sistema Operativo
+# Sistema Operativo
 .DS_Store
 Thumbs.db
 ehthumbs.db
 
-#Logs
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-#Testing & Cobertura
+# Testing & Cobertura
 coverage/
 .nyc_output/
 
-#Misc
+# Misc
 *.local
 *.lock
 package-lock.json  # Opcional: si prefieres no versionarlo, pero es recomendado subirlo

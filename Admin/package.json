@@ -10,7 +10,7 @@
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2"
   },
-  "name": "kingstore-platform",
+  "name": "kingstore-admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
