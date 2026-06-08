@@ -41,6 +41,7 @@ export default function OrdersPage() {
 
   const [filter, setFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const selectedOrder = useMemo(() =>
     storeOrders.find(o => o.id === selectedOrderId) || storeOrders[0],
@@ -65,16 +66,21 @@ export default function OrdersPage() {
     'Cancelado': null
   };
 
-  const handleNextStatus = () => {
+  const handleNextStatus = async () => {
     if (selectedOrder) {
       const next = nextStatusMap[selectedOrder.status];
       if (next) {
-        updateOrder(selectedOrder.id, { status: next });
+        try {
+          setActionError('');
+          await updateOrder(selectedOrder.id, { status: next });
+        } catch (error) {
+          setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el pedido');
+        }
       }
     }
   };
 
-  const handleStepClick = (stepLabel: string) => {
+  const handleStepClick = async (stepLabel: string) => {
     const statusMap: Record<string, Order['status']> = {
       'Aprobado': 'Aprobado',
       'Pagado': 'Pagado',
@@ -84,7 +90,12 @@ export default function OrdersPage() {
     };
     const newStatus = statusMap[stepLabel];
     if (newStatus && selectedOrder) {
-      updateOrder(selectedOrder.id, { status: newStatus });
+      try {
+        setActionError('');
+        await updateOrder(selectedOrder.id, { status: newStatus });
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el pedido');
+      }
     }
   };
 
@@ -100,9 +111,14 @@ export default function OrdersPage() {
     ];
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (selectedOrder && selectedOrder.status !== 'Cancelado' && selectedOrder.status !== 'Entregado') {
-      updateOrder(selectedOrder.id, { status: 'Cancelado' });
+      try {
+        setActionError('');
+        await updateOrder(selectedOrder.id, { status: 'Cancelado' });
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'No se pudo cancelar el pedido');
+      }
     }
   };
 
@@ -140,6 +156,11 @@ export default function OrdersPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start min-h-[750px]">
+          {actionError && (
+            <div className="lg:col-span-12 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
+              {actionError}
+            </div>
+          )}
           {/* Sidebar Orders List */}
           <div className="lg:col-span-4 h-full">
             <Card className="!p-0 h-full flex flex-col overflow-hidden">

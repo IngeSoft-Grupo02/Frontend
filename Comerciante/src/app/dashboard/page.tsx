@@ -61,7 +61,7 @@ export default function DashboardPage() {
           <div className="space-y-8">
             <Card title="Acciones Rápidas" subtitle="GESTIÓN INMEDIATA">
               <div className="flex flex-col gap-3 pt-2">
-                <Button className="w-full h-14 gap-3 font-black text-[14px] shadow-xl shadow-brand-black/10" onClick={() => router.push('/products/new')}><Plus size={20} /> Nuevo Producto</Button>
+                <Button className="w-full h-14 gap-3 font-black text-[14px] shadow-xl shadow-brand-black/10" onClick={() => router.push('/products/nuevo')}><Plus size={20} /> Nuevo Producto</Button>
                 <Button variant="camel" className="w-full h-14 gap-3 font-black text-[14px]" onClick={() => router.push('/carga-masiva')}><Upload size={20} /> Carga Masiva (CSV)</Button>
               </div>
             </Card>

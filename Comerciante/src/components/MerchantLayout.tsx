@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export const Topbar = ({ title, subtitle, noSidebar }: { title: string; subtitle?: string; noSidebar?: boolean }) => {
-  const { user, setUser } = useStore();
+  const { user, logout } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
   
@@ -55,7 +55,7 @@ export const Topbar = ({ title, subtitle, noSidebar }: { title: string; subtitle
               <div className="h-px bg-brand-neutral-border my-1" />
               <div className="px-2 pb-1">
                 <button 
-                  onClick={() => { setUser(null); sessionStorage.removeItem('mc_user'); router.push('/login'); }}
+                  onClick={() => { logout(); router.push('/login'); }}
                   className="w-full px-4 py-2.5 text-left text-[13px] font-black text-brand-black bg-white border border-brand-black rounded-xl flex items-center gap-2 hover:bg-brand-neutral-light transition-all active:scale-[0.98]"
                 >
                   <LogOut size={16} strokeWidth={2.5} /> Cerrar sesión

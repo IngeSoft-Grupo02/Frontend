@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 import { MerchantLayout } from '@/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/components/ui';
 import { useStore } from '@/context/StoreContext';
-import { Discount } from '@/lib/types';
+import { Discount, Product } from '@/lib/types';
 import {
     ArrowUpRight,
     Check,
@@ -26,12 +26,13 @@ import {
 import React, { useMemo, useState } from 'react';
 
 export default function DiscountsPage() {
-  const { discounts, addDiscount, updateDiscount, deleteDiscount } = useStore();
+  const { discounts, products, addDiscount, updateDiscount, deleteDiscount } = useStore();
   const [filter, setFilter] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Form State
   const [formData, setFormData] = useState<Partial<Discount & { type?: string }>>({
@@ -39,9 +40,51 @@ export default function DiscountsPage() {
     type: 'Porcentaje',
     value: 5,
     minUnits: 20,
-    appliesTo: 'Todo el catálogo',
+    appliesTo: 'Todo el catalogo',
     status: 'Activa'
   });
+
+  const MAX_DISCOUNTS = 5;
+  const canCreateMoreDiscounts = discounts.length < MAX_DISCOUNTS;
+
+  const applyDiscountValue = (price: number, discount: Discount) => {
+    if (discount.type === 'Monto Fijo') return Math.max(price - discount.value, 0);
+    return Math.max(price * (1 - discount.value / 100), 0);
+  };
+
+  const formatMoney = (value: number) => `S/ ${value.toFixed(2)}`;
+
+  const discountScopeLabel = (discount: Discount) =>
+    discount.appliesTo === 'Producto especifico' && discount.productName
+      ? `${discount.appliesTo} - ${discount.productName}`
+      : discount.appliesTo;
+
+  const productDiscountPreview = useMemo(() => {
+    if (formData.appliesTo !== 'Producto especifico' || !formData.productId) return null;
+    const product = products.find((item: Product) => item.id === formData.productId);
+    if (!product) return null;
+
+    const existingDiscounts = discounts.filter((discount: Discount) =>
+      discount.status === 'Activa'
+      && (discount.appliesTo === 'Todo el catalogo' || discount.productId === product.id)
+      && discount.id !== editingId
+    );
+    const draftDiscount: Discount = {
+      id: editingId || 'DRAFT',
+      name: formData.name || 'Nuevo descuento',
+      type: (formData.type as Discount['type']) || 'Porcentaje',
+      value: Number(formData.value || 0),
+      minUnits: Number(formData.minUnits || 0),
+      appliesTo: 'Producto especifico',
+      productId: product.id,
+      productName: product.name,
+      status: formData.status || 'Activa',
+      usageCount: 0
+    };
+    const sequence = [...existingDiscounts, draftDiscount];
+    const finalPrice = sequence.reduce((price, discount) => applyDiscountValue(price, discount), product.price);
+    return { product, sequence, finalPrice };
+  }, [discounts, editingId, formData, products]);
 
   const selectedDiscount = useMemo(() =>
     discounts.find((d: Discount) => d.id === showDetailId),
@@ -57,29 +100,53 @@ export default function DiscountsPage() {
     });
   }, [discounts, filter, searchTerm]);
 
-  const handleCreateRule = (e: React.FormEvent) => {
+  const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    const newErrors: Record<string, string> = {};
+    const value = Number(formData.value || 0);
+    const minUnits = Number(formData.minUnits || 0);
+    const appliesTo = formData.appliesTo || 'Todo el catalogo';
+    const selectedProduct = products.find((product: Product) => product.id === formData.productId);
 
-    if (editingId) {
-      updateDiscount(editingId, {
-        name: formData.name,
-        value: formData.value || 0,
-        minUnits: formData.minUnits || 0,
-        appliesTo: formData.appliesTo || 'Todo el catálogo'
-      });
-      setEditingId(null);
-    } else {
-      const newRule: Discount = {
-        id: `DESC-${Math.floor(Math.random() * 10000)}`,
-        name: formData.name,
-        value: formData.value || 0,
-        minUnits: formData.minUnits || 0,
-        appliesTo: formData.appliesTo || 'Todo el catálogo',
-        status: 'Activa',
-        usageCount: 0
-      };
-      addDiscount(newRule);
+    if (!formData.name?.trim()) newErrors.name = 'La etiqueta es obligatoria';
+    if (!Number.isInteger(minUnits) || minUnits <= 0) newErrors.minUnits = 'La cantidad minima debe ser un entero mayor a 0';
+    if (value <= 0) newErrors.value = 'El descuento debe ser mayor a 0';
+    if (formData.type === 'Porcentaje' && value > 100) newErrors.value = 'El porcentaje no puede superar 100%';
+    if (!editingId && !canCreateMoreDiscounts) newErrors.form = 'Solo puedes configurar hasta 5 descuentos por tienda';
+    if (appliesTo === 'Producto especifico' && !selectedProduct) newErrors.productId = 'Selecciona el producto al que se aplicara el descuento';
+
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      return;
+    }
+
+    const discountName = formData.name!.trim();
+    const payload = {
+      name: discountName,
+      type: formData.type as Discount['type'],
+      value,
+      minUnits,
+      appliesTo: appliesTo as Discount['appliesTo'],
+      productId: appliesTo === 'Producto especifico' ? selectedProduct?.id : undefined,
+      productName: appliesTo === 'Producto especifico' ? selectedProduct?.name : undefined,
+      status: (formData.status || 'Activa') as Discount['status']
+    };
+
+    try {
+      if (editingId) {
+        await updateDiscount(editingId, payload);
+        setEditingId(null);
+      } else {
+        await addDiscount({
+          id: `DESC-${Math.floor(Math.random() * 10000)}`,
+          ...payload,
+          status: 'Activa',
+          usageCount: 0
+        });
+      }
+    } catch (error) {
+      setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el descuento' });
+      return;
     }
 
     setIsCreating(false);
@@ -88,26 +155,35 @@ export default function DiscountsPage() {
       type: 'Porcentaje',
       value: 5,
       minUnits: 20,
-      appliesTo: 'Todo el catálogo',
+      appliesTo: 'Todo el catalogo',
+      productId: undefined,
+      productName: undefined,
       status: 'Activa'
     });
+    setFormErrors({});
   };
-
   const startEdit = (discount: Discount) => {
     setFormData({
       name: discount.name,
+      type: discount.type || 'Porcentaje',
       value: discount.value,
       minUnits: discount.minUnits,
       appliesTo: discount.appliesTo,
+      productId: discount.productId,
+      productName: discount.productName,
       status: discount.status
     });
     setEditingId(discount.id);
     setIsCreating(true);
+    setFormErrors({});
     setShowDetailId(null);
   };
-
-  const toggleStatus = (id: string, currentStatus: string) => {
-    updateDiscount(id, { status: currentStatus === 'Activa' ? 'Pausada' : 'Activa' });
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    try {
+      await updateDiscount(id, { status: currentStatus === 'Activa' ? 'Pausada' : 'Activa' });
+    } catch (error) {
+      setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo cambiar el estado' });
+    }
   };
 
   if (isCreating) {
@@ -119,18 +195,27 @@ export default function DiscountsPage() {
               <h2 className="text-[32px] font-black tracking-tighter text-brand-black">{editingId ? 'Modificar Regla' : 'Crear Nueva Regla de Volumen'}</h2>
               <p className="text-[14px] font-bold text-brand-text-muted uppercase tracking-tight">Establece los gatillos de descuento para tus clientes</p>
             </div>
-            <Button variant="outline" onClick={() => { setIsCreating(false); setEditingId(null); }} className="rounded-2xl px-6 h-12">Cancelar</Button>
+            <Button variant="outline" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); }} className="rounded-2xl px-6 h-12">Cancelar</Button>
           </div>
 
           <Card className="shadow-2xl shadow-brand-black/5 border-2 border-brand-neutral-border p-10 overflow-hidden">
             <form onSubmit={handleCreateRule} className="space-y-12">
+              {formErrors.form && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-[13px] font-bold">
+                  {formErrors.form}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-4">
                   <Input
                     label="Etiqueta del Descuento *"
                     placeholder="Ej: Oferta de Lanzamiento"
                     value={formData.name || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (formErrors.name) setFormErrors({ ...formErrors, name: '' });
+                    }}
+                    error={formErrors.name}
                     className="h-14 rounded-2xl font-bold"
                   />
                   <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-tighter">Este nombre identifica la promoción internamente</p>
@@ -177,6 +262,7 @@ export default function DiscountsPage() {
                     </div>
                   ))}
                 </div>
+                {formErrors.value && <p className="text-[11px] font-bold text-red-500">{formErrors.value}</p>}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -184,9 +270,16 @@ export default function DiscountsPage() {
                   <Input
                     label="Cantidad mínima de compra *"
                     value={formData.minUnits?.toString() || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, minUnits: parseInt(e.target.value) || 0 })}
-                    type="number"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setFormData({ ...formData, minUnits: parseInt(digits || '0') });
+                      if (formErrors.minUnits) setFormErrors({ ...formErrors, minUnits: '' });
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="20"
+                    error={formErrors.minUnits}
                     className="h-14 rounded-2xl font-bold"
                   />
                   <div className="bg-blue-50 p-6 rounded-[24px] border border-blue-100 flex items-start gap-4 shadow-sm">
@@ -201,22 +294,80 @@ export default function DiscountsPage() {
                   <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] leading-none">Aplicabilidad</label>
                   <select
                     value={formData.appliesTo}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, appliesTo: e.target.value as Discount['appliesTo'] })}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      const appliesTo = e.target.value as Discount['appliesTo'];
+                      setFormData({
+                        ...formData,
+                        appliesTo,
+                        productId: appliesTo === 'Producto especifico' ? formData.productId : undefined,
+                        productName: appliesTo === 'Producto especifico' ? formData.productName : undefined
+                      });
+                      setFormErrors({ ...formErrors, productId: '' });
+                    }}
                     className="w-full h-14 bg-white border border-brand-neutral-border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all appearance-none"
                     style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 20px center', backgroundSize: '1.2rem' }}
                   >
-                    <option>Todo el catálogo</option>
-                    <option>Producto específico</option>
-                    <option>Categoría</option>
+                    <option>Todo el catalogo</option>
+                    <option>Producto especifico</option>
                   </select>
+                  {formData.appliesTo === 'Producto especifico' && (
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] leading-none">Producto</label>
+                      <select
+                        value={formData.productId || ''}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const selectedProduct = products.find((product: Product) => product.id === e.target.value);
+                          setFormData({
+                            ...formData,
+                            productId: selectedProduct?.id,
+                            productName: selectedProduct?.name
+                          });
+                          if (formErrors.productId) setFormErrors({ ...formErrors, productId: '' });
+                        }}
+                        className={`w-full h-14 bg-white border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 transition-all appearance-none ${formErrors.productId ? 'border-red-500' : 'border-brand-neutral-border focus:border-brand-black'}`}
+                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 20px center', backgroundSize: '1.2rem' }}
+                      >
+                        <option value="">Selecciona un producto</option>
+                        {products.map((product: Product) => (
+                          <option key={product.id} value={product.id}>{product.name}</option>
+                        ))}
+                      </select>
+                      {formErrors.productId && <p className="text-[11px] font-bold text-red-500">{formErrors.productId}</p>}
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {productDiscountPreview && (
+                <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[32px] p-6 space-y-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Precio final estimado</p>
+                      <h4 className="text-[24px] font-black text-brand-black">{productDiscountPreview.product.name}</h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[11px] font-bold text-brand-text-muted uppercase">Base {formatMoney(productDiscountPreview.product.price)}</p>
+                      <p className="text-[28px] font-black text-brand-black">{formatMoney(productDiscountPreview.finalPrice)}</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    {productDiscountPreview.sequence.map((discount: Discount, index: number) => (
+                      <div key={`${discount.id}-${index}`} className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 border border-brand-neutral-border">
+                        <span className="text-[12px] font-black text-brand-black uppercase">{index + 1}. {discount.name}</span>
+                        <span className="text-[12px] font-black text-brand-text-muted">
+                          {discount.type === 'Monto Fijo' ? `- S/ ${discount.value}` : `- ${discount.value}%`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-6 pt-10 border-t border-brand-neutral-border">
-                <Button type="submit" disabled={!formData.name} className="flex-1 h-16 gap-3 rounded-[24px] font-black uppercase tracking-widest shadow-2xl shadow-brand-black/20 text-[15px]">
+                <Button type="submit" disabled={!formData.name || (!editingId && !canCreateMoreDiscounts)} className="flex-1 h-16 gap-3 rounded-[24px] font-black uppercase tracking-widest shadow-2xl shadow-brand-black/20 text-[15px]">
                   <Plus size={22} /> {editingId ? 'Guardar Cambios' : 'Activar Descuento'}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => { setIsCreating(false); setEditingId(null); }} className="h-16 px-10 rounded-3xl text-brand-text-muted hover:text-red-500">Descartar</Button>
+                <Button type="button" variant="ghost" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); }} className="h-16 px-10 rounded-3xl text-brand-text-muted hover:text-red-500">Descartar</Button>
               </div>
             </form>
           </Card>
@@ -235,14 +386,29 @@ export default function DiscountsPage() {
             <p className="text-brand-text-muted text-[15px] font-bold max-w-2xl leading-relaxed">
               Define descuentos automáticos que incentiven pedidos grandes. Las reglas se aplican en tiempo real al carrito.
             </p>
+            <p className="text-[12px] font-black text-brand-black uppercase tracking-widest">
+              {discounts.length}/{MAX_DISCOUNTS} descuentos configurados
+            </p>
           </div>
           <Button
-            onClick={() => setIsCreating(true)}
+            onClick={() => {
+              if (!canCreateMoreDiscounts) {
+                setFormErrors({ form: 'Solo puedes configurar hasta 5 descuentos por tienda' });
+                return;
+              }
+              setIsCreating(true);
+            }}
+            disabled={!canCreateMoreDiscounts}
             className="rounded-[32px] gap-3 h-16 px-12 shadow-2xl shadow-brand-black/20 font-black text-[15px] uppercase tracking-wider"
           >
             <Plus size={24} /> Crear Descuento
           </Button>
         </header>
+        {formErrors.form && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-[13px] font-bold">
+            {formErrors.form}
+          </div>
+        )}
 
         {/* Global Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -338,7 +504,7 @@ export default function DiscountsPage() {
                             {rule.name}
                             <ChevronRight size={14} className="opacity-0 group-hover:opacity-40" />
                           </span>
-                          <span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tighter mt-0.5">{rule.appliesTo}</span>
+                          <span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tighter mt-0.5">{discountScopeLabel(rule)}</span>
                         </div>
                       </td>
                       <td className="px-8 py-7 text-center">
@@ -412,7 +578,7 @@ export default function DiscountsPage() {
                     <div className="w-10 h-10 rounded-xl bg-brand-black flex items-center justify-center text-white">
                       <Package size={20} />
                     </div>
-                    <span className="text-[15px] font-black text-brand-black">{selectedDiscount.appliesTo}</span>
+                    <span className="text-[15px] font-black text-brand-black">{discountScopeLabel(selectedDiscount)}</span>
                   </div>
                   <Badge variant="outline" className="font-bold">{selectedDiscount.usageCount} canjes totales</Badge>
                 </div>
@@ -438,7 +604,9 @@ export default function DiscountsPage() {
                 <Button
                   onClick={() => {
                     if (confirm('¿Eliminar esta regla permanentemente?')) {
-                      deleteDiscount(selectedDiscount.id);
+                      deleteDiscount(selectedDiscount.id).catch(error => {
+                        setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo eliminar el descuento' });
+                      });
                       setShowDetailId(null);
                     }
                   }}
@@ -455,3 +623,5 @@ export default function DiscountsPage() {
     </MerchantLayout>
   );
 }
+
+

@@ -23,7 +23,7 @@ import React, { useState } from 'react';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, setUser } = useStore();
+  const { user, updateProfile, updatePassword } = useStore();
   const [activeTab, setActiveTab] = useState<'personal' | 'security'>('personal');
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,7 +52,9 @@ export default function ProfilePage() {
     return [firstName, paternalSurname, maternalSurname].filter(Boolean).join(' ');
   };
 
-  const handleSavePersonal = () => {
+  const onlyDigits = (value: string) => value.replace(/\D/g, '').slice(0, 15);
+
+  const handleSavePersonal = async () => {
     const newErrors: Record<string, string> = {};
 
     if (!firstName) newErrors.firstName = 'El nombre es obligatorio';
@@ -67,23 +69,24 @@ export default function ProfilePage() {
       return;
     }
 
-    const fullName = getFullName();
-    setUser({
-      email,
-      role: user?.role || 'Comerciante',
-      name: fullName,
-      firstName,
-      paternalSurname,
-      maternalSurname,
-      phone
-    });
+    try {
+      await updateProfile({
+        firstName,
+        paternalSurname,
+        maternalSurname,
+        email,
+        phone
+      });
 
-    setErrors({});
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+      setErrors({});
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      setErrors({ email: error instanceof Error ? error.message : 'No se pudo actualizar el perfil' });
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     const newErrors: Record<string, string> = {};
 
     if (!currentPassword) newErrors.currentPassword = 'La contraseña actual es obligatoria';
@@ -96,13 +99,17 @@ export default function ProfilePage() {
       return;
     }
 
-    // Simular cambio de contraseña
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setErrors({});
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+    try {
+      await updatePassword(currentPassword, newPassword, confirmPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setErrors({});
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      setErrors({ currentPassword: error instanceof Error ? error.message : 'No se pudo actualizar la contraseña' });
+    }
   };
 
   const tabs = [
@@ -211,8 +218,11 @@ export default function ProfilePage() {
                       <Input
                         label="Teléfono"
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={15}
                         value={phone}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(onlyDigits(e.target.value))}
                         className="h-14 rounded-2xl font-bold"
                       />
                     </div>

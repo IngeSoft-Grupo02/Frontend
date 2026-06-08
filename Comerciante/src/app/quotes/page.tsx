@@ -54,6 +54,7 @@ export default function QuotesPage() {
 
   const [filter, setFilter] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const selectedQuote = useMemo(() =>
     storeQuotes.find(q => q.id === selectedQuoteId) || storeQuotes[0],
@@ -82,9 +83,14 @@ export default function QuotesPage() {
     };
   }, [storeQuotes, store.customizationIncrement]);
 
-  const handleStatusUpdate = (status: Quote['status']) => {
+  const handleStatusUpdate = async (status: Quote['status']) => {
     if (selectedQuoteId) {
-      updateQuote(selectedQuoteId, { status });
+      try {
+        setActionError('');
+        await updateQuote(selectedQuoteId, { status });
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'No se pudo actualizar la cotización');
+      }
     }
   };
 
@@ -128,6 +134,11 @@ export default function QuotesPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start min-h-[800px]">
+          {actionError && (
+            <div className="lg:col-span-12 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
+              {actionError}
+            </div>
+          )}
           {/* List Section */}
           <div className="lg:col-span-4 h-full">
             <Card className="!p-0 h-full flex flex-col overflow-hidden shadow-2xl shadow-brand-black/5">

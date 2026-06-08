@@ -3,7 +3,6 @@
 import { MerchantLayout } from '@/components/MerchantLayout';
 import { Badge, Button, Card } from '@/components/ui';
 import { useStore } from '@/context/StoreContext';
-import { Product } from '@/lib/types';
 import JSZip from 'jszip';
 import {
     AlertCircle,
@@ -44,7 +43,7 @@ interface ValidationResult {
 
 export default function BulkUploadPage() {
   const router = useRouter();
-  const { addProduct } = useStore();
+  const { bulkUploadProducts } = useStore();
   const csvInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,11 +98,25 @@ export default function BulkUploadPage() {
     return { headers, rows };
   };
 
+  const isCsvFile = (file: File) => file.name.toLowerCase().endsWith('.csv');
+  const isZipFile = (file: File) => file.name.toLowerCase().endsWith('.zip');
+
   const handleCsvChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert('Solo se permiten archivos CSV.');
+    if (!isCsvFile(file)) {
+      setCsvErrors(['Solo se permiten archivos .csv para productos.']);
+      setCsvStatus('error');
+      setCsvFile(null);
+      if (csvInputRef.current) csvInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setCsvErrors(['El archivo CSV no debe exceder los 10MB.']);
+      setCsvStatus('error');
+      setCsvFile(null);
+      if (csvInputRef.current) csvInputRef.current.value = '';
       return;
     }
 
@@ -189,13 +202,19 @@ export default function BulkUploadPage() {
   const handleZipChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.zip')) {
-      alert('Solo se permiten archivos ZIP.');
+    if (!isZipFile(file)) {
+      setZipErrors(['Solo se permiten archivos .zip para imágenes.']);
+      setZipStatus('error');
+      setZipFile(null);
+      if (zipInputRef.current) zipInputRef.current.value = '';
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('El archivo ZIP no debe exceder los 50MB.');
+      setZipErrors(['El archivo ZIP no debe exceder los 50MB.']);
+      setZipStatus('error');
+      setZipFile(null);
+      if (zipInputRef.current) zipInputRef.current.value = '';
       return;
     }
 
@@ -206,25 +225,39 @@ export default function BulkUploadPage() {
       const zip = new JSZip();
       const content = await zip.loadAsync(file);
       
-      const entries = Object.keys(content.files)
+      const zipEntries = Object.keys(content.files)
         .filter(name => !content.files[name].dir)
         .filter(name => {
           const baseName = name.split(/[/\\]/).pop() || '';
           return !baseName.startsWith('.') && !name.includes('__MACOSX') && baseName !== 'Thumbs.db';
         })
-        .map(name => {
-          const baseName = name.split(/[/\\]/).pop() || '';
-          return baseName.trim().toLowerCase();
-        })
-        .filter(name => name !== '');
+        .map(path => ({
+          path,
+          name: (path.split(/[/\\]/).pop() || '').trim().toLowerCase(),
+          size: ((content.files[path] as any)._data?.uncompressedSize || 0) as number
+        }))
+        .filter(entry => entry.name !== '');
+
+      const entries = zipEntries.map(entry => entry.name);
       
-      const invalidExtensions = entries.filter(name => {
-        const ext = name.split('.').pop()?.toLowerCase();
+      const invalidExtensions = zipEntries.filter(entry => {
+        const ext = entry.name.split('.').pop()?.toLowerCase();
         return !['jpg', 'jpeg', 'png'].includes(ext || '');
-      });
+      }).map(entry => entry.name);
 
       if (invalidExtensions.length > 0) {
         setZipErrors([`Formatos no permitidos encontrados en el ZIP (solo JPG, PNG): ${invalidExtensions.slice(0, 3).join(', ')}${invalidExtensions.length > 3 ? '...' : ''}`]);
+        setZipStatus('error');
+        setZipFile(null);
+        return;
+      }
+
+      const oversizedImages = zipEntries
+        .filter(entry => entry.size > 2 * 1024 * 1024)
+        .map(entry => entry.name);
+
+      if (oversizedImages.length > 0) {
+        setZipErrors([`Imágenes mayores a 2MB encontradas: ${oversizedImages.slice(0, 3).join(', ')}${oversizedImages.length > 3 ? '...' : ''}`]);
         setZipStatus('error');
         setZipFile(null);
         return;
@@ -276,78 +309,20 @@ export default function BulkUploadPage() {
     setIsExecuting(true);
 
     try {
-      const timestamp = Date.now();
-      const zip = zipFile ? await new JSZip().loadAsync(zipFile.file) : null;
-      let totalImagesAssociated = 0;
-      const associatedImageNames = new Set<string>();
+      if (!csvFile) return;
+      const result = await bulkUploadProducts(csvFile.file, zipFile?.file);
 
-      const productNames = Array.from(new Set(csvFile?.data.map(r => r.NOMBRE)));
-      
-      const importedProducts = await Promise.all(productNames.map(async (name, idx) => {
-        const productRows = csvFile?.data.filter(r => r.NOMBRE === name) || [];
-        const firstRow = productRows[0];
-        
-        const images: { name: string; url: string }[] = [];
-        if (zip) {
-          const allImageRefs = productRows.reduce((acc: string[], row) => {
-            if (row.IMAGENES) {
-              const refs = row.IMAGENES.split(';')
-                .map((s: string) => s.trim().toLowerCase())
-                .filter((s: string) => s !== '');
-              return [...acc, ...refs];
-            }
-            return acc;
-          }, []);
-          
-          const uniqueImageRefs = Array.from(new Set(allImageRefs));
-
-          for (const imgName of uniqueImageRefs as string[]) {
-            const fileEntry = Object.keys(zip.files).find(path => {
-              const baseName = path.split(/[/\\]/).pop()?.trim().toLowerCase() || '';
-              return baseName === imgName;
-            });
-
-            if (fileEntry && !zip.files[fileEntry].dir) {
-              const fileData = await zip.files[fileEntry].async('blob');
-              const reader = new FileReader();
-              const dataUrl: string = await new Promise<string>((resolve) => {
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(fileData);
-              });
-              
-              images.push({ name: imgName as string, url: dataUrl });
-              totalImagesAssociated++;
-              associatedImageNames.add(imgName as string);
-            }
-          }
-        }
-
-        return {
-          id: `PRD-IMPORTED-${idx}-${timestamp}`,
-          name: name,
-          description: firstRow.DESCRIPCION || '',
-          price: 89.00,
-          stock: productRows.reduce((acc, r) => acc + parseInt(r.STOCK || '0'), 0),
-          status: 'Activo' as const,
-          updatedAt: new Date().toISOString(),
-          updatedBy: 'Importación Masiva',
-          images: images,
-          sizes: Array.from(new Set(productRows.map(r => r.TALLA))),
-          sizeColorStock: productRows.reduce((acc: any, r) => {
-            if (!acc[r.TALLA]) acc[r.TALLA] = {};
-            acc[r.TALLA][r.COLOR] = parseInt(r.STOCK || '0');
-            return acc;
-          }, {})
-        } as Product;
-      }));
-
-      importedProducts.forEach(p => addProduct(p));
+      if (result.errors?.length) {
+        setCsvErrors(result.errors);
+        setCsvStatus('error');
+        return;
+      }
       
       setImportedSummary({
-        products: importedProducts.length,
-        variants: csvFile?.variants || 0,
-        images: associatedImageNames.size,
-        unusedImages: zipFile ? zipFile.entries.length - associatedImageNames.size : 0
+        products: result.productsCreated,
+        variants: result.variantsProcessed,
+        images: result.imagesUploaded,
+        unusedImages: zipFile ? Math.max(zipFile.entries.length - result.imagesUploaded, 0) : 0
       });
       
       setIsFinished(true);

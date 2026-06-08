@@ -27,6 +27,7 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState<'recent' | 'old' | 'more-stock' | 'less-stock'>('recent');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   const selectedProduct = useMemo(() =>
     products.find(p => p.id === showDetailId),
@@ -68,16 +69,26 @@ export default function ProductsPage() {
     return result;
   }, [products, searchTerm, statusFilter, sortBy]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId) {
-      deleteProduct(deleteId);
-      setDeleteId(null);
+      try {
+        setActionError('');
+        await deleteProduct(deleteId);
+        setDeleteId(null);
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'No se pudo eliminar el producto');
+      }
     }
   };
 
-  const toggleStatus = (product: Product) => {
+  const toggleStatus = async (product: Product) => {
     const newStatus = product.status === 'Inactivo' ? 'Activo' : 'Inactivo';
-    updateProduct(product.id, { status: newStatus });
+    try {
+      setActionError('');
+      await updateProduct(product.id, { status: newStatus });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el producto');
+    }
   };
 
   const formatRelativeDate = (dateStr: string) => {
@@ -106,7 +117,7 @@ export default function ProductsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="secondary" className="gap-2 h-12 px-6 rounded-2xl" onClick={() => router.push('/bulk-upload')}>
+            <Button variant="secondary" className="gap-2 h-12 px-6 rounded-2xl" onClick={() => router.push('/carga-masiva')}>
               <Upload size={18} /> Carga masiva
             </Button>
             <Button className="gap-2 h-12 px-6 rounded-2xl shadow-xl shadow-brand-black/10" onClick={() => router.push('/products/nuevo')}>
@@ -136,6 +147,11 @@ export default function ProductsPage() {
         </div>
 
         <Card className="!p-0 border-brand-neutral-border shadow-xl rounded-[32px] overflow-hidden">
+          {actionError && (
+            <div className="mx-8 mt-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
+              {actionError}
+            </div>
+          )}
           <div className="px-8 py-6 border-b border-brand-neutral-border flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-brand-neutral-light/20">
             <div className="flex flex-col md:flex-row items-center gap-4 flex-1">
               <div className="relative w-full md:max-w-md group">

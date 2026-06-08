@@ -15,6 +15,8 @@ export default function StoreSelectionPage() {
   };
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   const getPendingQuotes = (storeId: string) => quotes.filter(q => q.storeId === storeId && q.status === 'Pendiente').length;
+  const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categoria';
+  const getStoreColor = (store: Store) => store.palette || '#5D634B';
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] font-sans">
@@ -27,11 +29,11 @@ export default function StoreSelectionPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {stores.map((store, index) => (
             <motion.div key={store.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-white rounded-[24px] border border-brand-neutral-border overflow-hidden card-shadow group flex flex-col">
-              <div className="h-[200px] p-8 flex flex-col justify-between relative overflow-hidden transition-all group-hover:opacity-95" style={{ backgroundColor: store.palette || '#5D634B' }}>
+              <div className="h-[200px] p-8 flex flex-col justify-between relative overflow-hidden transition-all group-hover:opacity-95" style={{ backgroundColor: getStoreColor(store) }}>
                 <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 text-white"><LayoutGrid size={80} strokeWidth={1} /></div>
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg"><span className="text-[24px] font-black" style={{ color: store.palette || '#5D634B' }}>{getInitials(store.name)}</span></div>
-                  <div className="space-y-1"><h3 className="text-[22px] font-black text-white leading-none">{store.name}</h3><p className="text-[11px] font-black text-white/70 uppercase tracking-widest">{store.type}</p></div>
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg"><span className="text-[24px] font-black" style={{ color: getStoreColor(store) }}>{getInitials(store.name)}</span></div>
+                  <div className="space-y-1"><h3 className="text-[22px] font-black text-white leading-none">{store.name}</h3><p className="text-[11px] font-black text-white/70 uppercase tracking-widest">{getStoreCategory(store)}</p></div>
                 </div>
               </div>
               <div className="p-8 flex-1 flex flex-col space-y-6">

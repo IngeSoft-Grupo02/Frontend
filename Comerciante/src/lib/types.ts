@@ -2,15 +2,27 @@
 @license
 SPDX-License-Identifier: Apache-2.0
 */
+export interface StoreCategory {
+  id: number;
+  name: string;
+}
+
 export interface Store {
   id: string;
   name: string;
   type: string;
+  categoryId?: number;
+  categoryName?: string;
   status: 'Activa' | 'Inactiva';
   logo?: string;
+  logoUrl?: string;
   palette?: string;
   description?: string;
   customizationIncrement?: 5 | 10 | 15;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  website?: string;
   colors?: {
     primary?: string;
     secondary?: string;
@@ -77,11 +89,14 @@ export interface Product {
 
 export interface Discount {
   id: string;
+  productId?: string;
+  productName?: string;
   name: string;
-  type?: 'Porcentaje' | 'Monto Fijo';  // ← AGREGADO
+  type?: 'Porcentaje' | 'Monto Fijo';
   value: number;
   minUnits: number;
   status: 'Activa' | 'Pausada';
   usageCount: number;
-  appliesTo: 'Todo el catálogo' | 'Producto específico' | 'Categoría';
+  appliesTo: 'Todo el catalogo' | 'Producto especifico';
 }
+

@@ -8,24 +8,13 @@ import React, { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser } = useStore();
+  const { login } = useStore();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const validUser = {
-    email: 'maria@studio47.pe',
-    password: 'Comer123',
-    role: 'Comerciante',
-    name: 'María Cantillo López',
-    firstName: 'María',
-    paternalSurname: 'Cantillo',
-    maternalSurname: 'López',
-    phone: '987654321'
-  };
 
   const validateEmail = (val: string) => {
     if (!val) {
@@ -41,7 +30,7 @@ export default function LoginPage() {
     return true;
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     
@@ -51,27 +40,15 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
+    try {
+      setIsLoading(true);
+      await login(email, password);
+      router.push('/store-selection');
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesión');
+    } finally {
       setIsLoading(false);
-      
-      if (email === validUser.email && password === validUser.password) {
-        setUser({ 
-          email, 
-          role: validUser.role, 
-          name: validUser.name,
-          firstName: validUser.firstName,
-          paternalSurname: validUser.paternalSurname,
-          maternalSurname: validUser.maternalSurname,
-          phone: validUser.phone
-        });
-        router.push('/store-selection');
-      } else if (email === validUser.email) {
-        setLoginError('Contraseña incorrecta');
-      } else {
-        setLoginError('Cuenta no existe');
-      }
-    }, 800);
+    }
   };
 
   return (

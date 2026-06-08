@@ -3,6 +3,7 @@
 import { MerchantLayout } from '@/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/components/ui';
 import { useStore } from '@/context/StoreContext';
+import { merchantApi, merchantSession } from '@/lib/api';
 import { Product } from '@/lib/types';
 import {
   AlertCircle,
@@ -15,11 +16,27 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 const COLORS = ['Blanco', 'Negro', 'Rojo', 'Azul', 'Verde'];
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+type ProductImageDraft = { name: string; url: string; file?: File };
 
-export default function ProductFormPage() {
+const sanitizeMoney = (value: string) => {
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  const [integerPart, ...decimalParts] = cleaned.split('.');
+  const decimals = decimalParts.join('').slice(0, 2);
+  return decimalParts.length > 0 ? `${integerPart}.${decimals}` : integerPart;
+};
+
+const isAllowedImage = (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  const validExtension = IMAGE_EXTENSIONS.includes(extension);
+  const validMime = file.type === '' || ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+  return validExtension && validMime;
+};
+
+function ProductFormPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -35,7 +52,7 @@ export default function ProductFormPage() {
       talla: string;
       stock: Record<string, number>;
     }>;
-    images: Array<{ name: string; url: string }>;
+    images: ProductImageDraft[];
   }>({
     name: '',
     description: '',
@@ -116,12 +133,13 @@ export default function ProductFormPage() {
     return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().substring(0, 3);
   };
 
-  const handleSave = (asDraft = false) => {
+  const handleSave = async (asDraft = false) => {
     if (!asDraft) {
-      if (!formData.name || !formData.price) {
+      if (!formData.name || !formData.description || !formData.price || parseFloat(formData.price) <= 0) {
         setErrors({
           name: !formData.name ? 'El nombre es obligatorio' : '',
-          price: !formData.price ? 'El precio es obligatorio' : ''
+          description: !formData.description ? 'La descripción es obligatoria' : '',
+          price: !formData.price ? 'El precio es obligatorio' : parseFloat(formData.price) <= 0 ? 'El precio debe ser mayor a 0' : ''
         });
         return;
       }
@@ -150,31 +168,43 @@ export default function ProductFormPage() {
       }
     });
 
-    const payload: Omit<Product, 'id'> = {
-      name: formData.name || 'Sin nombre',
-      description: formData.description,
-      price: parseFloat(formData.price) || 0,
-      stock: totalStock,
-      sizeColorStock,
-      sizeStock: Object.entries(sizeColorStock).reduce((acc, [size, colors]) => ({
-        ...acc,
-        [size]: Object.values(colors).reduce((s, q) => s + q, 0)
-      }), {}),
-      status: asDraft ? 'Borrador' : (canBeActive ? 'Activo' : 'Borrador'),
-      variants: sizes.length * COLORS.length,
-      updatedAt: new Date().toISOString(),
-      updatedBy: 'Admin',
-      sizes: sizes,
-      image: formData.images[0]?.url || '',
-      images: formData.images,
-    };
+    try {
+      const uploadedImages = merchantSession.getToken()
+        ? await Promise.all(formData.images.map(async image => {
+          if (!image.file) return { name: image.name, url: image.url };
+          const result = await merchantApi.uploadProductImage(image.file, store.id);
+          return { name: image.name, url: result.imageUrl };
+        }))
+        : formData.images.map(image => ({ name: image.name, url: image.url }));
 
-    if (editId) {
-      updateProduct(editId, payload);
-    } else {
-      addProduct(payload);
+      const payload: Omit<Product, 'id'> = {
+        name: formData.name || 'Sin nombre',
+        description: formData.description,
+        price: parseFloat(formData.price) || 0,
+        stock: totalStock,
+        sizeColorStock,
+        sizeStock: Object.entries(sizeColorStock).reduce((acc, [size, colors]) => ({
+          ...acc,
+          [size]: Object.values(colors).reduce((s, q) => s + q, 0)
+        }), {}),
+        status: asDraft ? 'Borrador' : (canBeActive ? 'Activo' : 'Borrador'),
+        variants: sizes.length * COLORS.length,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'Admin',
+        sizes: sizes,
+        image: uploadedImages[0]?.url || '',
+        images: uploadedImages,
+      };
+
+      if (editId) {
+        await updateProduct(editId, payload);
+      } else {
+        await addProduct(payload);
+      }
+      router.push('/products');
+    } catch (error) {
+      setErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el producto' });
     }
-    router.push('/products');
   };
 
   const updateTallaName = (index: number, name: string) => {
@@ -237,11 +267,19 @@ export default function ProductFormPage() {
           <div className="lg:col-span-8 space-y-8">
             <Card title="Información Básica" subtitle="01 · IDENTIDAD" headerAction={<Badge variant={formData.status === 'Activo' ? 'success' : 'primary'}>{formData.status}</Badge>}>
               <div className="space-y-8 py-2">
+                {errors.form && (
+                  <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 text-[13px] font-bold">
+                    <AlertCircle size={18} /> {errors.form}
+                  </div>
+                )}
                 <Input
                   label="Nombre del producto *"
                   placeholder="Ej: Polo Oversized Premium Onyx"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (errors.name) setErrors({ ...errors, name: '' });
+                  }}
                   error={errors.name}
                 />
                 <div className="space-y-2">
@@ -250,9 +288,15 @@ export default function ProductFormPage() {
                     rows={4}
                     placeholder="Describe fit, sensación, detalles técnicos..."
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-white border border-brand-neutral-border rounded-2xl px-5 py-4 text-[14px] font-medium outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all min-h-[140px] resize-none"
+                    onChange={(e) => {
+                      setFormData({ ...formData, description: e.target.value });
+                      if (errors.description) setErrors({ ...errors, description: '' });
+                    }}
+                    className={`w-full bg-white border rounded-2xl px-5 py-4 text-[14px] font-medium outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all min-h-[140px] resize-none ${
+                      errors.description ? 'border-red-500' : 'border-brand-neutral-border'
+                    }`}
                   />
+                  {errors.description && <p className="text-[11px] font-bold text-red-500">{errors.description}</p>}
                 </div>
               </div>
             </Card>
@@ -330,7 +374,11 @@ export default function ProductFormPage() {
                   label="Precio Venta (S/)*"
                   placeholder="89.00"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value.replace(/[^0-9.]/g, '') })}
+                  inputMode="decimal"
+                  onChange={(e) => {
+                    setFormData({ ...formData, price: sanitizeMoney(e.target.value) });
+                    if (errors.price) setErrors({ ...errors, price: '' });
+                  }}
                   error={errors.price}
                 />
               </div>
@@ -350,7 +398,7 @@ export default function ProductFormPage() {
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button
-                            variant="black"
+                            variant="primary"
                             size="sm"
                             className="rounded-xl h-8 px-3 text-[10px]"
                             onClick={() => setFormData(prev => ({
@@ -374,24 +422,31 @@ export default function ProductFormPage() {
                         <input
                           type="file"
                           className="absolute inset-0 opacity-0 cursor-pointer"
-                          accept="image/*"
+                          accept=".jpg,.jpeg,.png,.webp"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
+                              if (!isAllowedImage(file)) {
+                                setErrors(prev => ({ ...prev, imageUpload: 'Solo se permiten imagenes JPG, PNG o WEBP' }));
+                                e.target.value = '';
+                                return;
+                              }
                               if (file.size > 2 * 1024 * 1024) {
                                 setErrors(prev => ({ ...prev, imageUpload: 'Máximo 2MB por imagen' }));
+                                e.target.value = '';
                                 return;
                               }
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setFormData(prev => ({
                                   ...prev,
-                                  images: [...prev.images, { name: file.name, url: reader.result as string }].slice(0, 5)
+                                  images: [...prev.images, { name: file.name, url: reader.result as string, file }].slice(0, 5)
                                 }));
                                 setErrors(prev => ({ ...prev, imageUpload: '' }));
                               };
                               reader.readAsDataURL(file);
                             }
+                            e.target.value = '';
                           }}
                         />
                       </div>
@@ -419,7 +474,7 @@ export default function ProductFormPage() {
                         'Fondo neutro o minimalista',
                         'Producto centrado y bien iluminado',
                         'Mínimo 800px de resolución',
-                        'Formatos aceptados: JPG, PNG'
+                        'Formatos aceptados: JPG, PNG, WEBP'
                       ].map(tip => (
                         <li key={tip} className="flex items-center gap-2">
                           <CheckCircle2 size={14} className="text-brand-text-muted" />
@@ -520,5 +575,13 @@ export default function ProductFormPage() {
         </div>
       </div>
     </MerchantLayout>
+  );
+}
+
+export default function ProductFormPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductFormPageContent />
+    </Suspense>
   );
 }

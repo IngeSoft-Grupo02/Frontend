@@ -2,11 +2,11 @@
 import { Button, Card, Input } from '@/components/ui';
 import { AlertCircle, ArrowLeft, Check, CheckCircle2, Eye, EyeOff, Key, Mail, RotateCcw, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 
 type RecoveryStep = 'request' | 'sent' | 'reset' | 'success' | 'invalid';
 
-export default function RecoveryPage() {
+function RecoveryPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<RecoveryStep>('request');
@@ -53,7 +53,7 @@ export default function RecoveryPage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <header className="space-y-3 text-center"><h1 className="text-[32px] font-extrabold tracking-tight leading-none">¿Olvidaste tu contraseña?</h1><p className="text-[14px] text-brand-text-muted font-medium">Ingresa tu correo administrativo para que podamos enviarte un enlace de recuperación.</p></header>
           <form onSubmit={handleRequest} className="space-y-6">
-            <Input label="Correo electrónico" placeholder="ejemplo@plataforma.com" value={email} onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }} onBlur={(e) => validateEmail(e.target.value)} error={emailError} />
+            <Input type="email" label="Correo electrónico" placeholder="ejemplo@plataforma.com" value={email} onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }} onBlur={(e) => validateEmail(e.target.value)} error={emailError} />
             <div className="flex flex-col gap-3">
               <Button type="submit" size="lg" className="h-14 font-extrabold text-[15px] gap-3">Enviar enlace <Mail size={18} /></Button>
               <Button type="button" variant="ghost" size="lg" className="h-14 gap-2" onClick={() => router.push('/login')}><ArrowLeft size={18} /> Cancelar y volver</Button>
@@ -129,5 +129,13 @@ export default function RecoveryPage() {
         {renderContent()}
       </Card>
     </div>
+  );
+}
+
+export default function RecoveryPage() {
+  return (
+    <Suspense fallback={null}>
+      <RecoveryPageContent />
+    </Suspense>
   );
 }

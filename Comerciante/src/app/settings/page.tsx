@@ -18,15 +18,22 @@ import {
     Users,
     X
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 // Constante tipada para los incrementos
 const INCREMENT_VALUES = [5, 10, 15] as const;
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const WEBSITE_REGEX = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/;
+
+const onlyDigits = (value: string) => value.replace(/\D/g, '').slice(0, 15);
+const isValidHexColor = (value: string) => HEX_COLOR_REGEX.test(value);
 
 export default function SettingsPage() {
-  const { store, setStore, stores, setStores } = useStore();
+  const { store, saveStore } = useStore();
   const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'notifications' | 'team'>('general');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // General Settings
   const [storeName, setStoreName] = useState(store.name);
@@ -35,10 +42,10 @@ export default function SettingsPage() {
   const [customizationIncrement, setCustomizationIncrement] = useState<5 | 10 | 15>(store.customizationIncrement || 10);
 
   // Contact Info
-  const [email, setEmail] = useState('contacto@studio47.pe');
-  const [phone, setPhone] = useState('+51 987 654 321');
-  const [address, setAddress] = useState('Av. Petit Thouars 1234, San Isidro, Lima');
-  const [website, setWebsite] = useState('www.studio47.pe');
+  const [email, setEmail] = useState(store.contactEmail || '');
+  const [phone, setPhone] = useState(store.contactPhone || '');
+  const [address, setAddress] = useState(store.address || '');
+  const [website, setWebsite] = useState(store.website || '');
 
   // Branding
   const [primaryColor, setPrimaryColor] = useState(store.palette || '#000000');
@@ -57,19 +64,85 @@ export default function SettingsPage() {
     { id: '2', name: 'Carlos Mendoza', role: 'Editor', email: 'carlos@studio47.pe', status: 'Activo' },
     { id: '3', name: 'Ana Torres', role: 'Visualizador', email: 'ana@studio47.pe', status: 'Inactivo' }
   ]);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('Editor');
 
-  const handleSave = () => {
-    setStore({
+  useEffect(() => {
+    setStoreName(store.name);
+    setStoreType(store.type);
+    setStoreDescription(store.description || '');
+    setCustomizationIncrement(store.customizationIncrement || 10);
+    setEmail(store.contactEmail || '');
+    setPhone(store.contactPhone || '');
+    setAddress(store.address || '');
+    setWebsite(store.website || '');
+    setPrimaryColor(store.palette || '#000000');
+  }, [store]);
+
+  const handleSave = async () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!storeName.trim()) newErrors.storeName = 'El nombre de la tienda es obligatorio';
+    if (email && !EMAIL_REGEX.test(email)) newErrors.email = 'Formato de correo inválido';
+    if (website && !WEBSITE_REGEX.test(website)) newErrors.website = 'Formato de sitio web inválido';
+    if (!isValidHexColor(primaryColor)) newErrors.primaryColor = 'Color primario inválido';
+    if (!isValidHexColor(secondaryColor)) newErrors.secondaryColor = 'Color secundario inválido';
+    if (!isValidHexColor(accentColor)) newErrors.accentColor = 'Color de acento inválido';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      await saveStore({
       ...store,
-      name: storeName,
+      name: storeName.trim(),
       type: storeType,
-      description: storeDescription,
+      description: storeDescription.trim(),
       customizationIncrement: customizationIncrement,
-      palette: primaryColor
-    });
+      palette: primaryColor,
+      contactEmail: email.trim(),
+      contactPhone: phone,
+      address: address.trim(),
+      website: website.trim()
+      });
 
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+      setErrors({});
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      setErrors({ storeName: error instanceof Error ? error.message : 'No se pudo guardar la tienda' });
+    }
+  };
+
+  const handleInviteMember = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!inviteName.trim()) newErrors.inviteName = 'El nombre es obligatorio';
+    if (!inviteEmail.trim()) newErrors.inviteEmail = 'El correo es obligatorio';
+    else if (!EMAIL_REGEX.test(inviteEmail)) newErrors.inviteEmail = 'Formato de correo inválido';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(prev => ({ ...prev, ...newErrors }));
+      return;
+    }
+
+    setTeamMembers(prev => [
+      ...prev,
+      {
+        id: `${Date.now()}`,
+        name: inviteName.trim(),
+        role: inviteRole,
+        email: inviteEmail.trim(),
+        status: 'Activo'
+      }
+    ]);
+    setInviteName('');
+    setInviteEmail('');
+    setInviteRole('Editor');
+    setErrors(prev => ({ ...prev, inviteName: '', inviteEmail: '' }));
   };
 
   const tabs = [
@@ -134,7 +207,11 @@ export default function SettingsPage() {
                     <Input
                       label="Nombre de la tienda"
                       value={storeName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStoreName(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setStoreName(e.target.value);
+                        if (errors.storeName) setErrors({ ...errors, storeName: '' });
+                      }}
+                      error={errors.storeName}
                       className="h-14 rounded-2xl font-bold"
                     />
                     <div>
@@ -197,14 +274,21 @@ export default function SettingsPage() {
                         label="Correo electrónico"
                         type="email"
                         value={email}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setEmail(e.target.value);
+                          if (errors.email) setErrors({ ...errors, email: '' });
+                        }}
+                        error={errors.email}
                         className="h-14 rounded-2xl font-bold"
                       />
                       <Input
                         label="Teléfono"
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={15}
                         value={phone}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(onlyDigits(e.target.value))}
                         className="h-14 rounded-2xl font-bold"
                       />
                     </div>
@@ -218,7 +302,11 @@ export default function SettingsPage() {
                       label="Sitio web"
                       type="url"
                       value={website}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWebsite(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setWebsite(e.target.value);
+                        if (errors.website) setErrors({ ...errors, website: '' });
+                      }}
+                      error={errors.website}
                       className="h-14 rounded-2xl font-bold"
                     />
                   </div>
@@ -237,14 +325,18 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-4">
                           <input
                             type="color"
-                            value={primaryColor}
+                            value={isValidHexColor(primaryColor) ? primaryColor : '#000000'}
                             onChange={(e) => setPrimaryColor(e.target.value)}
                             className="w-20 h-20 rounded-2xl border-2 border-brand-neutral-border cursor-pointer"
                           />
                           <div className="flex-1">
                             <Input
                               value={primaryColor}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrimaryColor(e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setPrimaryColor(e.target.value);
+                                if (errors.primaryColor) setErrors({ ...errors, primaryColor: '' });
+                              }}
+                              error={errors.primaryColor}
                               className="h-12 rounded-xl font-mono font-bold"
                             />
                             <p className="text-[10px] font-bold text-brand-text-muted uppercase mt-1">Color principal de la marca</p>
@@ -257,14 +349,18 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-4">
                           <input
                             type="color"
-                            value={secondaryColor}
+                            value={isValidHexColor(secondaryColor) ? secondaryColor : '#000000'}
                             onChange={(e) => setSecondaryColor(e.target.value)}
                             className="w-20 h-20 rounded-2xl border-2 border-brand-neutral-border cursor-pointer"
                           />
                           <div className="flex-1">
                             <Input
                               value={secondaryColor}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSecondaryColor(e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setSecondaryColor(e.target.value);
+                                if (errors.secondaryColor) setErrors({ ...errors, secondaryColor: '' });
+                              }}
+                              error={errors.secondaryColor}
                               className="h-12 rounded-xl font-mono font-bold"
                             />
                             <p className="text-[10px] font-bold text-brand-text-muted uppercase mt-1">Acentos y detalles</p>
@@ -277,14 +373,18 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-4">
                           <input
                             type="color"
-                            value={accentColor}
+                            value={isValidHexColor(accentColor) ? accentColor : '#000000'}
                             onChange={(e) => setAccentColor(e.target.value)}
                             className="w-20 h-20 rounded-2xl border-2 border-brand-neutral-border cursor-pointer"
                           />
                           <div className="flex-1">
                             <Input
                               value={accentColor}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccentColor(e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setAccentColor(e.target.value);
+                                if (errors.accentColor) setErrors({ ...errors, accentColor: '' });
+                              }}
+                              error={errors.accentColor}
                               className="h-12 rounded-xl font-mono font-bold"
                             />
                             <p className="text-[10px] font-bold text-brand-text-muted uppercase mt-1">Botones y CTAs</p>
@@ -396,18 +496,33 @@ export default function SettingsPage() {
                       <Input
                         label="Nombre completo"
                         placeholder="Juan Pérez"
+                        value={inviteName}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setInviteName(e.target.value);
+                          if (errors.inviteName) setErrors({ ...errors, inviteName: '' });
+                        }}
+                        error={errors.inviteName}
                         className="h-14 rounded-2xl font-bold"
                       />
                       <Input
                         label="Correo electrónico"
                         type="email"
                         placeholder="juan@studio47.pe"
+                        value={inviteEmail}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setInviteEmail(e.target.value);
+                          if (errors.inviteEmail) setErrors({ ...errors, inviteEmail: '' });
+                        }}
+                        error={errors.inviteEmail}
                         className="h-14 rounded-2xl font-bold"
                       />
                     </div>
                     <div>
                       <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Rol</label>
-                      <select className="w-full h-14 bg-white border border-brand-neutral-border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all appearance-none"
+                      <select
+                        value={inviteRole}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInviteRole(e.target.value)}
+                        className="w-full h-14 bg-white border border-brand-neutral-border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all appearance-none"
                         style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 20px center', backgroundSize: '1.2rem' }}
                       >
                         <option>Administrador</option>
@@ -415,7 +530,7 @@ export default function SettingsPage() {
                         <option>Visualizador</option>
                       </select>
                     </div>
-                    <Button className="w-full h-14 gap-3 rounded-2xl font-black">
+                    <Button type="button" onClick={handleInviteMember} className="w-full h-14 gap-3 rounded-2xl font-black">
                       <Plus size={20} /> Enviar invitación
                     </Button>
                   </div>
