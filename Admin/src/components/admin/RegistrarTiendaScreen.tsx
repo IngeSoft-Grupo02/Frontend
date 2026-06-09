@@ -7,10 +7,10 @@ import { useState } from 'react';
 import { Badge, Button, Card, Input, Select } from '../UI';
 
 const COLOR_PALETTES = [
-  { id: 'core-street',  name: 'Core Street',  primary: '#0F0F10', secondary: '#6E7F5D', accent: '#B89B72' },
-  { id: 'atelier-mono', name: 'Atelier Mono', primary: '#161616', secondary: '#8C8C8C', accent: '#C9C7C1' },
-  { id: 'utility-drop', name: 'Utility Drop', primary: '#1B2018', secondary: '#6E7F5D', accent: '#A34A3C' },
-  { id: 'luxe-capsule', name: 'Luxe Capsule', primary: '#15120F', secondary: '#B89B72', accent: '#E4D5B7' },
+  { id: 'core-street',  name: 'Core Street',  primary: '#0F1011', secondary: '#475569', accent: '#D4AF37' },
+  { id: 'atelier-mono', name: 'Atelier Mono', primary: '#F9FAFB', secondary: '#FFFFFF', accent: '#2563EB' },
+  { id: 'utility-drop', name: 'Utility Drop', primary: '#36454F', secondary: '#8A9A86', accent: '#10B981' },
+  { id: 'luxe-capsule', name: 'Luxe Capsule', primary: '#4B3621', secondary: '#D5CEC4', accent: '#B87333' },
 ];
 
 interface RegistrarTiendaScreenProps {
@@ -158,7 +158,7 @@ export function RegistrarTiendaScreen({ merchants, onBack, onSave, onNavigateToB
                 {items.map(s => (
                   <Badge
                     key={s}
-                    variant={state.includes(s) ? 'seleccionado' : 'pendiente'}
+                    variant={state.includes(s) ? 'selected' : 'pending'}
                     onClick={() => toggleItem(setter, s)}
                     className="cursor-pointer"
                   >

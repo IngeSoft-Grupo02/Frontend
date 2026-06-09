@@ -1,7 +1,8 @@
 'use client';
 
+import { api, LoginResponse } from '@/lib/api';
 import { MOCK_AUDIT, MOCK_CATEGORIES, MOCK_STORES, MOCK_USERS } from '@/lib/mockData';
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Define los tipos
 interface Store {
@@ -45,9 +46,10 @@ interface AuditLog {
 }
 
 interface AppContextType {
+  isAuthReady: boolean;
   isLoggedIn: boolean;
   currentUser: any;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   stores: Store[];
   users: User[];
@@ -65,6 +67,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
@@ -72,21 +75,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
   const [auditLogs] = useState<AuditLog[]>(MOCK_AUDIT);
 
-  const login = (email: string, password: string) => {
-    if (email === 'admin@platform.com' && password === 'admin123') {
+  useEffect(() => {
+    const token = window.localStorage.getItem('adminToken');
+    const rawUser = window.localStorage.getItem('adminUser');
+
+    if (token && rawUser) {
       setIsLoggedIn(true);
-      setCurrentUser({
-        name: 'Admin Kingstore',
-        email: 'admin@plataforma.com',
-        phone: '987654321',
-        role: 'Super admin'
-      });
-      return true;
+      setCurrentUser(JSON.parse(rawUser));
     }
-    return false;
+
+    setIsAuthReady(true);
+  }, []);
+
+  const toCurrentUser = (session: LoginResponse) => ({
+    id: session.id,
+    name: session.email.split('@')[0],
+    email: session.email,
+    role: 'Administrador',
+  });
+
+  const login = async (email: string, password: string) => {
+    try {
+      const session = await api.auth.login(email.trim().toLowerCase(), password);
+
+      if (session.role !== 'SYSTEM_ADMIN') {
+        return {
+          success: false,
+          error: 'Acceso denegado. Esta cuenta no pertenece al panel de administracion.',
+        };
+      }
+
+      const user = toCurrentUser(session);
+      window.localStorage.setItem('adminToken', session.token);
+      window.localStorage.setItem('adminUser', JSON.stringify(user));
+      setIsLoggedIn(true);
+      setCurrentUser(user);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'No se pudo iniciar sesion. Revisa tus credenciales.',
+      };
+    }
   };
 
   const logout = () => {
+    window.localStorage.removeItem('adminToken');
+    window.localStorage.removeItem('adminUser');
     setIsLoggedIn(false);
     setCurrentUser(null);
   };
@@ -125,6 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
+      isAuthReady,
       isLoggedIn,
       currentUser,
       login,

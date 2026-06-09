@@ -220,9 +220,9 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockDiscounts: Discount[] = [
-  { id: '1', name: 'Compra por mayor 20+ polos', type: 'Porcentaje', value: 10, minUnits: 20, status: 'Activa', usageCount: 22, appliesTo: 'Todo el catalogo' },
-  { id: '2', name: 'Volumen alto 50+ polos', type: 'Porcentaje', value: 25, minUnits: 50, status: 'Activa', usageCount: 8, appliesTo: 'Todo el catalogo' },
-  { id: '3', name: 'Bulk corporate 100+', type: 'Porcentaje', value: 50, minUnits: 100, status: 'Activa', usageCount: 3, appliesTo: 'Todo el catalogo' },
-  { id: '4', productId: '1', productName: 'Polo Oversized Onyx', name: 'Descuento fijo Polo Onyx', type: 'Monto Fijo', value: 15, minUnits: 10, status: 'Activa', usageCount: 5, appliesTo: 'Producto especifico' },
-  { id: '5', name: 'Descuento aniversario', type: 'Porcentaje', value: 5, minUnits: 5, status: 'Pausada', usageCount: 0, appliesTo: 'Todo el catalogo' }
+  { id: '1', name: 'Compra por mayor 20+ polos', type: 'Porcentaje', value: 10, minUnits: 20, status: 'Activa', usageCount: 22, appliesTo: 'Todo el cat?logo' },
+  { id: '2', name: 'Volumen alto 50+ polos', type: 'Porcentaje', value: 25, minUnits: 50, status: 'Activa', usageCount: 8, appliesTo: 'Todo el cat?logo' },
+  { id: '3', name: 'Bulk corporate 100+', type: 'Porcentaje', value: 50, minUnits: 100, status: 'Activa', usageCount: 3, appliesTo: 'Todo el cat?logo' },
+  { id: '4', productId: '1', productName: 'Polo Oversized Onyx', name: 'Descuento Polo Onyx', type: 'Porcentaje', value: 15, minUnits: 10, status: 'Activa', usageCount: 5, appliesTo: 'Producto espec?fico' },
+  { id: '5', name: 'Descuento aniversario', type: 'Porcentaje', value: 5, minUnits: 5, status: 'Pausada', usageCount: 0, appliesTo: 'Todo el cat?logo' }
 ];

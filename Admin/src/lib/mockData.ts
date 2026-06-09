@@ -72,18 +72,21 @@ export const MOCK_USERS = [
 
 export const MOCK_CATEGORIES = [
   {
+    id: 'cat-ropa',
     name: 'Ropa',
     description: 'Prendas de vestir en general',
     status: 'Activa',
     use: 45
   },
   {
+    id: 'cat-accesorios',
     name: 'Accesorios',
     description: 'Complementos y accesorios de moda',
     status: 'Activa',
     use: 23
   },
   {
+    id: 'cat-calzado',
     name: 'Calzado',
     description: 'Zapatos y zapatillas',
     status: 'Inactiva',

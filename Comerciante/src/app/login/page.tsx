@@ -23,7 +23,7 @@ export default function LoginPage() {
     }
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     if (!isEmail) {
-      setEmailError('Formato de correo inválido');
+      setEmailError('Formato de correo invalido');
       return false;
     }
     setEmailError('');
@@ -33,10 +33,10 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    
+
     if (!validateEmail(email)) return;
     if (!password) {
-      setLoginError('La contraseña es obligatoria');
+      setLoginError('La contrase?a es obligatoria');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/store-selection');
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesión');
+      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesion');
     } finally {
       setIsLoading(false);
     }
@@ -53,21 +53,20 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-white font-sans overflow-y-auto">
-      {/* Left Column */}
-      <div className="hidden lg:flex flex-col w-[45%] bg-brand-black p-12 justify-between relative overflow-hidden shrink-0">
+      <div className="hidden lg:flex flex-col w-[42%] bg-brand-black p-10 justify-between relative overflow-hidden shrink-0">
         <div className="z-10 animate-in slide-in-from-left duration-700">
-          <div className="h-1.5 w-12 bg-brand-camel mb-6 rounded-full"></div>
-          <h1 className="text-white text-[24px] font-extrabold tracking-tight">STREET/CORE</h1>
+          <div className="h-1.5 w-12 bg-brand-camel mb-5 rounded-full"></div>
+          <h1 className="text-white text-[22px] font-extrabold tracking-tight">STREET/CORE</h1>
           <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest mt-1">Merchant Console v1.0</p>
         </div>
-        
-        <div className="z-10 max-w-sm animate-in slide-in-from-left duration-1000 delay-200">
-          <h2 className="text-white text-[64px] font-extrabold leading-[1.05] tracking-tighter">
+
+        <div className="z-10 max-w-[340px] animate-in slide-in-from-left duration-1000 delay-200">
+          <h2 className="text-white text-[52px] font-extrabold leading-[1.05] tracking-tighter">
             Potencia <br />
             <span className="text-brand-camel">tus ventas.</span>
           </h2>
-          <p className="text-white/60 text-[14px] font-medium mt-8 leading-relaxed">
-            Gestión inteligente para marcas independientes.<br />
+          <p className="text-white/60 text-[13px] font-medium mt-6 leading-relaxed">
+            Gestion inteligente para marcas independientes.<br />
             Control total de stock, pedidos y cotizaciones corporativas.
           </p>
         </div>
@@ -76,13 +75,12 @@ export default function LoginPage() {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] -ml-20 -mb-20"></div>
       </div>
 
-      {/* Right Column */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-12 xl:p-24 bg-brand-neutral-light/30">
-        <div className="w-full max-w-[440px] space-y-12 animate-in fade-in slide-in-from-right duration-700">
-          <header className="space-y-4">
-            <div className="h-1.5 w-12 bg-brand-black mb-8 rounded-full"></div>
-            <h1 className="text-[48px] font-extrabold tracking-tighter text-brand-black leading-none">Acceso al Panel</h1>
-            <p className="text-brand-text-muted text-[16px] leading-relaxed font-medium max-w-[320px]">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 xl:p-14 bg-brand-neutral-light/30">
+        <div className="w-full max-w-[400px] space-y-8 animate-in fade-in slide-in-from-right duration-700">
+          <header className="space-y-3">
+            <div className="h-1.5 w-10 bg-brand-black mb-6 rounded-full"></div>
+            <h1 className="text-[40px] font-extrabold tracking-tighter text-brand-black leading-none">Acceso al Panel</h1>
+            <p className="text-brand-text-muted text-[14px] leading-relaxed font-medium max-w-[320px]">
               Bienvenido de nuevo. Ingresa tus credenciales para gestionar tu tienda.
             </p>
           </header>
@@ -94,13 +92,13 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Correo electrónico</label>
+              <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Correo electronico</label>
               <div className="relative group">
-                <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${emailError ? 'text-red-500' : 'text-brand-text-muted'}`} size={18} />
-                <input 
-                  type="email" 
+                <Mail className={`absolute left-4 top-6 -translate-y-1/2 transition-colors ${emailError ? 'text-red-500' : 'text-brand-text-muted'}`} size={18} />
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -108,7 +106,7 @@ export default function LoginPage() {
                   }}
                   onBlur={(e) => validateEmail(e.target.value)}
                   placeholder="ejemplo@plataforma.com"
-                  className={`w-full h-14 pl-12 pr-4 bg-white border rounded-2xl text-[14px] font-extrabold outline-none focus:ring-4 transition-all ${emailError ? 'border-red-400 focus:ring-red-500/5' : 'border-brand-neutral-border focus:ring-brand-black/5 focus:border-brand-black'}`}
+                  className={`w-full h-12 pl-12 pr-4 bg-white border rounded-2xl text-[14px] font-extrabold outline-none focus:ring-4 transition-all ${emailError ? 'border-red-400 focus:ring-red-500/5' : 'border-brand-neutral-border focus:ring-brand-black/5 focus:border-brand-black'}`}
                 />
                 {emailError && <p className="text-[11px] font-bold text-red-500 px-1 mt-1">{emailError}</p>}
               </div>
@@ -116,26 +114,26 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Contraseña</label>
-                <button 
-                  type="button" 
+                <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Contrase?a</label>
+                <button
+                  type="button"
                   onClick={() => router.push('/recovery')}
                   className="text-[11px] font-extrabold text-brand-camel hover:underline"
                 >
-                  ¿Olvidaste tu contraseña?
+                  ?Olvidaste tu contrase?a?
                 </button>
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-muted" size={18} />
-                <input 
+                <input
                   type={showPass ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full h-14 pl-12 pr-12 bg-white border border-brand-neutral-border rounded-2xl text-[14px] font-extrabold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all"
+                  placeholder="************"
+                  className="w-full h-12 pl-12 pr-12 bg-white border border-brand-neutral-border rounded-2xl text-[14px] font-extrabold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowPass(!showPass)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted hover:text-brand-black transition-colors"
                 >
@@ -144,25 +142,25 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              size="lg" 
-              className={`w-full h-14 !text-[15px] !rounded-[20px] transition-all ${isLoading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : ''}`}
+            <Button
+              type="submit"
+              size="lg"
+              className={`w-full h-12 !text-[14px] !rounded-[18px] transition-all ${isLoading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : ''}`}
               disabled={isLoading}
             >
-              {isLoading ? 'Verificando...' : 'Iniciar sesión'}
+              {isLoading ? 'Verificando...' : 'Iniciar sesion'}
             </Button>
           </form>
 
-          <footer className="pt-8 text-center">
-            <div className="flex items-center gap-6 mb-8">
+          <footer className="pt-4 text-center">
+            <div className="flex items-center gap-6 mb-5">
               <div className="h-[1.5px] flex-1 bg-brand-neutral-border opacity-50"></div>
               <span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">O</span>
               <div className="h-[1.5px] flex-1 bg-brand-neutral-border opacity-50"></div>
             </div>
-            
-            <button type="button" className="text-[14px] font-extrabold text-brand-black bg-brand-neutral-mid px-6 py-4 rounded-2xl hover:bg-brand-neutral-border transition-colors w-full">
-              Contactar Soporte Técnico
+
+            <button type="button" className="text-[14px] font-extrabold text-brand-black bg-brand-neutral-mid px-6 py-3 rounded-2xl hover:bg-brand-neutral-border transition-colors w-full">
+              Contactar Soporte Tecnico
             </button>
           </footer>
         </div>

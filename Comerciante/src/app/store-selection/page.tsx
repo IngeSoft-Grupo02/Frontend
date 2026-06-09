@@ -15,7 +15,7 @@ export default function StoreSelectionPage() {
   };
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   const getPendingQuotes = (storeId: string) => quotes.filter(q => q.storeId === storeId && q.status === 'Pendiente').length;
-  const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categoria';
+  const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categor?a';
   const getStoreColor = (store: Store) => store.palette || '#5D634B';
 
   return (

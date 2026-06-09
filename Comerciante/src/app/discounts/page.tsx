@@ -33,49 +33,50 @@ export default function DiscountsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
 
   // Form State
-  const [formData, setFormData] = useState<Partial<Discount & { type?: string }>>({
+  const [formData, setFormData] = useState<Partial<Discount>>({
     name: '',
     type: 'Porcentaje',
     value: 5,
     minUnits: 20,
-    appliesTo: 'Todo el catalogo',
+    appliesTo: 'Todo el cat?logo',
     status: 'Activa'
   });
 
   const MAX_DISCOUNTS = 5;
   const canCreateMoreDiscounts = discounts.length < MAX_DISCOUNTS;
 
-  const applyDiscountValue = (price: number, discount: Discount) => {
-    if (discount.type === 'Monto Fijo') return Math.max(price - discount.value, 0);
-    return Math.max(price * (1 - discount.value / 100), 0);
-  };
+  const applyDiscountValue = (price: number, discount: Discount) => Math.max(price * (1 - discount.value / 100), 0);
 
   const formatMoney = (value: number) => `S/ ${value.toFixed(2)}`;
 
-  const discountScopeLabel = (discount: Discount) =>
-    discount.appliesTo === 'Producto especifico' && discount.productName
-      ? `${discount.appliesTo} - ${discount.productName}`
-      : discount.appliesTo;
+  const discountScopeLabel = (discount: Discount) => {
+    const scopeLabel = discount.appliesTo === 'Producto espec?fico' ? 'Producto específico' : 'Todo el catálogo';
+    return discount.appliesTo === 'Producto espec?fico' && discount.productName
+      ? `${scopeLabel} - ${discount.productName}`
+      : scopeLabel;
+  };
 
   const productDiscountPreview = useMemo(() => {
-    if (formData.appliesTo !== 'Producto especifico' || !formData.productId) return null;
+    if (formData.appliesTo !== 'Producto espec?fico' || !formData.productId) return null;
     const product = products.find((item: Product) => item.id === formData.productId);
     if (!product) return null;
 
     const existingDiscounts = discounts.filter((discount: Discount) =>
       discount.status === 'Activa'
-      && (discount.appliesTo === 'Todo el catalogo' || discount.productId === product.id)
+      && (discount.appliesTo === 'Todo el cat?logo' || discount.productId === product.id)
       && discount.id !== editingId
     );
     const draftDiscount: Discount = {
       id: editingId || 'DRAFT',
       name: formData.name || 'Nuevo descuento',
-      type: (formData.type as Discount['type']) || 'Porcentaje',
+      type: 'Porcentaje',
       value: Number(formData.value || 0),
       minUnits: Number(formData.minUnits || 0),
-      appliesTo: 'Producto especifico',
+      appliesTo: 'Producto espec?fico',
       productId: product.id,
       productName: product.name,
       status: formData.status || 'Activa',
@@ -86,6 +87,23 @@ export default function DiscountsPage() {
     return { product, sequence, finalPrice };
   }, [discounts, editingId, formData, products]);
 
+  const selectedFormProduct = useMemo(
+    () => products.find((product: Product) => product.id === formData.productId),
+    [products, formData.productId]
+  );
+
+  const filteredProductsForPicker = useMemo(() => {
+    const term = productSearchTerm.trim().toLowerCase();
+    if (!term) return products;
+    return products.filter((product: Product) => product.name.toLowerCase().includes(term));
+  }, [products, productSearchTerm]);
+
+  const selectProductForDiscount = (product: Product) => {
+    setFormData({ ...formData, productId: product.id, productName: product.name });
+    if (formErrors.productId) setFormErrors({ ...formErrors, productId: '' });
+    setIsProductPickerOpen(false);
+    setProductSearchTerm('');
+  };
   const selectedDiscount = useMemo(() =>
     discounts.find((d: Discount) => d.id === showDetailId),
     [discounts, showDetailId]
@@ -105,15 +123,15 @@ export default function DiscountsPage() {
     const newErrors: Record<string, string> = {};
     const value = Number(formData.value || 0);
     const minUnits = Number(formData.minUnits || 0);
-    const appliesTo = formData.appliesTo || 'Todo el catalogo';
+    const appliesTo = formData.appliesTo || 'Todo el cat?logo';
     const selectedProduct = products.find((product: Product) => product.id === formData.productId);
 
     if (!formData.name?.trim()) newErrors.name = 'La etiqueta es obligatoria';
-    if (!Number.isInteger(minUnits) || minUnits <= 0) newErrors.minUnits = 'La cantidad minima debe ser un entero mayor a 0';
+    if (!Number.isInteger(minUnits) || minUnits <= 0) newErrors.minUnits = 'La cantidad mínima debe ser un entero mayor a 0';
     if (value <= 0) newErrors.value = 'El descuento debe ser mayor a 0';
-    if (formData.type === 'Porcentaje' && value > 100) newErrors.value = 'El porcentaje no puede superar 100%';
+    if (value > 100) newErrors.value = 'El porcentaje no puede superar 100%';
     if (!editingId && !canCreateMoreDiscounts) newErrors.form = 'Solo puedes configurar hasta 5 descuentos por tienda';
-    if (appliesTo === 'Producto especifico' && !selectedProduct) newErrors.productId = 'Selecciona el producto al que se aplicara el descuento';
+    if (appliesTo === 'Producto espec?fico' && !selectedProduct) newErrors.productId = 'Selecciona el producto al que se aplicará el descuento';
 
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors);
@@ -123,12 +141,12 @@ export default function DiscountsPage() {
     const discountName = formData.name!.trim();
     const payload = {
       name: discountName,
-      type: formData.type as Discount['type'],
+      type: 'Porcentaje' as Discount['type'],
       value,
       minUnits,
       appliesTo: appliesTo as Discount['appliesTo'],
-      productId: appliesTo === 'Producto especifico' ? selectedProduct?.id : undefined,
-      productName: appliesTo === 'Producto especifico' ? selectedProduct?.name : undefined,
+      productId: appliesTo === 'Producto espec?fico' ? selectedProduct?.id : undefined,
+      productName: appliesTo === 'Producto espec?fico' ? selectedProduct?.name : undefined,
       status: (formData.status || 'Activa') as Discount['status']
     };
 
@@ -155,17 +173,19 @@ export default function DiscountsPage() {
       type: 'Porcentaje',
       value: 5,
       minUnits: 20,
-      appliesTo: 'Todo el catalogo',
+      appliesTo: 'Todo el cat?logo',
       productId: undefined,
       productName: undefined,
       status: 'Activa'
     });
     setFormErrors({});
+    setIsProductPickerOpen(false);
+    setProductSearchTerm('');
   };
   const startEdit = (discount: Discount) => {
     setFormData({
       name: discount.name,
-      type: discount.type || 'Porcentaje',
+      type: 'Porcentaje',
       value: discount.value,
       minUnits: discount.minUnits,
       appliesTo: discount.appliesTo,
@@ -177,6 +197,8 @@ export default function DiscountsPage() {
     setIsCreating(true);
     setFormErrors({});
     setShowDetailId(null);
+    setIsProductPickerOpen(false);
+    setProductSearchTerm('');
   };
   const toggleStatus = async (id: string, currentStatus: string) => {
     try {
@@ -195,7 +217,7 @@ export default function DiscountsPage() {
               <h2 className="text-[32px] font-black tracking-tighter text-brand-black">{editingId ? 'Modificar Regla' : 'Crear Nueva Regla de Volumen'}</h2>
               <p className="text-[14px] font-bold text-brand-text-muted uppercase tracking-tight">Establece los gatillos de descuento para tus clientes</p>
             </div>
-            <Button variant="outline" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); }} className="rounded-2xl px-6 h-12">Cancelar</Button>
+            <Button variant="outline" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); setIsProductPickerOpen(false); setProductSearchTerm(''); }} className="rounded-2xl px-6 h-12">Cancelar</Button>
           </div>
 
           <Card className="shadow-2xl shadow-brand-black/5 border-2 border-brand-neutral-border p-10 overflow-hidden">
@@ -223,25 +245,9 @@ export default function DiscountsPage() {
 
                 <div className="space-y-4">
                   <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] leading-none">Tipo de Bonificación</label>
-                  <div className="grid grid-cols-2 gap-3 bg-brand-neutral-light p-2 rounded-2xl border border-brand-neutral-border">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'Porcentaje' })}
-                      className={`rounded-xl py-3 text-[13px] font-black flex items-center justify-center gap-2 transition-all ${
-                        formData.type === 'Porcentaje' ? 'bg-brand-black text-white shadow-xl' : 'text-brand-text-muted hover:text-brand-black'
-                      }`}
-                    >
-                      {formData.type === 'Porcentaje' && <Check size={14} />} Porcentaje
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'Monto Fijo' })}
-                      className={`rounded-xl py-3 text-[13px] font-black flex items-center justify-center gap-2 transition-all ${
-                        formData.type === 'Monto Fijo' ? 'bg-brand-black text-white shadow-xl' : 'text-brand-text-muted hover:text-brand-black'
-                      }`}
-                    >
-                      {formData.type === 'Monto Fijo' && <Check size={14} />} Monto Fijo
-                    </button>
+                  <div className="h-14 bg-brand-neutral-light border border-brand-neutral-border rounded-2xl px-5 flex items-center justify-between">
+                    <span className="text-[14px] font-black text-brand-black">Porcentaje</span>
+                    <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Regla fija</span>
                   </div>
                 </div>
               </div>
@@ -257,7 +263,7 @@ export default function DiscountsPage() {
                         formData.value === val ? 'border-brand-black bg-brand-neutral-mid shadow-inner ring-4 ring-brand-black/5' : 'border-brand-neutral-border hover:border-brand-black'
                       }`}
                     >
-                      <h4 className="text-[28px] font-black">{val}{formData.type === 'Porcentaje' ? '%' : ''}</h4>
+                      <h4 className="text-[28px] font-black">{val}%</h4>
                       <p className="text-[10px] font-black text-brand-text-muted uppercase mt-1">Tier Descuento</p>
                     </div>
                   ))}
@@ -299,39 +305,39 @@ export default function DiscountsPage() {
                       setFormData({
                         ...formData,
                         appliesTo,
-                        productId: appliesTo === 'Producto especifico' ? formData.productId : undefined,
-                        productName: appliesTo === 'Producto especifico' ? formData.productName : undefined
+                        productId: appliesTo === 'Producto espec?fico' ? formData.productId : undefined,
+                        productName: appliesTo === 'Producto espec?fico' ? formData.productName : undefined
                       });
+                      if (appliesTo !== 'Producto espec?fico') {
+                        setIsProductPickerOpen(false);
+                        setProductSearchTerm('');
+                      }
                       setFormErrors({ ...formErrors, productId: '' });
                     }}
                     className="w-full h-14 bg-white border border-brand-neutral-border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all appearance-none"
                     style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 20px center', backgroundSize: '1.2rem' }}
                   >
-                    <option>Todo el catalogo</option>
-                    <option>Producto especifico</option>
+                    <option>Todo el catálogo</option>
+                    <option>Producto específico</option>
                   </select>
-                  {formData.appliesTo === 'Producto especifico' && (
+                  {formData.appliesTo === 'Producto espec?fico' && (
                     <div className="space-y-3">
                       <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] leading-none">Producto</label>
-                      <select
-                        value={formData.productId || ''}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                          const selectedProduct = products.find((product: Product) => product.id === e.target.value);
-                          setFormData({
-                            ...formData,
-                            productId: selectedProduct?.id,
-                            productName: selectedProduct?.name
-                          });
-                          if (formErrors.productId) setFormErrors({ ...formErrors, productId: '' });
-                        }}
-                        className={`w-full h-14 bg-white border rounded-2xl px-5 text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 transition-all appearance-none ${formErrors.productId ? 'border-red-500' : 'border-brand-neutral-border focus:border-brand-black'}`}
-                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 20px center', backgroundSize: '1.2rem' }}
+                      <button
+                        type="button"
+                        onClick={() => setIsProductPickerOpen(true)}
+                        className={`w-full min-h-14 bg-white border rounded-2xl px-5 py-4 text-left outline-none focus:ring-4 focus:ring-brand-black/5 transition-all flex items-center justify-between gap-4 ${formErrors.productId ? 'border-red-500' : 'border-brand-neutral-border hover:border-brand-black'}`}
                       >
-                        <option value="">Selecciona un producto</option>
-                        {products.map((product: Product) => (
-                          <option key={product.id} value={product.id}>{product.name}</option>
-                        ))}
-                      </select>
+                        <div className="min-w-0">
+                          <p className="text-[14px] font-black text-brand-black truncate">
+                            {selectedFormProduct ? selectedFormProduct.name : 'Buscar y seleccionar producto'}
+                          </p>
+                          <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tight">
+                            {selectedFormProduct ? `${formatMoney(selectedFormProduct.price)} | Stock ${selectedFormProduct.stock}` : 'Abre el buscador de productos'}
+                          </p>
+                        </div>
+                        <Search size={18} className="text-brand-text-muted shrink-0" />
+                      </button>
                       {formErrors.productId && <p className="text-[11px] font-bold text-red-500">{formErrors.productId}</p>}
                     </div>
                   )}
@@ -355,7 +361,7 @@ export default function DiscountsPage() {
                       <div key={`${discount.id}-${index}`} className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 border border-brand-neutral-border">
                         <span className="text-[12px] font-black text-brand-black uppercase">{index + 1}. {discount.name}</span>
                         <span className="text-[12px] font-black text-brand-text-muted">
-                          {discount.type === 'Monto Fijo' ? `- S/ ${discount.value}` : `- ${discount.value}%`}
+                          - {discount.value}%
                         </span>
                       </div>
                     ))}
@@ -367,11 +373,65 @@ export default function DiscountsPage() {
                 <Button type="submit" disabled={!formData.name || (!editingId && !canCreateMoreDiscounts)} className="flex-1 h-16 gap-3 rounded-[24px] font-black uppercase tracking-widest shadow-2xl shadow-brand-black/20 text-[15px]">
                   <Plus size={22} /> {editingId ? 'Guardar Cambios' : 'Activar Descuento'}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); }} className="h-16 px-10 rounded-3xl text-brand-text-muted hover:text-red-500">Descartar</Button>
+                <Button type="button" variant="ghost" onClick={() => { setIsCreating(false); setEditingId(null); setFormErrors({}); setIsProductPickerOpen(false); setProductSearchTerm(''); }} className="h-16 px-10 rounded-3xl text-brand-text-muted hover:text-red-500">Descartar</Button>
               </div>
             </form>
           </Card>
         </div>
+        {isProductPickerOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-brand-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-2xl bg-white rounded-[36px] shadow-2xl border-4 border-white overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-8 border-b border-brand-neutral-border flex items-start justify-between gap-6">
+                <div>
+                  <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.2em]">Selección de producto</p>
+                  <h3 className="text-[28px] font-black tracking-tighter text-brand-black">Buscar producto</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setIsProductPickerOpen(false); setProductSearchTerm(''); }}
+                  className="w-11 h-11 rounded-full border-2 border-brand-neutral-border flex items-center justify-center hover:bg-brand-neutral-light transition-all"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+              <div className="p-8 space-y-5">
+                <div className="relative">
+                  <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-text-muted" />
+                  <input
+                    type="text"
+                    value={productSearchTerm}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre de producto..."
+                    className="w-full h-14 pl-14 pr-5 bg-brand-neutral-light border border-brand-neutral-border rounded-2xl text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+                  {filteredProductsForPicker.map((product: Product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => selectProductForDiscount(product)}
+                      className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between gap-4 transition-all ${formData.productId === product.id ? 'border-brand-black bg-brand-neutral-light' : 'border-brand-neutral-border hover:border-brand-black'}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-black text-brand-black truncate">{product.name}</p>
+                        <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tight">{formatMoney(product.price)} | Stock {product.stock}</p>
+                      </div>
+                      {formData.productId === product.id ? <Check size={18} className="text-brand-black shrink-0" /> : <Package size={18} className="text-brand-text-muted shrink-0" />}
+                    </button>
+                  ))}
+                  {filteredProductsForPicker.length === 0 && (
+                    <div className="py-16 text-center space-y-3">
+                      <Package size={34} className="mx-auto text-brand-neutral-mid" />
+                      <p className="text-[13px] font-black text-brand-text-muted uppercase tracking-widest">No se encontraron productos</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </MerchantLayout>
     );
   }
@@ -508,10 +568,10 @@ export default function DiscountsPage() {
                         </div>
                       </td>
                       <td className="px-8 py-7 text-center">
-                        <span className="text-[16px] font-black text-brand-black">{rule.value}{rule.type === 'Porcentaje' ? '%' : ' S/'}</span>
+                        <span className="text-[16px] font-black text-brand-black">{rule.value}%</span>
                       </td>
                       <td className="px-8 py-7 text-center">
-                        <span className="text-[14px] font-bold text-brand-black opacity-60">≥ {rule.minUnits} uds</span>
+                        <span className="text-[14px] font-bold text-brand-black opacity-60">{`>= ${rule.minUnits} uds`}</span>
                       </td>
                       <td className="px-8 py-7 text-center">
                         <Badge variant="outline" className="font-black text-[11px]">{rule.usageCount}</Badge>
@@ -563,7 +623,7 @@ export default function DiscountsPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-brand-neutral-light p-6 rounded-[32px] space-y-1">
                   <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider">Valor del Beneficio</p>
-                  <h4 className="text-[32px] font-black text-brand-black">{selectedDiscount.value}{selectedDiscount.type === 'Porcentaje' ? '%' : ' S/'}</h4>
+                  <h4 className="text-[32px] font-black text-brand-black">{selectedDiscount.value}%</h4>
                 </div>
                 <div className="bg-brand-neutral-light p-6 rounded-[32px] space-y-1">
                   <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider">Mínimo Unidades</p>
@@ -623,5 +683,6 @@ export default function DiscountsPage() {
     </MerchantLayout>
   );
 }
+
 
 

@@ -49,6 +49,21 @@ const MAX_DISCOUNTS_PER_STORE = 5;
 
 const fallbackStore = mockStores[0];
 
+const localPreviewLogo = (store: Store) => {
+  const value = store.logoUrl || store.logo || '';
+  return value.startsWith('data:') || value.startsWith('blob:') ? value : '';
+};
+
+const preserveLocalPreviewLogo = (source: Store, saved: Store) => {
+  const previewLogo = localPreviewLogo(source);
+  if (!previewLogo || saved.logoUrl || saved.logo) return saved;
+  return {
+    ...saved,
+    logo: previewLogo,
+    logoUrl: previewLogo
+  };
+};
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
@@ -155,9 +170,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (store?.id) {
       persistStore(store);
-      if (hasBackendSession) {
-        loadScopedData(store.id);
-      }
+    }
+  }, [store]);
+
+  useEffect(() => {
+    if (store?.id && hasBackendSession) {
+      loadScopedData(store.id);
     }
   }, [store.id, hasBackendSession, loadScopedData]);
 
@@ -237,7 +255,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const onlyStatus = Object.keys(updates).length === 1 && updates.status;
+    const canPatchActive = onlyStatus && (updates.status === 'Activo' || updates.status === 'Inactivo');
     const updated = onlyStatus
+      && canPatchActive
       ? await merchantApi.updateProductActive(id, activeFromProductStatus(updates.status), store.id)
       : await merchantApi.updateProduct(merged, store.id);
     setProducts(prev => prev.map(item => item.id === id ? updated : item));
@@ -341,7 +361,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setStore(s);
       return s;
     }
-    const updated = await merchantApi.updateStore(s);
+    const updated = preserveLocalPreviewLogo(s, await merchantApi.updateStore(s));
     setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
     setStore(updated);
     return updated;
@@ -376,7 +396,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 const activeFromProductStatus = (status?: Product['status']) =>
-  status !== 'Borrador' && status !== 'Inactivo';
+  status === 'Activo';
 
 export const useStore = () => {
   const context = useContext(StoreContext);

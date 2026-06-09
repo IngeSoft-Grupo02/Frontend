@@ -113,7 +113,7 @@ export function CategoriasScreen({ categories, stores, onCreate, onUpdate, onDel
                   <td className="py-5 px-8 font-extrabold text-neutral-900">{cat.name}</td>
                   <td className="py-5 px-4 font-medium text-neutral-600">{cat.description}</td>
                   <td className="py-5 px-4">
-                    <Badge variant={cat.status === 'Activa' ? 'activo' : 'pendiente'}>{cat.status}</Badge>
+                    <Badge variant={cat.status === 'Activa' ? 'active' : 'pending'}>{cat.status}</Badge>
                   </td>
                   <td className="py-5 px-4 text-right font-mono text-[12px] text-neutral-500">{cat.use || 0} tiendas</td>
                   <td className="py-5 px-8 text-right">

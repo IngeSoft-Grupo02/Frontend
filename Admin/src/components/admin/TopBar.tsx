@@ -6,7 +6,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import { User, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export default function TopBar() {
+type TopBarProps = {
+  title?: string;
+  subtitle?: string;
+};
+
+export default function TopBar({ title: titleProp, subtitle: subtitleProp }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { currentUser, logout } = useApp();
@@ -25,7 +30,9 @@ export default function TopBar() {
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 
-  const { title, subtitle } = getPageMeta();
+  const fallbackMeta = getPageMeta();
+  const title = titleProp || fallbackMeta.title;
+  const subtitle = subtitleProp || fallbackMeta.subtitle;
 
   const handleLogout = () => {
     logout();

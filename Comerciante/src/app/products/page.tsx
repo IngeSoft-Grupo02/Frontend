@@ -17,17 +17,19 @@ import {
   X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { products, deleteProduct, updateProduct } = useStore();
+  const { products, deleteProduct, updateProduct, isLoading, apiError } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [sortBy, setSortBy] = useState<'recent' | 'old' | 'more-stock' | 'less-stock'>('recent');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
 
   const selectedProduct = useMemo(() =>
     products.find(p => p.id === showDetailId),
@@ -39,7 +41,7 @@ export default function ProductsPage() {
       total: products.length,
       active: products.filter(p => p.status === 'Activo').length,
       drafts: products.filter(p => p.status === 'Borrador').length,
-      outOfStock: products.filter(p => p.stock === 0).length,
+      outOfStock: products.filter(p => p.status === 'Sin stock').length,
       inactive: products.filter(p => p.status === 'Inactivo').length,
     };
   }, [products]);
@@ -70,14 +72,18 @@ export default function ProductsPage() {
   }, [products, searchTerm, statusFilter, sortBy]);
 
   const handleDelete = async () => {
-    if (deleteId) {
-      try {
-        setActionError('');
-        await deleteProduct(deleteId);
-        setDeleteId(null);
-      } catch (error) {
-        setActionError(error instanceof Error ? error.message : 'No se pudo eliminar el producto');
-      }
+    if (!deleteId || isDeletingRef.current) return;
+    isDeletingRef.current = true;
+    setIsDeleting(true);
+    try {
+      setActionError('');
+      await deleteProduct(deleteId);
+      setDeleteId(null);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'No se pudo eliminar el producto');
+    } finally {
+      isDeletingRef.current = false;
+      setIsDeleting(false);
     }
   };
 
@@ -131,7 +137,7 @@ export default function ProductsPage() {
             { label: 'Totales', value: stats.total, color: 'bg-brand-black' },
             { label: 'Activos', value: stats.active, color: 'bg-green-500' },
             { label: 'Borradores', value: stats.drafts, color: 'bg-blue-500' },
-            { label: 'Sin Stock', value: stats.outOfStock, color: 'bg-red-500' },
+            { label: 'Sin stock', value: stats.outOfStock, color: 'bg-red-500' },
             { label: 'Inactivos', value: stats.inactive, color: 'bg-brand-neutral-dark' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-3xl border border-brand-neutral-border p-6 shadow-sm transition-all hover:shadow-md cursor-default group">
@@ -147,9 +153,9 @@ export default function ProductsPage() {
         </div>
 
         <Card className="!p-0 border-brand-neutral-border shadow-xl rounded-[32px] overflow-hidden">
-          {actionError && (
+          {(actionError || apiError) && (
             <div className="mx-8 mt-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
-              {actionError}
+              {actionError || apiError}
             </div>
           )}
           <div className="px-8 py-6 border-b border-brand-neutral-border flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-brand-neutral-light/20">
@@ -174,6 +180,7 @@ export default function ProductsPage() {
                     <option key={status} value={status}>{status === 'Todos' ? 'Filtrar por Estado' : status}</option>
                   ))}
                 </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-brand-text-muted" />
               </div>
             </div>
             <div className="relative">
@@ -192,7 +199,13 @@ export default function ProductsPage() {
           </div>
 
           <div className="min-h-[400px]">
-            {filteredAndSortedProducts.length > 0 ? (
+            {isLoading ? (
+              <div className="p-8 space-y-4 animate-pulse">
+                {[0, 1, 2, 3].map(item => (
+                  <div key={item} className="h-20 rounded-2xl bg-brand-neutral-light border border-brand-neutral-border" />
+                ))}
+              </div>
+            ) : filteredAndSortedProducts.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -418,9 +431,10 @@ export default function ProductsPage() {
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={handleDelete}
+                  disabled={isDeleting}
                   className="h-14 font-extrabold !bg-red-600 hover:!bg-red-700 !text-white rounded-2xl w-full text-[15px] shadow-xl shadow-red-200"
                 >
-                  Sí, eliminar definitivamente
+                  {isDeleting ? 'Eliminando...' : 'Si, eliminar definitivamente'}
                 </Button>
                 <Button
                   variant="ghost"

@@ -9,34 +9,41 @@ import { useState } from 'react';
 
 // Opciones de colores
 const PRIMARY_COLORS_OPTIONS = [
-  { name: 'ONYX BLACK', code: '#000000' },
-  { name: 'DEEP ZINC', code: '#1A1A1B' },
-  { name: 'MIDNIGHT', code: '#0D1120' },
-  { name: 'CHARCOAL', code: '#333D4F' },
-  { name: 'ESPRESSO', code: '#1F1C1B' }
+  { name: 'ONYX BLACK', code: '#0F1011' },
+  { name: 'MIDNIGHT', code: '#1A2332' },
+  { name: 'CHARCOAL', code: '#36454F' },
+  { name: 'ESPRESSO', code: '#4B3621' },
+  { name: 'ALABASTER', code: '#F9FAFB' },
+  { name: 'WARM CREAM', code: '#FDFBF7' }
 ];
 
 const SECONDARY_COLORS_OPTIONS = [
-  { name: 'OLIVE DRAB', code: '#5D634B' },
-  { name: 'SAGE', code: '#8B9E82' },
-  { name: 'SLATE', code: '#4A5568' },
-  { name: 'TERRA', code: '#A97C44' },
-  { name: 'DUSTY RED', code: '#A52222' }
+  { name: 'SLATE', code: '#475569' },
+  { name: 'SAGE', code: '#8A9A86' },
+  { name: 'TERRA', code: '#E2725B' },
+  { name: 'DUSTY RED', code: '#B25C5C' },
+  { name: 'GHOST WHITE', code: '#FFFFFF' },
+  { name: 'SOFT TAUPE', code: '#D5CEC4' },
+  { name: 'BLUSH PINK', code: '#F4C2C2' },
+  { name: 'FROSTED BLUE', code: '#B0E0E6' }
 ];
 
 const TERTIARY_COLORS_OPTIONS = [
-  { name: 'RICH CAMEL', code: '#B2956D' },
-  { name: 'RAW GOLD', code: '#C59D53' },
-  { name: 'SILVER MIST', code: '#9BA9BC' },
-  { name: 'COPPER', code: '#BC5610' },
-  { name: 'STONE', code: '#CED1D6' }
+  { name: 'RAW GOLD', code: '#D4AF37' },
+  { name: 'COPPER', code: '#B87333' },
+  { name: 'COBALT BLUE', code: '#2563EB' },
+  { name: 'CORAL PUNCH', code: '#FF5A5F' },
+  { name: 'EMERALD', code: '#10B981' },
+  { name: 'SUNFLOWER', code: '#FFC107' },
+  { name: 'HOT MAGENTA', code: '#FF00FF' },
+  { name: 'VIOLET POP', code: '#8B5CF6' }
 ];
 
 const COLOR_PALETTES = [
-  { id: 'core-street', name: 'Core Street', primary: '#0F0F10', secondary: '#6E7F5D', accent: '#B89B72' },
-  { id: 'atelier-mono', name: 'Atelier Mono', primary: '#161616', secondary: '#8C8C8C', accent: '#C9C7C1' },
-  { id: 'utility-drop', name: 'Utility Drop', primary: '#1B2018', secondary: '#6E7F5D', accent: '#A34A3C' },
-  { id: 'luxe-capsule', name: 'Luxe Capsule', primary: '#15120F', secondary: '#B89B72', accent: '#E4D5B7' },
+  { id: 'core-street', name: 'Core Street', primary: '#0F1011', secondary: '#475569', accent: '#D4AF37' },
+  { id: 'atelier-mono', name: 'Atelier Mono', primary: '#F9FAFB', secondary: '#FFFFFF', accent: '#2563EB' },
+  { id: 'utility-drop', name: 'Utility Drop', primary: '#36454F', secondary: '#8A9A86', accent: '#10B981' },
+  { id: 'luxe-capsule', name: 'Luxe Capsule', primary: '#4B3621', secondary: '#D5CEC4', accent: '#B87333' },
 ];
 
 export default function EditarTiendaPage() {

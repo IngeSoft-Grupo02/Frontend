@@ -106,35 +106,78 @@ const colorToBackend = (color?: string) => {
 };
 
 const activeFromStatus = (status?: Product['status'] | Discount['status']) =>
-  status !== 'Borrador' && status !== 'Inactivo' && status !== 'Pausada';
+  status === 'Activo' || status === 'Activa';
+
+const productStatusFromBackend = (rawStatus: unknown, active?: boolean): Product['status'] => {
+  const normalized = String(rawStatus || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[_\s-]+/g, ' ');
+
+  if (normalized === 'draft' || normalized === 'borrador') return 'Borrador';
+  if (normalized === 'out of stock' || normalized === 'sin stock' || normalized === 'fuera de stock') return 'Sin stock';
+  if (normalized === 'inactive' || normalized === 'inactivo' || normalized === 'inactiva') return 'Inactivo';
+  if (normalized === 'active' || normalized === 'activo' || normalized === 'activa') return 'Activo';
+  return active === false ? 'Inactivo' : 'Activo';
+};
+
+const productStatusToBackend = (status?: Product['status']) => {
+  switch (status) {
+    case 'Borrador': return 'DRAFT';
+    case 'Sin stock': return 'OUT_OF_STOCK';
+    case 'Inactivo': return 'INACTIVE';
+    case 'Activo':
+    default: return 'ACTIVE';
+  }
+};
 
 const isPersistableUrl = (value?: string) => {
   const url = (value || '').trim();
   return Boolean(url) && !url.startsWith('data:') && !url.startsWith('blob:');
 };
 
+const uniqueImageUrls = (urls: Array<string | undefined>) => {
+  const seen = new Set<string>();
+  return urls
+    .map(url => (url || '').trim())
+    .filter(url => {
+      if (!isPersistableUrl(url) || seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    })
+    .slice(0, 5);
+};
+
 const PRIMARY_COLOR_HEX: Record<string, string> = {
-  ONYX_BLACK: '#000000',
-  DEEP_ZINC: '#1A1A1B',
-  MIDNIGHT: '#0D1120',
-  CHARCOAL: '#333D4F',
-  ESPRESSO: '#1F1C1B'
+  ONYX_BLACK: '#0F1011',
+  MIDNIGHT: '#1A2332',
+  CHARCOAL: '#36454F',
+  ESPRESSO: '#4B3621',
+  ALABASTER: '#F9FAFB',
+  WARM_CREAM: '#FDFBF7'
 };
 
 const SECONDARY_COLOR_HEX: Record<string, string> = {
-  OLIVE_DRAB: '#5D634B',
-  SAGE: '#8B9E82',
-  SLATE: '#4A5568',
-  TERRA: '#A97C44',
-  DUSTY_RED: '#A52222'
+  SLATE: '#475569',
+  SAGE: '#8A9A86',
+  TERRA: '#E2725B',
+  DUSTY_RED: '#B25C5C',
+  GHOST_WHITE: '#FFFFFF',
+  SOFT_TAUPE: '#D5CEC4',
+  BLUSH_PINK: '#F4C2C2',
+  FROSTED_BLUE: '#B0E0E6'
 };
 
 const TERTIARY_COLOR_HEX: Record<string, string> = {
-  RICH_CAMEL: '#B2956D',
-  RAW_GOLD: '#C59D53',
-  SILVER_MIST: '#9BA9BC',
-  COPPER: '#BC5610',
-  STONE: '#CED1D6'
+  RAW_GOLD: '#D4AF37',
+  COPPER: '#B87333',
+  COBALT_BLUE: '#2563EB',
+  CORAL_PUNCH: '#FF5A5F',
+  EMERALD: '#10B981',
+  SUNFLOWER: '#FFC107',
+  HOT_MAGENTA: '#FF00FF',
+  VIOLET_POP: '#8B5CF6'
 };
 
 const colorHex = (value: unknown, palette: Record<string, string>, fallback: string) => {
@@ -163,8 +206,8 @@ const logoUrlPayload = (store: Store | Omit<Store, 'id'>) => {
 
 export const mapStore = (raw: JsonValue): Store => {
   const primaryColor = raw.primaryColor || raw.colors?.primary || 'ONYX_BLACK';
-  const secondaryColor = raw.secondaryColor || raw.colors?.secondary || 'OLIVE_DRAB';
-  const tertiaryColor = raw.tertiaryColor || raw.colors?.tertiary || 'RICH_CAMEL';
+  const secondaryColor = raw.secondaryColor || raw.colors?.secondary || 'SLATE';
+  const tertiaryColor = raw.tertiaryColor || raw.colors?.tertiary || 'RAW_GOLD';
   const categoryName = raw.categoryName || raw.category?.storeCategoryName || raw.type || '';
 
   return {
@@ -193,7 +236,7 @@ export const mapStore = (raw: JsonValue): Store => {
 
 export const mapStoreCategory = (raw: JsonValue): StoreCategory => ({
   id: Number(raw.id),
-  name: raw.name || raw.storeCategoryName || raw.categoryName || 'Categoria'
+  name: raw.name || raw.storeCategoryName || raw.categoryName || 'Categor?a'
 });
 
 export const mapProduct = (raw: JsonValue): Product => {
@@ -204,7 +247,7 @@ export const mapProduct = (raw: JsonValue): Product => {
     return acc;
   }, {});
   const sizes = Object.keys(sizeColorStock);
-  const images = (raw.imageUrls || []).map((url: string, index: number) => ({ name: `imagen-${index + 1}`, url }));
+  const images = uniqueImageUrls(raw.imageUrls || []).map((url, index) => ({ name: `imagen-${index + 1}`, url }));
 
   return {
     id: String(raw.id),
@@ -219,7 +262,7 @@ export const mapProduct = (raw: JsonValue): Product => {
         Object.values(sizeColorStock[size]).reduce((sum: number, value: number) => sum + value, 0)
       ])
     ) as Record<string, number>,
-    status: raw.status || (raw.active === false ? 'Inactivo' : 'Activo'),
+    status: productStatusFromBackend(raw.status, raw.active),
     variants: raw.variants?.length || 0,
     updatedAt: new Date().toISOString(),
     updatedBy: 'Backend',
@@ -237,20 +280,20 @@ export const productPayload = (product: Product | Omit<Product, 'id'>) => {
       stock: Number(stock || 0)
     }))
   );
-  const imageUrls = [
-    ...(product.images?.map(image => image.url).filter(isPersistableUrl) || []),
-    ...(isPersistableUrl(product.image) ? [product.image as string] : [])
-  ].slice(0, 5);
+  const imageUrls = uniqueImageUrls([
+    ...(product.images?.map(image => image.url) || []),
+    product.image
+  ]);
 
   return {
     name: product.name,
     description: product.description || '',
     price: Number(product.price || 0),
     costPrice: Math.max(Number(product.price || 0) * 0.7, 0),
-    material: 'COTTON',
     imageUrls,
     variants,
-    active: activeFromStatus(product.status)
+    active: activeFromStatus(product.status),
+    status: productStatusToBackend(product.status)
   };
 };
 
@@ -259,7 +302,7 @@ const normalizeDiscountAppliesTo = (value: unknown): Discount['appliesTo'] => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-  return text.includes('producto') ? 'Producto especifico' : 'Todo el catalogo';
+  return text.includes('producto') ? 'Producto espec?fico' : 'Todo el cat?logo';
 };
 
 export const mapDiscount = (raw: JsonValue): Discount => ({
@@ -267,7 +310,7 @@ export const mapDiscount = (raw: JsonValue): Discount => ({
   productId: raw.productId != null ? String(raw.productId) : undefined,
   productName: raw.productName,
   name: raw.name || raw.productName || 'Descuento',
-  type: raw.type === 'Monto Fijo' ? 'Monto Fijo' : 'Porcentaje',
+  type: 'Porcentaje',
   value: Number(raw.value ?? raw.discountPercentage ?? 0),
   minUnits: Number(raw.minUnits ?? raw.minQuantity ?? 0),
   status: raw.status === 'Pausada' || raw.active === false ? 'Pausada' : 'Activa',
@@ -277,7 +320,7 @@ export const mapDiscount = (raw: JsonValue): Discount => ({
 
 export const discountPayload = (discount: Discount | Partial<Discount>) => ({
   name: discount.name,
-  type: discount.type || 'Porcentaje',
+  type: 'Porcentaje',
   value: Number(discount.value || 0),
   minUnits: Number(discount.minUnits || 0),
   minQuantity: Number(discount.minUnits || 0),
@@ -285,8 +328,8 @@ export const discountPayload = (discount: Discount | Partial<Discount>) => ({
   volumeType: 'UNIT',
   active: (discount.status || 'Activa') === 'Activa',
   status: discount.status || 'Activa',
-  appliesTo: discount.appliesTo === 'Producto especifico' ? 'Producto especifico' : 'Todo el catalogo',
-  productId: discount.appliesTo === 'Producto especifico' && discount.productId ? Number(discount.productId) : null,
+  appliesTo: discount.appliesTo === 'Producto espec?fico' ? 'Producto espec?fico' : 'Todo el cat?logo',
+  productId: discount.appliesTo === 'Producto espec?fico' && discount.productId ? Number(discount.productId) : null,
   usageCount: discount.usageCount || 0
 });
 
@@ -399,8 +442,8 @@ export const merchantApi = {
       description: store.description,
       categoryId: store.categoryId,
       primaryColor: colorEnum(store.colors?.primary || store.palette, PRIMARY_COLOR_HEX, 'ONYX_BLACK'),
-      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'OLIVE_DRAB'),
-      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RICH_CAMEL'),
+      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
+      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
       logoUrl: logoUrlPayload(store),
       status: store.status
     })
@@ -412,8 +455,8 @@ export const merchantApi = {
       description: store.description,
       categoryId: store.categoryId,
       primaryColor: colorEnum(store.colors?.primary || store.palette, PRIMARY_COLOR_HEX, 'ONYX_BLACK'),
-      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'OLIVE_DRAB'),
-      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RICH_CAMEL'),
+      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
+      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
       logoUrl: logoUrlPayload(store),
       status: store.status
     })
@@ -463,4 +506,3 @@ export const merchantApi = {
     body: JSON.stringify({ status })
   }).then(mapQuote)
 };
-

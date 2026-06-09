@@ -8,67 +8,66 @@ import { Eye, EyeOff, LayoutDashboard } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useApp();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateEmail = (value: string) => {
     setEmail(value);
     if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setEmailError('Ingresa un correo válido.');
+      setEmailError('Ingresa un correo valido.');
     } else {
       setEmailError('');
     }
     setLoginError(null);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (isSubmitting) return;
+
     if (!email || !password) {
-      setLoginError('No se pudo iniciar sesión. Verifica tus credenciales.');
+      setLoginError('No se pudo iniciar sesion. Verifica tus credenciales.');
       return;
     }
 
-    const success = login(email, password);
-    
-    if (success) {
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
+
+    if (result.success) {
       router.push('/admin');
     } else {
-      if (email === 'user@platform.com') {
-        setLoginError('Acceso denegado. Tu cuenta no tiene rol de administrador.');
-      } else {
-        setLoginError('Credenciales incorrectas. (Prueba: admin@platform.com / admin123)');
-      }
+      setLoginError(result.error || 'Credenciales incorrectas.');
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleLogin();
+      void handleLogin();
     }
   };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6 lg:p-10 overflow-hidden">
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-0 md:gap-12 bg-white rounded-[40px] shadow-2xl overflow-hidden h-auto md:h-[750px]">
-        
-        {/* Left Section - Branding */}
         <div className="w-full md:w-[450px] bg-brand-black p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden shrink-0">
           <div className="z-10">
             <h1 className="text-[48px] lg:text-[64px] font-display font-extrabold leading-none mb-8 tracking-tighter">
               Kingstore
             </h1>
             <p className="text-[16px] lg:text-[18px] text-neutral-400 font-medium max-w-[280px] leading-relaxed">
-              Gestiona tiendas, usuarios, límites globales y trazabilidad operacional desde un único panel.
+              Gestiona tiendas, usuarios, limites globales y trazabilidad operacional desde un unico panel.
             </p>
           </div>
 
           <div className="absolute top-0 right-0 w-[800px] h-full opacity-10 pointer-events-none -mr-[300px] flex items-center justify-center">
             <LayoutDashboard size={800} />
           </div>
-          
+
           <div className="z-10 mt-auto pt-12">
             <div className="flex gap-2">
               <div className="w-3 h-3 rounded-full bg-brand-camel"></div>
@@ -78,29 +77,25 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Section - Login Form */}
         <div className="flex-1 p-10 lg:p-24 flex flex-col justify-center bg-white overflow-y-auto">
           <div className="max-w-md w-full mx-auto">
-            
             <div className="mb-10">
               <h2 className="text-[32px] lg:text-[42px] font-display font-extrabold leading-none mb-3 tracking-tight text-[#0a0a0a]">
-                Iniciar sesión
+                Iniciar sesion
               </h2>
               <p className="text-[16px] text-neutral-400 font-medium">
                 Acceso restringido para administradores de la plataforma
               </p>
             </div>
 
-            <div className="space-y-6" onKeyPress={handleKeyPress}>
-              
-              {/* Email Input */}
+            <div className="space-y-6" onKeyDown={handleKeyPress}>
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-neutral-500 ml-1 uppercase tracking-wide">
-                  Correo electrónico
+                  Correo electronico
                 </label>
                 <input
                   type="email"
-                  placeholder="admin@platform.com"
+                  placeholder="admin@kingstore.pe"
                   value={email}
                   onChange={(e) => validateEmail(e.target.value)}
                   className={`w-full px-5 py-4 bg-neutral-50 border ${emailError ? 'border-red-300' : 'border-neutral-200'} rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all`}
@@ -110,15 +105,14 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Password Input */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-neutral-500 ml-1 uppercase tracking-wide">
-                  Contraseña
+                  Contrasena
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••••••"
+                    placeholder="************"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -134,33 +128,31 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <button 
+                <button
                   onClick={() => router.push('/recuperar-contrasena')}
                   className="text-brand-camel font-bold text-[14px] hover:underline underline-offset-4 tracking-tight block"
                 >
-                  ¿Olvidaste tu contraseña?
+                  Olvidaste tu contrasena?
                 </button>
               </div>
 
-              {/* Remember Me */}
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input type="checkbox" className="w-5 h-5 accent-brand-black rounded-lg" defaultChecked />
-                <span className="text-[14px] font-bold text-neutral-800">Mantener sesión abierta</span>
+                <span className="text-[14px] font-bold text-neutral-800">Mantener sesion abierta</span>
               </label>
 
-              {/* Error Message */}
               {loginError && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-xl text-[14px] font-bold animate-in fade-in slide-in-from-top-2">
                   {loginError}
                 </div>
               )}
 
-              {/* Login Button */}
               <button
                 onClick={handleLogin}
-                className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-8 shadow-lg shadow-brand-black/20"
+                disabled={isSubmitting}
+                className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-8 shadow-lg shadow-brand-black/20 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Ingresar al panel
+                {isSubmitting ? 'Validando...' : 'Ingresar al panel'}
               </button>
             </div>
           </div>

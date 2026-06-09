@@ -40,7 +40,7 @@ function ProductFormPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
-  const { products, addProduct, updateProduct, store } = useStore();
+  const { products, addProduct, updateProduct, store, isLoading, apiError } = useStore();
   const isInitialized = useRef<string | null>(null);
 
   const [formData, setFormData] = useState<{
@@ -68,6 +68,8 @@ function ProductFormPageContent() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   // Cargar datos si es edición
   useEffect(() => {
@@ -134,6 +136,7 @@ function ProductFormPageContent() {
   };
 
   const handleSave = async (asDraft = false) => {
+    if (isSavingRef.current) return;
     if (!asDraft) {
       if (!formData.name || !formData.description || !formData.price || parseFloat(formData.price) <= 0) {
         setErrors({
@@ -167,6 +170,9 @@ function ProductFormPageContent() {
         sizeColorStock[name] = block.stock;
       }
     });
+
+    isSavingRef.current = true;
+    setIsSaving(true);
 
     try {
       const uploadedImages = merchantSession.getToken()
@@ -204,6 +210,9 @@ function ProductFormPageContent() {
       router.push('/products');
     } catch (error) {
       setErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el producto' });
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -241,24 +250,64 @@ function ProductFormPageContent() {
     setFormData({ ...formData, inventoryBlocks: newBlocks });
   };
 
+  const isWaitingForProduct = Boolean(editId) && isLoading && !products.some(p => p.id === editId);
+  const editProductNotFound = Boolean(editId) && !isLoading && !products.some(p => p.id === editId);
+
+  if (isWaitingForProduct) {
+    return (
+      <MerchantLayout title="Editar producto" subtitle="Cargando informaci?n del cat?logo">
+        <div className="grid gap-6 animate-pulse">
+          <div className="h-12 w-80 rounded-2xl bg-brand-neutral-mid" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="h-80 rounded-[2rem] bg-white border border-brand-neutral-border" />
+              <div className="h-64 rounded-[2rem] bg-white border border-brand-neutral-border" />
+            </div>
+            <div className="lg:col-span-4 h-96 rounded-[2rem] bg-white border border-brand-neutral-border" />
+          </div>
+        </div>
+      </MerchantLayout>
+    );
+  }
+
+  if (editProductNotFound) {
+    return (
+      <MerchantLayout title="Editar producto" subtitle="Producto no encontrado">
+        <Card>
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
+            <AlertCircle size={36} className="text-red-500" />
+            <h2 className="text-[24px] font-black text-brand-black">No se encontro el producto</h2>
+            <p className="text-[14px] font-bold text-brand-text-muted">Vuelve al cat?logo y selecciona un producto existente.</p>
+            <Button onClick={() => router.push('/products')}>Volver al cat?logo</Button>
+          </div>
+        </Card>
+      </MerchantLayout>
+    );
+  }
+
   return (
     <MerchantLayout title={editId ? "Editar producto" : "Crear producto"} subtitle={`Gestión de inventario › ${formData.name || 'Nueva prenda'}`}>
+      {apiError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
+          {apiError}
+        </div>
+      )}
       <div className="flex flex-col gap-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
-            <button onClick={() => router.push('/products')} className="flex items-center gap-2 text-[11px] font-extrabold text-brand-text-muted hover:text-brand-black transition-all group uppercase tracking-[0.2em] leading-none">
-              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver al catálogo
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-[11px] font-extrabold text-brand-text-muted hover:text-brand-black transition-all group uppercase tracking-[0.2em] leading-none">
+              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver
             </button>
             <h1 className="text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">
               {editId ? 'Editar' : 'Crear'} Producto
             </h1>
           </div>
           <div className="flex gap-4">
-            <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => handleSave(true)}>
-              <Save size={18} className="mr-2" /> Guardar como borrador
+            <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
+              <Save size={18} className="mr-2" /> {isSaving ? 'Guardando...' : 'Guardar como borrador'}
             </Button>
-            <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)}>
-              <Check size={20} /> {editId ? 'Actualizar' : 'Publicar'} catálogo
+            <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
+              <Check size={20} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} cat?logo`}
             </Button>
           </div>
         </header>
@@ -488,20 +537,20 @@ function ProductFormPageContent() {
             </Card>
           </div>
 
-          <div className="lg:col-span-4 space-y-8 sticky top-28">
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
             <Card title="Vista Previa en Tienda">
-              <div className="bg-brand-neutral-light rounded-[32px] border border-brand-neutral-border overflow-hidden shadow-2xl">
-                <div className="bg-white p-4 border-b border-brand-neutral-border flex items-center justify-between">
+              <div className="bg-brand-neutral-light rounded-[28px] border border-brand-neutral-border overflow-hidden shadow-xl">
+                <div className="bg-white p-3 border-b border-brand-neutral-border flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 bg-black rounded flex items-center justify-center text-white text-[8px] font-bold">{getInitials(store.name)}</div>
                     <span className="text-[11px] font-extrabold">{store.name}</span>
                   </div>
                 </div>
 
-                <div className="p-4">
+                <div className="p-3">
                   <div className="bg-white rounded-2xl border border-brand-neutral-border overflow-hidden group">
-                    <div className="aspect-square bg-zinc-100 relative flex items-center justify-center overflow-hidden">
-                      <div className="absolute top-3 left-3 z-10">
+                    <div className="aspect-[4/3] bg-zinc-100 relative flex items-center justify-center overflow-hidden">
+                      <div className="absolute top-2 left-2 z-10">
                         <Badge variant="black" className="bg-white text-black h-5 px-3 font-black text-[9px]">NEW</Badge>
                       </div>
 
@@ -514,23 +563,23 @@ function ProductFormPageContent() {
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center opacity-20 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                          <Layers size={60} strokeWidth={0.5} className="text-black" />
+                          <Layers size={42} strokeWidth={0.5} className="text-black" />
                         </div>
                       )}
                     </div>
 
-                    <div className="p-5 space-y-4">
+                    <div className="p-4 space-y-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0 pr-4">
-                          <h3 className="text-brand-black text-[16px] font-black tracking-tight leading-none mb-1 truncate">{formData.name || 'Nombre del Ítem'}</h3>
+                          <h3 className="text-brand-black text-[15px] font-black tracking-tight leading-none mb-1 truncate">{formData.name || 'Nombre del Ítem'}</h3>
                           <p className="text-brand-text-muted text-[10px] font-bold uppercase tracking-widest line-clamp-1">{formData.description || 'Sin descripción'}</p>
                         </div>
-                        <div className="text-brand-black font-black text-[15px] tracking-tighter">
+                        <div className="text-brand-black font-black text-[14px] tracking-tighter">
                           S/ {formData.price || '0.00'}
                         </div>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <div className="flex flex-wrap gap-2">
                           {previewSizes.length > 0 ? (
                             previewSizes.map(s => (
@@ -542,7 +591,7 @@ function ProductFormPageContent() {
                         </div>
 
                         <Button
-                          className="w-full h-10 text-[11px] font-black rounded-xl"
+                          className="w-full h-9 text-[11px] font-black rounded-xl"
                           style={{ backgroundColor: store.colors?.primary || '#000000' }}
                         >
                           Agregar al Carrito
@@ -555,7 +604,7 @@ function ProductFormPageContent() {
             </Card>
 
             <Card title="Estado de Publicación" subtitle="REQUISITOS">
-              <div className="space-y-5 pt-2">
+              <div className="space-y-4 pt-1">
                 {[
                   { l: 'Nombre y descripción completa', ok: validation.nameDesc },
                   { l: 'Precio definido', ok: validation.prices },
@@ -569,6 +618,14 @@ function ProductFormPageContent() {
                     {item.ok && <Check size={14} className="text-green-500" strokeWidth={4} />}
                   </div>
                 ))}
+                <div className="pt-4 border-t border-brand-neutral-border space-y-3">
+                  <Button variant="ghost" className="w-full h-11 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
+                    <Save size={16} className="mr-2" /> {isSaving ? 'Guardando...' : 'Guardar borrador'}
+                  </Button>
+                  <Button className="w-full gap-2 h-12 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
+                    <Check size={18} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} catálogo`}
+                  </Button>
+                </div>
               </div>
             </Card>
           </div>
@@ -580,7 +637,7 @@ function ProductFormPageContent() {
 
 export default function ProductFormPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="min-h-screen bg-brand-neutral-light p-10 text-[13px] font-black uppercase tracking-widest text-brand-text-muted">Cargando formulario...</div>}>
       <ProductFormPageContent />
     </Suspense>
   );

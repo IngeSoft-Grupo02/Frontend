@@ -12,27 +12,34 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 type ColorOption = { name: string; value: string; hex: string };
 
 const PRIMARY_COLORS: ColorOption[] = [
-  { name: 'ONYX BLACK', value: 'ONYX_BLACK', hex: '#000000' },
-  { name: 'DEEP ZINC', value: 'DEEP_ZINC', hex: '#1A1A1B' },
-  { name: 'MIDNIGHT', value: 'MIDNIGHT', hex: '#0D1120' },
-  { name: 'CHARCOAL', value: 'CHARCOAL', hex: '#333D4F' },
-  { name: 'ESPRESSO', value: 'ESPRESSO', hex: '#1F1C1B' }
+  { name: 'ONYX BLACK', value: 'ONYX_BLACK', hex: '#0F1011' },
+  { name: 'MIDNIGHT', value: 'MIDNIGHT', hex: '#1A2332' },
+  { name: 'CHARCOAL', value: 'CHARCOAL', hex: '#36454F' },
+  { name: 'ESPRESSO', value: 'ESPRESSO', hex: '#4B3621' },
+  { name: 'ALABASTER', value: 'ALABASTER', hex: '#F9FAFB' },
+  { name: 'WARM CREAM', value: 'WARM_CREAM', hex: '#FDFBF7' }
 ];
 
 const SECONDARY_COLORS: ColorOption[] = [
-  { name: 'OLIVE DRAB', value: 'OLIVE_DRAB', hex: '#5D634B' },
-  { name: 'SAGE', value: 'SAGE', hex: '#8B9E82' },
-  { name: 'SLATE', value: 'SLATE', hex: '#4A5568' },
-  { name: 'TERRA', value: 'TERRA', hex: '#A97C44' },
-  { name: 'DUSTY RED', value: 'DUSTY_RED', hex: '#A52222' }
+  { name: 'SLATE', value: 'SLATE', hex: '#475569' },
+  { name: 'SAGE', value: 'SAGE', hex: '#8A9A86' },
+  { name: 'TERRA', value: 'TERRA', hex: '#E2725B' },
+  { name: 'DUSTY RED', value: 'DUSTY_RED', hex: '#B25C5C' },
+  { name: 'GHOST WHITE', value: 'GHOST_WHITE', hex: '#FFFFFF' },
+  { name: 'SOFT TAUPE', value: 'SOFT_TAUPE', hex: '#D5CEC4' },
+  { name: 'BLUSH PINK', value: 'BLUSH_PINK', hex: '#F4C2C2' },
+  { name: 'FROSTED BLUE', value: 'FROSTED_BLUE', hex: '#B0E0E6' }
 ];
 
 const TERTIARY_COLORS: ColorOption[] = [
-  { name: 'RICH CAMEL', value: 'RICH_CAMEL', hex: '#B2956D' },
-  { name: 'RAW GOLD', value: 'RAW_GOLD', hex: '#C59D53' },
-  { name: 'SILVER MIST', value: 'SILVER_MIST', hex: '#9BA9BC' },
-  { name: 'COPPER', value: 'COPPER', hex: '#BC5610' },
-  { name: 'STONE', value: 'STONE', hex: '#CED1D6' }
+  { name: 'RAW GOLD', value: 'RAW_GOLD', hex: '#D4AF37' },
+  { name: 'COPPER', value: 'COPPER', hex: '#B87333' },
+  { name: 'COBALT BLUE', value: 'COBALT_BLUE', hex: '#2563EB' },
+  { name: 'CORAL PUNCH', value: 'CORAL_PUNCH', hex: '#FF5A5F' },
+  { name: 'EMERALD', value: 'EMERALD', hex: '#10B981' },
+  { name: 'SUNFLOWER', value: 'SUNFLOWER', hex: '#FFC107' },
+  { name: 'HOT MAGENTA', value: 'HOT_MAGENTA', hex: '#FF00FF' },
+  { name: 'VIOLET POP', value: 'VIOLET_POP', hex: '#8B5CF6' }
 ];
 
 const FALLBACK_CATEGORIES: StoreCategory[] = [
@@ -85,8 +92,8 @@ function StoreFormPageContent() {
     categoryName: '',
     description: '',
     primaryColor: 'ONYX_BLACK',
-    secondaryColor: 'OLIVE_DRAB',
-    tertiaryColor: 'RICH_CAMEL'
+    secondaryColor: 'SLATE',
+    tertiaryColor: 'RAW_GOLD'
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState('');
@@ -109,7 +116,7 @@ function StoreFormPageContent() {
         if (isMounted) setCategories(loaded);
       } catch (error) {
         if (!isMounted) return;
-        const message = error instanceof Error ? error.message : 'No se pudieron cargar las categorias';
+        const message = error instanceof Error ? error.message : 'No se pudieron cargar las categor?as';
         if (merchantSession.getToken()) {
           setCategoryLoadError(message);
           setCategories([]);
@@ -139,8 +146,8 @@ function StoreFormPageContent() {
       categoryName: store.categoryName || store.type || '',
       description: store.description || '',
       primaryColor: colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK'),
-      secondaryColor: colorValue(store.colors?.secondary, SECONDARY_COLORS, 'OLIVE_DRAB'),
-      tertiaryColor: colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RICH_CAMEL')
+      secondaryColor: colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'),
+      tertiaryColor: colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD')
     });
     const logoUrl = store.logoUrl || store.logo || '';
     setExistingLogoUrl(logoUrl);
@@ -170,7 +177,7 @@ function StoreFormPageContent() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!formData.name.trim()) nextErrors.name = 'El nombre de la tienda es obligatorio';
-    if (!formData.categoryId) nextErrors.categoryId = 'Selecciona una categoria existente';
+    if (!formData.categoryId) nextErrors.categoryId = 'Selecciona una categor?a existente';
     if (!PRIMARY_COLORS.some(color => color.value === formData.primaryColor)) nextErrors.primaryColor = 'Color principal invalido';
     if (!SECONDARY_COLORS.some(color => color.value === formData.secondaryColor)) nextErrors.secondaryColor = 'Color secundario invalido';
     if (!TERTIARY_COLORS.some(color => color.value === formData.tertiaryColor)) nextErrors.tertiaryColor = 'Color terciario invalido';
@@ -296,23 +303,23 @@ function StoreFormPageContent() {
   );
 
   return (
-    <MerchantLayout title={editId ? 'Editar Tienda' : 'Crear Tienda'} subtitle="Configuracion de unidad de negocio" noSidebar={true}>
+    <MerchantLayout title={editId ? 'Editar Tienda' : 'Crear Tienda'} subtitle="Configuraci?n de unidad de negocio" noSidebar={true}>
       <div className="space-y-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <button
-              onClick={() => router.push('/store-selection')}
+              onClick={() => router.back()}
               className="flex items-center gap-2 text-[11px] font-extrabold text-brand-text-muted hover:text-brand-black transition-all group uppercase tracking-[0.2em] leading-none"
             >
               <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Volver a tiendas
+              Volver
             </button>
             <h1 className="text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">
               {editId ? 'Editar' : 'Crear'} Tienda
             </h1>
           </div>
           <div className="flex gap-4">
-            <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => router.push('/store-selection')}>
+            <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => router.back()}>
               Cancelar
             </Button>
             <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={handleSave}>
@@ -323,7 +330,7 @@ function StoreFormPageContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
-            <Card title="Informacion basica" subtitle="01 - MODELO DE TIENDA">
+            <Card title="Informaci?n b?sica" subtitle="01 - MODELO DE TIENDA">
               <div className="space-y-6">
                 <Input
                   label="Nombre de la tienda *"
@@ -338,14 +345,14 @@ function StoreFormPageContent() {
                 />
 
                 <div>
-                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Categoria *</label>
+                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Categor?a *</label>
                   <button
                     type="button"
                     onClick={() => setShowCategoryModal(true)}
                     className={`w-full min-h-14 bg-white border rounded-2xl px-5 py-4 text-left outline-none focus:ring-4 focus:ring-brand-black/5 transition-all flex items-center justify-between ${errors.categoryId ? 'border-red-500' : 'border-brand-neutral-border hover:border-brand-black'}`}
                   >
                     <span className={`text-[14px] font-bold ${formData.categoryName ? 'text-brand-black' : 'text-brand-text-muted'}`}>
-                      {formData.categoryName || 'Selecciona una categoria existente'}
+                      {formData.categoryName || 'Selecciona una categor?a existente'}
                     </span>
                     <Search size={18} className="text-brand-text-muted" />
                   </button>
@@ -421,7 +428,7 @@ function StoreFormPageContent() {
             <Card title="Paleta de colores" subtitle="02 - IDENTIDAD VISUAL">
               <div className="space-y-8">
                 <div>
-                  <h4 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2">Configuracion de marca</h4>
+                  <h4 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2">Configuraci?n de marca</h4>
                   <p className="text-[13px] font-bold text-brand-text-muted">Selecciona los colores permitidos por el modelo de tienda. Estos valores se guardan como enums del backend.</p>
                 </div>
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -454,7 +461,7 @@ function StoreFormPageContent() {
                 <div className="h-40 flex items-center justify-center relative" style={{ backgroundColor: selectedPrimaryHex }}>
                   <div className="absolute top-4 left-4">
                     <Badge variant="black" className="!px-4 !py-1.5 font-black text-[11px]">
-                      {formData.categoryName || 'Categoria'}
+                      {formData.categoryName || 'Categor?a'}
                     </Badge>
                   </div>
                   <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden">
@@ -471,7 +478,7 @@ function StoreFormPageContent() {
                 <div className="p-6 space-y-4">
                   <div>
                     <h3 className="text-[22px] font-black text-brand-black leading-none mb-1">{formData.name || 'Nombre de la tienda'}</h3>
-                    <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{formData.categoryName || 'Sin categoria'}</p>
+                    <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{formData.categoryName || 'Sin categor?a'}</p>
                   </div>
                   <p className="text-[13px] font-medium text-brand-text-muted leading-relaxed">
                     {formData.description || 'Sin descripcion disponible para esta tienda.'}
@@ -494,15 +501,15 @@ function StoreFormPageContent() {
               </div>
             </Card>
 
-            <Card title="Resumen de configuracion">
+            <Card title="Resumen de configuraci?n">
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[12px] font-bold text-brand-text-muted uppercase">Nombre</span>
                   <span className="text-[13px] font-black text-brand-black text-right">{formData.name || 'Sin nombre'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-[12px] font-bold text-brand-text-muted uppercase">Categoria</span>
-                  <span className="text-[13px] font-black text-brand-black text-right">{formData.categoryName || 'Sin categoria'}</span>
+                  <span className="text-[12px] font-bold text-brand-text-muted uppercase">Categor?a</span>
+                  <span className="text-[13px] font-black text-brand-black text-right">{formData.categoryName || 'Sin categor?a'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[12px] font-bold text-brand-text-muted uppercase">Principal</span>
@@ -527,8 +534,8 @@ function StoreFormPageContent() {
           <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden border border-brand-neutral-border">
             <div className="p-8 border-b border-brand-neutral-border flex items-start justify-between gap-6">
               <div>
-                <h3 className="text-[26px] font-black text-brand-black tracking-tight">Seleccionar categoria</h3>
-                <p className="text-[13px] font-bold text-brand-text-muted mt-1">Busca una categoria existente en la base de datos.</p>
+                <h3 className="text-[26px] font-black text-brand-black tracking-tight">Seleccionar categor?a</h3>
+                <p className="text-[13px] font-bold text-brand-text-muted mt-1">Busca una categor?a existente en la base de datos.</p>
               </div>
               <button type="button" onClick={() => setShowCategoryModal(false)} className="p-2 rounded-full hover:bg-brand-neutral-mid transition-colors">
                 <X size={22} />
@@ -536,14 +543,14 @@ function StoreFormPageContent() {
             </div>
             <div className="p-8 space-y-6">
               <Input
-                label="Buscar categoria"
-                placeholder="Nombre de categoria..."
+                label="Buscar categor?a"
+                placeholder="Nombre de categor?a..."
                 value={categorySearch}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCategorySearch(e.target.value)}
                 className="h-12 rounded-2xl font-bold"
               />
               <div className="max-h-[360px] overflow-y-auto space-y-2 pr-2">
-                {isLoadingCategories && <p className="py-12 text-center text-brand-text-muted font-bold">Cargando categorias...</p>}
+                {isLoadingCategories && <p className="py-12 text-center text-brand-text-muted font-bold">Cargando categor?as...</p>}
                 {!isLoadingCategories && filteredCategories.map(category => (
                   <button
                     type="button"
@@ -564,7 +571,7 @@ function StoreFormPageContent() {
                 ))}
                 {!isLoadingCategories && filteredCategories.length === 0 && (
                   <div className="py-16 text-center text-brand-text-muted font-bold italic">
-                    No se encontraron categorias.
+                    No se encontraron categor?as.
                   </div>
                 )}
               </div>

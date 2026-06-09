@@ -92,11 +92,10 @@ export interface Discount {
   productId?: string;
   productName?: string;
   name: string;
-  type?: 'Porcentaje' | 'Monto Fijo';
+  type?: 'Porcentaje';
   value: number;
   minUnits: number;
   status: 'Activa' | 'Pausada';
   usageCount: number;
-  appliesTo: 'Todo el catalogo' | 'Producto especifico';
+  appliesTo: 'Todo el cat?logo' | 'Producto espec?fico';
 }
-
