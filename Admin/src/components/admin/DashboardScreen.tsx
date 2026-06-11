@@ -103,8 +103,8 @@ export function DashboardScreen({ stores, onCreateStore }: DashboardScreenProps)
                     <td className="py-4 px-4 font-mono text-[12px] text-neutral-500">{store.responsible}</td>
                     <td className="py-4 px-4">
                       <Badge variant={
-                        store.status === 'Activa' ? 'active' :
-                            store.status === 'Suspendida' ? 'suspended' : 'pending'
+                        store.status === 'Activa'      ? 'activo' :
+                            store.status === 'Suspendida'  ? 'suspendido' : 'pendiente'
                       }>
                         {store.status}
                       </Badge>

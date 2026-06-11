@@ -1,402 +1,365 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useApp } from '@/context/AppContext';
-import { ArrowLeft, Save, AlertCircle, CheckCircle2, Users, Store } from 'lucide-react';
+import { api, StoreResponse } from '@/lib/api';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Users, Store } from 'lucide-react';
 import { Button, Input, Select, Card, Badge } from '@/components/UI';
+
+// ── Helpers de validación ─────────────────────────────────────────
+
+const SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+
+function calcularEdad(fechaNac: string): number {
+  const hoy = new Date();
+  const nac = new Date(fechaNac);
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const mes = hoy.getMonth() - nac.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return edad;
+}
+
+function validarCampo(name: string, value: string, form: any): string {
+  switch (name) {
+    case 'firstName':
+    case 'paternalSurname':
+    case 'maternalSurname':
+      if (!value.trim()) return 'Obligatorio.';
+      if (!SOLO_LETRAS.test(value)) return 'Solo letras y espacios, sin números ni caracteres especiales.';
+      if (value.trim().length < 2) return 'Mínimo 2 caracteres.';
+      return '';
+
+    case 'docNumber':
+      if (!value) return 'Obligatorio.';
+      if (!/^\d+$/.test(value)) return 'Solo números.';
+      if (form.docType === 'DNI' && value.length !== 8) return 'DNI debe tener 8 dígitos.';
+      if (form.docType === 'FOREIGN_ID_CARD' && value.length !== 9) return 'Carnet debe tener 9 dígitos.';
+      return '';
+
+    case 'email':
+      if (!value.trim()) return 'Obligatorio.';
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Email inválido.';
+
+    case 'password':
+      if (!value) return 'Obligatorio.';
+      return value.length >= 8 ? '' : 'Mínimo 8 caracteres.';
+
+    case 'phone':
+      if (!value) return '';
+      if (!/^\d+$/.test(value)) return 'Solo números.';
+      return value.length !== 9 ? 'Debe tener 9 dígitos.' : '';
+
+    case 'ruc':
+      if (form.role === 'MERCHANT') {
+        if (!value) return 'Obligatorio.';
+        if (!/^\d{11}$/.test(value)) return 'RUC debe tener 11 dígitos numéricos.';
+      }
+      return '';
+
+    case 'birthDate':
+      if (!value) return 'Obligatorio.';
+      const hoy = new Date();
+      const nac = new Date(value);
+      if (nac >= hoy) return 'La fecha de nacimiento no puede ser futura.';
+      const edad = calcularEdad(value);
+      if (edad < 18) return 'El usuario debe ser mayor de edad (18+).';
+      if (edad > 100) return 'Fecha de nacimiento inválida.';
+      return '';
+
+    default: return '';
+  }
+}
+
+// ── Campos requeridos según rol ───────────────────────────────────
+function camposRequeridos(role: string): string[] {
+  const base = ['firstName', 'paternalSurname', 'maternalSurname',
+    'docNumber', 'birthDate', 'email', 'password'];
+  if (role === 'MERCHANT') return [...base, 'ruc'];
+  return base;
+}
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
-  const { addUser, stores } = useApp();
+  const [stores, setStores] = useState<StoreResponse[]>([]);
+  const [selectedMerchantStores, setSelectedMerchantStores] = useState<{id:number;name:string}[]>([]);
 
-  const [formData, setFormData] = useState({
-    docType: 'DNI',
-    docNumber: '',
-    name: '',
-    lastNamePaterno: '',
-    lastNameMaterno: '',
-    birthDate: '',
-    phone: '',
-    ruc: '',
-    email: '',
-    password: 'Kingstore2026*',
-    role: 'Comerciante',
-    store: ''
+  const [form, setForm] = useState({
+    docType: 'DNI', docNumber: '', firstName: '', paternalSurname: '', maternalSurname: '',
+    birthDate: '', phone: '', gender: 'MALE', ruc: '', email: '', password: 'Kingstore2026*',
+    role: 'MERCHANT', storeId: '',
   });
+  const [errors,      setErrors]      = useState<Record<string,string>>({});
+  const [touched,     setTouched]     = useState<Record<string,boolean>>({});
+  const [loading,     setLoading]     = useState(false);
+  const [globalError, setGlobalError] = useState<string|null>(null);
 
-  const [selectedMerchantStores, setSelectedMerchantStores] = useState<string[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    api.stores.getAll().then(setStores).catch(() => setStores([]));
+  }, []);
 
-  const validate = (name: string, value: string, currentFormData = formData) => {
-    let error = '';
-    const onlyLetters = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
-
-    switch (name) {
-      case 'docNumber':
-        if (currentFormData.docType === 'DNI') {
-          if (value.length !== 8) error = 'DNI debe tener exactamente 8 dígitos.';
-        } else if (currentFormData.docType === 'RUC') {
-          if (value.length !== 11) error = 'RUC debe tener exactamente 11 dígitos.';
-        } else if (currentFormData.docType === 'Carnet de extranjería') {
-          if (value.length !== 9) error = 'Carnet de extranjería debe tener exactamente 9 dígitos.';
-        } else if (currentFormData.docType === 'Pasaporte') {
-          if (value.length === 0) error = 'Campo obligatorio.';
-          else if (value.length < 5) error = 'Pasaporte inválido.';
-        }
-        break;
-      case 'name':
-      case 'lastNamePaterno':
-        if (!onlyLetters.test(value)) error = 'No se permiten números ni caracteres especiales.';
-        if (!value) error = 'Campo obligatorio.';
-        break;
-      case 'phone':
-        if (value.length !== 9) error = 'Teléfono debe tener 9 dígitos.';
-        break;
-      case 'ruc':
-        if (value.length > 0 && value.length !== 11) error = 'RUC debe tener 11 dígitos.';
-        if (value.length === 0 && currentFormData.role === 'Comerciante') error = 'Campo obligatorio.';
-        break;
-      case 'email':
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo electrónico inválido.';
-        break;
-      case 'birthDate':
-        if (!value) {
-          error = 'Campo obligatorio.';
-        } else {
-          const birth = new Date(value);
-          const today = new Date();
-          if (birth > today) {
-            error = 'La fecha no puede ser futura.';
-          } else {
-            let age = today.getFullYear() - birth.getFullYear();
-            const m = today.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-            if (age < 18) error = 'El comerciante debe ser mayor de edad.';
-          }
-        }
-        break;
-      case 'password':
-        if (value.length < 8) error = 'Mínimo 8 caracteres.';
-        break;
+  // ── ¿El formulario está completo y sin errores? ───────────────
+  const isFormValid = (): boolean => {
+    const requeridos = camposRequeridos(form.role);
+    for (const campo of requeridos) {
+      const val = (form as any)[campo] ?? '';
+      if (!val.trim()) return false;
+      if (validarCampo(campo, val, form)) return false;
     }
-    return error;
+    if (form.role === 'MERCHANT' && selectedMerchantStores.length === 0) return false;
+    if (form.role === 'CUSTOMER' && !form.storeId) return false;
+    return true;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value: rawValue } = e.target;
-    let value = rawValue;
+    let { name, value } = e.target;
 
-    // Input masking
-    if (name === 'docNumber') {
-      if (formData.docType === 'DNI') value = value.replace(/\D/g, '').slice(0, 8);
-      else if (formData.docType === 'RUC') value = value.replace(/\D/g, '').slice(0, 11);
-      else if (formData.docType === 'Carnet de extranjería') value = value.replace(/\D/g, '').slice(0, 9);
-      else if (formData.docType === 'Pasaporte') value = value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
-    } else if (name === 'phone') {
-      value = value.replace(/\D/g, '').slice(0, 9);
-    } else if (name === 'ruc') {
-      value = value.replace(/\D/g, '').slice(0, 11);
-    } else if (['name', 'lastNamePaterno', 'lastNameMaterno'].includes(name)) {
-      value = value.replace(/[0-9]/g, '');
+    // Sanitización por campo
+    if (name === 'firstName' || name === 'paternalSurname' || name === 'maternalSurname') {
+      // Eliminar números y caracteres especiales en tiempo real
+      value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     }
+    if (name === 'docNumber') {
+      value = value.replace(/\D/g, '').slice(0, form.docType === 'DNI' ? 8 : 9);
+    }
+    if (name === 'phone') value = value.replace(/\D/g, '').slice(0, 9);
+    if (name === 'ruc')   value = value.replace(/\D/g, '').slice(0, 11);
 
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setForm(p => ({ ...p, [name]: value }));
+    if (touched[name]) setErrors(p => ({ ...p, [name]: validarCampo(name, value, {...form, [name]: value}) }));
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setTouched(prev => ({ ...prev, [name]: true }));
-    setErrors(prev => ({ ...prev, [name]: validate(name, value) }));
+    setTouched(p => ({ ...p, [name]: true }));
+    setErrors(p => ({ ...p, [name]: validarCampo(name, value, form) }));
   };
 
-  const isFormValid = () => {
-    const requiredFields = ['docNumber', 'name', 'lastNamePaterno', 'birthDate', 'phone', 'email', 'password'];
-    if (formData.role === 'Comerciante') {
-      requiredFields.push('ruc');
-      if (selectedMerchantStores.length === 0) return false;
-    }
-    if (formData.role === 'Cliente' && !formData.store) return false;
-    
-    const hasEmptyFields = requiredFields.some(f => !formData[f as keyof typeof formData]);
-    if (hasEmptyFields) return false;
-    
-    const currentErrors = requiredFields.map(f => validate(f, (formData as any)[f]));
-    return currentErrors.every(e => e === '');
-  };
-
-  const handleSave = () => {
-    // Mark all as touched to show errors
-    const allTouched: Record<string, boolean> = {};
-    const allErrors: Record<string, string> = {};
-    const requiredFields = ['docNumber', 'name', 'lastNamePaterno', 'birthDate', 'phone', 'email', 'password', 'docType'];
-    
-    if (formData.role === 'Comerciante') requiredFields.push('ruc');
-    
-    requiredFields.forEach(f => {
-      allTouched[f] = true;
-      allErrors[f] = validate(f, (formData as any)[f]);
+  const handleSave = async () => {
+    // Marcar todos como touched y validar
+    const requeridos = camposRequeridos(form.role);
+    const newTouched: Record<string,boolean> = {};
+    const newErrors:  Record<string,string>  = {};
+    requeridos.forEach(f => {
+      newTouched[f] = true;
+      newErrors[f]  = validarCampo(f, (form as any)[f] ?? '', form);
     });
-    
-    setTouched(allTouched);
-    setErrors(allErrors);
+    setTouched(newTouched); setErrors(newErrors);
 
-    if (isFormValid()) {
-      let finalStore = formData.store;
-      if (formData.role === 'Administrador') finalStore = 'Todas';
-      if (formData.role === 'Comerciante') finalStore = selectedMerchantStores.length > 0 ? selectedMerchantStores.join(', ') : 'Ninguna';
+    if (Object.values(newErrors).some(e => e)) return;
+    if (form.role === 'MERCHANT' && selectedMerchantStores.length === 0) {
+      setErrors(p => ({ ...p, storeId: 'Selecciona al menos una tienda.' }));
+      return;
+    }
 
-      addUser({
-        name: `${formData.name} ${formData.lastNamePaterno}`,
-        email: formData.email,
-        role: formData.role,
-        store: finalStore,
-        docType: formData.docType,
-        docNumber: formData.docNumber,
-        phone: formData.phone,
-        birthDate: formData.birthDate,
-        ruc: formData.ruc
+    setLoading(true); setGlobalError(null);
+    try {
+      await api.users.create({
+        email:           form.email,
+        password:        form.password,
+        documentNumber:  form.docNumber,
+        documentType:    form.docType as any,
+        firstName:       form.firstName,
+        paternalSurname: form.paternalSurname,
+        maternalSurname: form.maternalSurname,
+        birthDate:       form.birthDate || undefined,
+        phone:           form.phone || undefined,
+        gender:          form.gender as any,
+        role:            form.role as any,
+        ruc:             form.role === 'MERCHANT' ? form.ruc : undefined,
+        storeId:         form.role === 'CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
       router.push('/admin/usuarios');
-    }
+    } catch (err: any) { setGlobalError(err.message); }
+    finally { setLoading(false); }
   };
 
+  const addStore = (id: number, name: string) => {
+    if (!selectedMerchantStores.find(s => s.id === id)) {
+      setSelectedMerchantStores(p => [...p, { id, name }]);
+      setErrors(p => ({ ...p, storeId: '' }));
+    }
+  };
+  const removeStore = (id: number) =>
+      setSelectedMerchantStores(p => p.filter(s => s.id !== id));
+
+  // Fecha máxima permitida (hace 18 años)
+  const maxBirthDate = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const formValid = isFormValid();
+
   return (
-    <div className="space-y-12 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="space-y-12 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
         <div>
-          <button 
-            onClick={() => router.back()} 
-            className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline"
-          >
-            <ArrowLeft size={16} /> Volver a usuarios
+          <button onClick={() => router.push('/admin/usuarios')}
+                  className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline">
+            <ArrowLeft size={16}/> Volver a usuarios
           </button>
-          <h2 className="text-[28px] font-display font-extrabold tracking-tight">
-            Formulario de Registro
-          </h2>
-          <p className="text-[14px] font-medium text-neutral-400">
-            Verifica los datos obligatorios según el rol seleccionado
-          </p>
+          <h2 className="text-[28px] font-display font-extrabold tracking-tight">Formulario de Registro</h2>
+          <p className="text-[14px] font-medium text-neutral-400">Verifica los datos obligatorios según el rol seleccionado</p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card className="p-10">
-            <h3 className="text-[20px] font-display font-extrabold mb-8 flex items-center gap-2">
-              <Users size={20} className="text-brand-camel" /> Persona
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <Select 
-                label="Rol del sistema" 
-                name="role" 
-                value={formData.role} 
-                onChange={handleChange}
-              >
-                <option>Administrador</option>
-                <option>Comerciante</option>
-                <option>Cliente</option>
-              </Select>
-              
-              {formData.role === 'Administrador' ? (
-                <Input label="Tienda asociada" value="Todas" disabled />
-              ) : formData.role === 'Comerciante' ? (
-                <div className="space-y-4">
-                  <Select 
-                    label="Asignar tiendas (Una o muchas)" 
-                    value="" 
-                    onChange={(e: any) => {
-                      const val = e.target.value;
-                      if (val && !selectedMerchantStores.includes(val)) {
-                        setSelectedMerchantStores(prev => [...prev, val]);
-                      }
-                    }}
-                  >
-                    <option value="">Seleccionar tienda...</option>
-                    {stores.filter(s => !selectedMerchantStores.includes(s.name)).map(s => (
-                      <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                  </Select>
-
-                  {selectedMerchantStores.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2 p-3 bg-neutral-50/50 rounded-2xl border border-dashed border-neutral-200">
-                      {selectedMerchantStores.map(s => (
-                        <Badge 
-                          key={s} 
-                          variant="selected" 
-                          onClick={() => setSelectedMerchantStores(prev => prev.filter(p => p !== s))}
-                          className="cursor-pointer hover:bg-brand-camel/80 transition-colors"
-                        >
-                          {s} <span className="ml-1 opacity-60">×</span>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  {selectedMerchantStores.length === 0 && (
-                    <p className="text-[10px] text-red-400 font-bold uppercase ml-1">Debes seleccionar al menos una tienda</p>
-                  )}
-                </div>
-              ) : (
-                <Select 
-                  label="Tienda asociada (Solo una)" 
-                  name="store" 
-                  value={formData.store} 
-                  onChange={handleChange}
-                >
-                  <option value="">Seleccionar...</option>
-                  {stores.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                </Select>
-              )}
-              
-              <Select 
-                label="Tipo de documento" 
-                name="docType" 
-                value={formData.docType} 
-                onChange={(e) => {
-                  handleChange(e);
-                  setFormData(prev => ({ ...prev, docNumber: '' }));
-                }}
-              >
-                <option>DNI</option>
-                <option>RUC</option>
-                <option>Carnet de extranjería</option>
-                <option>Pasaporte</option>
-              </Select>
-              
-              <Input 
-                label="Número de documento" 
-                name="docNumber"
-                placeholder={
-                  formData.docType === 'DNI' ? '8 dígitos' : 
-                  formData.docType === 'RUC' ? '11 dígitos' : 
-                  formData.docType === 'Carnet de extranjería' ? '9 dígitos' :
-                  'Máx. 20 caracteres'
-                } 
-                value={formData.docNumber}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.docNumber ? errors.docNumber : ''}
-              />
-              
-              <Input 
-                label="Nombre" 
-                name="name"
-                placeholder="Luciana" 
-                value={formData.name} 
-                onChange={handleChange} 
-                onBlur={handleBlur}
-                error={touched.name ? errors.name : ''}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Apellido Paterno" 
-                  name="lastNamePaterno"
-                  placeholder="Vega" 
-                  value={formData.lastNamePaterno} 
-                  onChange={handleChange} 
-                  onBlur={handleBlur}
-                  error={touched.lastNamePaterno ? errors.lastNamePaterno : ''}
-                />
-                <Input 
-                  label="Apellido Materno" 
-                  name="lastNameMaterno"
-                  placeholder="Rios" 
-                  value={formData.lastNameMaterno}
-                  onChange={handleChange}
-                />
-              </div>
-              
-              <Input 
-                label="Fecha de Nacimiento" 
-                name="birthDate"
-                type="date" 
-                value={formData.birthDate}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.birthDate ? errors.birthDate : ''}
-              />
-              
-              <Input 
-                label="Teléfono" 
-                name="phone"
-                placeholder="987654321" 
-                value={formData.phone}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.phone ? errors.phone : ''}
-              />
+        {globalError && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+              <AlertCircle size={18} className="text-red-600 shrink-0"/>
+              <p className="text-[14px] text-red-800 font-medium">{globalError}</p>
             </div>
-          </Card>
+        )}
 
-          {(formData.role === 'Comerciante' || formData.role === 'Cliente') && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
             <Card className="p-10">
               <h3 className="text-[20px] font-display font-extrabold mb-8 flex items-center gap-2">
-                <Store size={20} className="text-brand-camel" /> Información adicional
+                <Users size={20} className="text-brand-camel"/> Persona
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <Input 
-                  label={formData.role === 'Comerciante' ? "RUC (Obligatorio)" : "RUC (Opcional)"} 
-                  name="ruc"
-                  placeholder="20123456789" 
-                  value={formData.ruc}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.ruc ? errors.ruc : ''}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                <Select label="Rol del sistema" name="role" value={form.role} onChange={handleChange}>
+                  <option value="SYSTEM_ADMIN">Administrador</option>
+                  <option value="MERCHANT">Comerciante</option>
+                  <option value="CUSTOMER">Cliente</option>
+                </Select>
+
+                {/* Tienda según rol */}
+                {form.role === 'SYSTEM_ADMIN' && (
+                    <Input label="Tienda asociada" value="Global (Entorno administrativo)" disabled/>
+                )}
+                {form.role === 'MERCHANT' && (
+                    <div className="space-y-3">
+                      <Select label="Asignar tiendas (Una o muchas)" value=""
+                              onChange={e => {
+                                const s = stores.find(st => st.id === Number(e.target.value));
+                                if (s) addStore(s.id, s.storeName);
+                              }}>
+                        <option value="">Seleccionar tienda...</option>
+                        {stores
+                            .filter(s => !selectedMerchantStores.find(ms => ms.id === s.id))
+                            .map(s => <option key={s.id} value={s.id}>{s.storeName}</option>)}
+                      </Select>
+                      {selectedMerchantStores.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 p-3 bg-neutral-50/50 rounded-2xl border border-dashed border-neutral-200">
+                            {selectedMerchantStores.map(s => (
+                                <Badge key={s.id} variant="selected" onClick={() => removeStore(s.id)} className="cursor-pointer">
+                                  {s.name} <span className="ml-1 opacity-60">×</span>
+                                </Badge>
+                            ))}
+                          </div>
+                      ) : (
+                          <p className="text-[10px] text-red-400 font-bold uppercase ml-1">
+                            {errors.storeId || 'Debes seleccionar al menos una tienda'}
+                          </p>
+                      )}
+                    </div>
+                )}
+                {form.role === 'CUSTOMER' && (
+                    <Select label="Tienda asociada (Solo una) *" name="storeId"
+                            value={form.storeId} onChange={handleChange}>
+                      <option value="">Seleccionar...</option>
+                      {stores.map(s => <option key={s.id} value={s.id}>{s.storeName}</option>)}
+                    </Select>
+                )}
+
+                <Select label="Tipo de documento" name="docType" value={form.docType} onChange={handleChange}>
+                  <option value="DNI">DNI</option>
+                  <option value="PASSPORT">Pasaporte</option>
+                  <option value="FOREIGN_ID_CARD">Carnet de extranjería</option>
+                </Select>
+
+                <Input label="Número de documento *" name="docNumber"
+                       placeholder={form.docType === 'DNI' ? '8 dígitos numéricos' : 'Número de documento'}
+                       value={form.docNumber} onChange={handleChange} onBlur={handleBlur}
+                       error={touched.docNumber ? errors.docNumber : ''}/>
+
+                <Input label="Nombre *" name="firstName" placeholder="Luciana"
+                       value={form.firstName} onChange={handleChange} onBlur={handleBlur}
+                       error={touched.firstName ? errors.firstName : ''}/>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Apellido Paterno *" name="paternalSurname" placeholder="Vega"
+                         value={form.paternalSurname} onChange={handleChange} onBlur={handleBlur}
+                         error={touched.paternalSurname ? errors.paternalSurname : ''}/>
+                  <Input label="Apellido Materno *" name="maternalSurname" placeholder="Rios"
+                         value={form.maternalSurname} onChange={handleChange} onBlur={handleBlur}
+                         error={touched.maternalSurname ? errors.maternalSurname : ''}/>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-neutral-500 mb-1.5 ml-1 uppercase">
+                    Fecha de Nacimiento * <span className="text-neutral-400 font-normal normal-case">(debe ser mayor de 18 años)</span>
+                  </label>
+                  <input type="date" name="birthDate" max={maxBirthDate}
+                         value={form.birthDate} onChange={handleChange} onBlur={handleBlur}
+                         className={`w-full px-5 py-3.5 bg-white border ${touched.birthDate && errors.birthDate ? 'border-red-400' : 'border-neutral-200'} rounded-2xl text-[14px] font-medium outline-none focus:border-brand-camel transition-colors`}/>
+                  {touched.birthDate && errors.birthDate && (
+                      <p className="text-[12px] text-red-500 font-bold mt-1 ml-1">{errors.birthDate}</p>
+                  )}
+                </div>
+
+                <Input label="Teléfono" name="phone" placeholder="987654321"
+                       value={form.phone} onChange={handleChange} onBlur={handleBlur}
+                       error={touched.phone ? errors.phone : ''}/>
+
+                <Select label="Género" name="gender" value={form.gender} onChange={handleChange}>
+                  <option value="MALE">Masculino</option>
+                  <option value="FEMALE">Femenino</option>
+                  <option value="NOT_SPECIFIED">No especificado</option>
+                </Select>
               </div>
             </Card>
-          )}
-        </div>
 
-        <div className="space-y-8">
-          <Card className="p-10 border-2 border-brand-camel">
-            <h3 className="text-[20px] font-display font-extrabold mb-8 flex items-center gap-2">
-              <CheckCircle2 size={20} className="text-brand-camel" /> Cuenta de Usuario
-            </h3>
-            <div className="space-y-6">
-              <Input 
-                label="Nombre de usuario (Email)" 
-                name="email"
-                placeholder="luciana@street.com" 
-                value={formData.email} 
-                onChange={handleChange} 
-                onBlur={handleBlur}
-                error={touched.email ? errors.email : ''}
-              />
-              <div>
-                <Input 
-                  label="Contraseña (Fija)" 
-                  name="password"
-                  type="text" 
-                  value={formData.password}
-                  disabled
-                  className="bg-neutral-100/50 cursor-not-allowed opacity-70"
-                />
-                <p className="text-[10px] text-brand-camel mt-2 font-bold uppercase ml-1">Contraseña de acceso inicial no modificable</p>
+            {form.role === 'MERCHANT' && (
+                <Card className="p-10">
+                  <h3 className="text-[20px] font-display font-extrabold mb-8 flex items-center gap-2">
+                    <Store size={20} className="text-brand-camel"/> Información adicional
+                  </h3>
+                  <Input label="RUC (Obligatorio) *" name="ruc" placeholder="20123456789"
+                         value={form.ruc} onChange={handleChange} onBlur={handleBlur}
+                         error={touched.ruc ? errors.ruc : ''}/>
+                </Card>
+            )}
+          </div>
+
+          <div className="space-y-8">
+            <Card className="p-10 border-2 border-brand-camel">
+              <h3 className="text-[20px] font-display font-extrabold mb-8 flex items-center gap-2">
+                <CheckCircle2 size={20} className="text-brand-camel"/> Cuenta de Usuario
+              </h3>
+              <div className="space-y-6">
+                <Input label="Email *" name="email" placeholder="luciana@street.com"
+                       value={form.email} onChange={handleChange} onBlur={handleBlur}
+                       error={touched.email ? errors.email : ''}/>
+                <div>
+                  <Input label="Contraseña (Fija)" name="password" type="text"
+                         value={form.password} disabled
+                         className="bg-neutral-100/50 cursor-not-allowed opacity-70"/>
+                  <p className="text-[10px] text-brand-camel mt-2 font-bold uppercase ml-1">
+                    Contraseña de acceso inicial no modificable
+                  </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="mt-12 space-y-3">
-              <Button 
-                className="w-full h-14 rounded-2xl" 
-                onClick={handleSave}
-                disabled={!isFormValid()}
-              >
-                Confirmar registro
-              </Button>
-              <Button variant="secondary" className="w-full h-14 rounded-2xl" onClick={() => router.back()}>Cancelar</Button>
-            </div>
-          </Card>
-
-          <div className="p-8 bg-brand-camel/10 rounded-[32px] border border-brand-camel/20">
-            <p className="text-[13px] font-bold text-brand-camel leading-relaxed">
-              Al crear el usuario, se le enviará un correo de bienvenida con las instrucciones para su primera sesión y configuración.
-            </p>
+              <div className="mt-12 space-y-3">
+                <Button className={`w-full h-14 rounded-2xl transition-opacity ${!formValid ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        onClick={handleSave} disabled={loading || !formValid}>
+                  {loading
+                      ? <><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</>
+                      : 'Confirmar registro'}
+                </Button>
+                {!formValid && (
+                    <p className="text-[11px] text-neutral-400 text-center font-medium">
+                      Completa todos los campos obligatorios para continuar
+                    </p>
+                )}
+                <Button variant="secondary" className="w-full h-14 rounded-2xl"
+                        onClick={() => router.push('/admin/usuarios')}>
+                  Cancelar
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
-    </div>
   );
 }

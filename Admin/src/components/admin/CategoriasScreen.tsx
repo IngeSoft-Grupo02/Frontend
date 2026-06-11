@@ -55,7 +55,7 @@ export function CategoriasScreen({ categories, stores, onCreate, onUpdate, onDel
     setNameTouched(true);
     if (!isFormValid) return;
     if (showModal === 'create') onCreate(formData);
-    else if (selectedCategory) onUpdate(selectedCategory.id, formData);
+    else if (selectedCategory) onUpdate(selectedCategory.name, formData);
     handleCloseModal();
   };
 
@@ -113,7 +113,7 @@ export function CategoriasScreen({ categories, stores, onCreate, onUpdate, onDel
                   <td className="py-5 px-8 font-extrabold text-neutral-900">{cat.name}</td>
                   <td className="py-5 px-4 font-medium text-neutral-600">{cat.description}</td>
                   <td className="py-5 px-4">
-                    <Badge variant={cat.status === 'Activa' ? 'active' : 'pending'}>{cat.status}</Badge>
+                    <Badge variant={cat.status === 'Activa' ? 'activo' : 'pendiente'}>{cat.status}</Badge>
                   </td>
                   <td className="py-5 px-4 text-right font-mono text-[12px] text-neutral-500">{cat.use || 0} tiendas</td>
                   <td className="py-5 px-8 text-right">
@@ -121,10 +121,10 @@ export function CategoriasScreen({ categories, stores, onCreate, onUpdate, onDel
                       <button onClick={() => handleOpenEdit(cat)} className="p-2 hover:bg-brand-camel/10 rounded-lg transition-colors text-brand-camel">
                         <Edit2 size={16} />
                       </button>
-                      <button onClick={() => onUpdate(cat.id, { status: cat.status === 'Activa' ? 'Inactiva' : 'Activa' })} className="px-3 py-1 text-[11px] font-bold hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500">
+                      <button onClick={() => onUpdate(cat.name, { status: cat.status === 'Activa' ? 'Inactiva' : 'Activa' })} className="px-3 py-1 text-[11px] font-bold hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500">
                         {cat.status === 'Activa' ? 'Inactivar' : 'Activar'}
                       </button>
-                      <button onClick={() => onDelete(cat.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
+                      <button onClick={() => onDelete(cat.name)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
                         <Trash2 size={16} />
                       </button>
                     </div>

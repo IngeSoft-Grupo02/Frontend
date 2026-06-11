@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
-  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'active' | 'suspended' | 'inactive' | 'pending' | 'alerta' | 'selected';
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'active' | 'suspended' | 'inactive' | 'pending' | 'alerta' | 'selected' | 'activo' | 'suspendido' | 'exito' | 'pendiente' | 'seleccionado';
   className?: string;
   onClick?: () => void;
 }

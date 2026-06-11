@@ -1,81 +1,132 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// src/lib/api.ts — Cliente HTTP centralizado Kingstore Admin
 
-export interface LoginResponse {
-  id: number;
-  email: string;
-  role: 'SYSTEM_ADMIN' | 'MERCHANT' | 'CUSTOMER';
-  storeSlug?: string | null;
-  token: string;
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+export function getAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 interface FetchOptions extends RequestInit {
-  params?: Record<string, string | number | boolean>;
+  params?: Record<string, string | number | boolean | undefined>;
+  auth?: boolean;
 }
 
-function authToken() {
-  if (typeof window === 'undefined') return null;
-  const token = window.localStorage.getItem('adminToken');
-  return token ? `Bearer ${token}` : null;
-}
-
-async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { params, ...restOptions } = options;
-  const url = new URL(`${API_URL}${endpoint}`);
-
+async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  const { params, auth = true, headers, ...rest } = options;
+  const url = new URL(`${API_BASE}${endpoint}`);
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, String(value));
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.append(k, String(v));
     });
   }
-
-  const headers = new Headers(restOptions.headers);
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-  const token = authToken();
-  if (token) {
-    headers.set('Authorization', token);
-  }
-
   const response = await fetch(url.toString(), {
-    ...restOptions,
-    headers,
+    headers: { 'Content-Type': 'application/json', ...(auth ? getAuthHeader() : {}), ...headers },
+    ...rest,
   });
-
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || `Error ${response.status}: ${endpoint}`);
+    const msg = await response.text().catch(() => `Error ${response.status}`);
+    throw new Error(msg || `Error ${response.status}: ${endpoint}`);
   }
-
-  return data as T;
+  const text = await response.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
 }
+
+async function requestMultipart<T>(endpoint: string, body: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST', headers: { ...getAuthHeader() }, body,
+  });
+  if (!response.ok) {
+    const msg = await response.text().catch(() => `Error ${response.status}`);
+    throw new Error(msg || `Error ${response.status}`);
+  }
+  const text = await response.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
+}
+
+// ── Tipos ─────────────────────────────────────────────────────────
+
+export interface StoreCategoryResponse {
+  id: number; storeCategoryName: string; active: boolean;
+}
+
+export interface StoreResponse {
+  id: number; storeName: string; slug: string; description: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null; secondaryColor: string | null; tertiaryColor: string | null;
+  storeStatus: string; createdAt: string;
+  category?: StoreCategoryResponse | null;
+  merchant?: { id: number; ruc: string; firstName: string; paternalSurname: string;
+    userAccount?: { id: number; email: string } } | null;
+}
+
+export interface UserResponseDTO {
+  id: number; email: string; active: boolean; role: string;
+  firstName: string; paternalSurname: string; maternalSurname: string;
+  documentNumber: string; documentType: string; phone: string;
+  ruc?: string; storeName?: string; storeId?: number;
+}
+
+export interface MerchantResponseDTO {
+  id: number; email: string; firstName: string; paternalSurname: string; ruc: string;
+}
+
+export interface AuditLogResponse {
+  id: number; timestamp: string; userEmail: string; role: string;
+  tenantSlug: string; httpMethod: string; endpoint: string;
+  statusCode: number; level: string; description: string;
+}
+
+// ── API ───────────────────────────────────────────────────────────
 
 export const api = {
   auth: {
-    login: (email: string, password: string) => fetchApi<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
+    login: (email: string, password: string) =>
+        request<{ id: number; email: string; role: string; storeSlug: string | null; token: string }>(
+            '/auth/login', { method: 'POST', auth: false, body: JSON.stringify({ email, password }) }
+        ),
   },
   stores: {
-    getAll: (filters?: any) => fetchApi('/admin/stores', { params: filters }),
-    getById: (id: string) => fetchApi(`/admin/stores/${id}`),
-    create: (data: any) => fetchApi('/admin/stores', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchApi(`/admin/stores/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetchApi(`/admin/stores/${id}`, { method: 'DELETE' }),
+    getAll:     (params?: { search?: string; status?: string }) => request<StoreResponse[]>('/admin/stores', { params }),
+    getById:    (id: number)             => request<StoreResponse>(`/admin/stores/${id}`),
+    create:     (data: any)              => request<StoreResponse>('/admin/stores', { method: 'POST', body: JSON.stringify(data) }),
+    update:     (id: number, data: any)  => request<StoreResponse>(`/admin/stores/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    suspend:    (id: number)             => request<string>(`/admin/stores/${id}/suspend`, { method: 'PATCH' }),
+    reactivate: (id: number)             => request<string>(`/admin/stores/${id}/reactivate`, { method: 'PATCH' }),
+    deactivate: (id: number)             => request<string>(`/admin/stores/${id}/deactivate`, { method: 'PATCH' }),
+    getMetrics: ()                       => request<any>('/admin/stores/metrics'),
   },
   users: {
-    getAll: (filters?: any) => fetchApi('/admin/users', { params: filters }),
-    create: (data: any) => fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchApi(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    getAll:     (params?: { search?: string }) => request<UserResponseDTO[]>('/admin/users', { params }),
+    getById:    (id: number)             => request<UserResponseDTO>(`/admin/users/${id}`),
+    create:     (data: any)              => request<UserResponseDTO>('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+    update:     (id: number, data: any)  => request<UserResponseDTO>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deactivate: (id: number)             => request<string>(`/admin/users/${id}/deactivate`, { method: 'PATCH' }),
+    reactivate: (id: number)             => request<string>(`/admin/users/${id}/reactivate`, { method: 'PATCH' }),
+    getMerchants: (params?: { search?: string }) => request<MerchantResponseDTO[]>('/admin/users/merchants', { params }),
   },
   audit: {
-    getLogs: (filters?: any) => fetchApi('/admin/audit', { params: filters }),
+    getAll: (params?: { level?: string; userEmail?: string; tenantSlug?: string; range?: string }) =>
+        request<AuditLogResponse[]>('/admin/audit', { params }),
   },
-  system: {
-    getConfig: () => fetchApi('/admin/system/config'),
-    updateConfig: (data: any) => fetchApi('/admin/system/config', { method: 'PUT', body: JSON.stringify(data) }),
+  categories: {
+    getAll:     (params?: { search?: string }) => request<{ id: number; storeCategoryName: string; active: boolean }[]>('/admin/categories', { params }),
+    create:     (data: { storeCategoryName: string }) => request<{ id: number; storeCategoryName: string }>('/admin/categories', { method: 'POST', body: JSON.stringify(data) }),
+    update:     (id: number, data: { storeCategoryName: string }) => request<{ id: number; storeCategoryName: string }>(`/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deactivate: (id: number) => request<string>(`/admin/categories/${id}/deactivate`, { method: 'PATCH' }),
+    reactivate: (id: number) => request<string>(`/admin/categories/${id}/reactivate`, { method: 'PATCH' }),
+    delete:     (id: number) => request<string>(`/admin/categories/${id}`, { method: 'DELETE' }),
+  },
+  bulk: {
+    upload: (merchants?: File, stores?: File, logos?: File) => {
+      const fd = new FormData();
+      if (merchants) fd.append('merchants', merchants);
+      if (stores)    fd.append('stores',    stores);
+      if (logos)     fd.append('logos',     logos);
+      return requestMultipart<any>('/admin/bulk/upload', fd);
+    },
+    existingEmails: () => request<string[]>('/admin/bulk/existing-emails'),
+    existingStores: () => request<{ storeNames: string[]; merchantEmails: string[] }>('/admin/bulk/existing-stores'),
   },
 };
