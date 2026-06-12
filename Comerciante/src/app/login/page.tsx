@@ -53,13 +53,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-white font-sans overflow-y-auto">
-      <div className="hidden lg:flex flex-col w-[42%] bg-brand-black p-10 justify-between relative overflow-hidden shrink-0">
-        <div className="z-10 animate-in slide-in-from-left duration-700">
-          <div className="h-1.5 w-12 bg-brand-camel mb-5 rounded-full"></div>
-          <h1 className="text-white text-[22px] font-extrabold tracking-tight">STREET/CORE</h1>
-          <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest mt-1">Merchant Console v1.0</p>
-        </div>
-
+      <div className="hidden lg:flex flex-col w-[42%] bg-brand-black p-10 justify-center relative overflow-hidden shrink-0">
         <div className="z-10 max-w-[340px] animate-in slide-in-from-left duration-1000 delay-200">
           <h2 className="text-white text-[52px] font-extrabold leading-[1.05] tracking-tighter">
             Potencia <br />
@@ -151,18 +145,6 @@ export default function LoginPage() {
               {isLoading ? 'Verificando...' : 'Iniciar sesión'}
             </Button>
           </form>
-
-          <footer className="pt-4 text-center">
-            <div className="flex items-center gap-6 mb-5">
-              <div className="h-[1.5px] flex-1 bg-brand-neutral-border opacity-50"></div>
-              <span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">O</span>
-              <div className="h-[1.5px] flex-1 bg-brand-neutral-border opacity-50"></div>
-            </div>
-
-            <button type="button" className="text-[14px] font-extrabold text-brand-black bg-brand-neutral-mid px-6 py-3 rounded-2xl hover:bg-brand-neutral-border transition-colors w-full">
-              Contactar Soporte Tecnico
-            </button>
-          </footer>
         </div>
       </div>
     </div>
