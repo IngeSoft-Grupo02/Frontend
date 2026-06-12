@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/comerciante',
   reactStrictMode: true,
   swcMinify: true,
   images: {
