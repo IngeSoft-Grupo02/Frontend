@@ -7,15 +7,15 @@ import Sidebar from '@/components/admin/Sidebar';
 import TopBar from '@/components/admin/TopBar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn } = useApp();
+  const { isLoggedIn, isAuthInitialized } = useApp();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoggedIn) router.push('/login');
-  }, [isLoggedIn, router]);
+    if (isAuthInitialized && !isLoggedIn) router.push('/login');
+  }, [isAuthInitialized, isLoggedIn, router]);
 
-  if (!isLoggedIn) return null;
+  if (!isAuthInitialized || !isLoggedIn) return null;
 
   const getPageMeta = () => {
     if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };

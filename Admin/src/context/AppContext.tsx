@@ -1,7 +1,7 @@
 'use client';
 
 import { MOCK_AUDIT, MOCK_CATEGORIES, MOCK_STORES, MOCK_USERS } from '@/lib/mockData';
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Define los tipos
 interface Store {
@@ -46,6 +46,7 @@ interface AuditLog {
 
 interface AppContextType {
   isLoggedIn: boolean;
+  isAuthInitialized: boolean;
   currentUser: any;
   login: (email: string, password: string, userData?: any) => boolean;
   logout: () => void;
@@ -66,11 +67,34 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
   const [auditLogs] = useState<AuditLog[]>(MOCK_AUDIT);
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('adminUser');
+      if (token && storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser?.role === 'Super admin') {
+          setCurrentUser(parsedUser);
+          setIsLoggedIn(true);
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('adminUser');
+        }
+      }
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('adminUser');
+    } finally {
+      setIsAuthInitialized(true);
+    }
+  }, []);
 
   const login = (email: string, password: string, userData?: any) => {
     // Si viene userData del backend, úsalo directamente
@@ -91,6 +115,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('adminUser');
   };
 
   const addStore = (store: any) => {
@@ -128,6 +154,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
       <AppContext.Provider value={{
         isLoggedIn,
+        isAuthInitialized,
         currentUser,
         login,
         logout,

@@ -51,12 +51,18 @@ export default function LoginPage() {
         localStorage.setItem('token', data.token);
       }
 
-      // Actualizar contexto con datos reales del backend
-      login(email, password, {
+      const adminUser = {
+        id: data.id,
         name: data.email,
         email: data.email,
         role: 'Super admin',
-      });
+      };
+
+      // Persistir datos mínimos del usuario para rehidratar la sesión al refrescar
+      localStorage.setItem('adminUser', JSON.stringify(adminUser));
+
+      // Actualizar contexto con datos reales del backend
+      login(email, password, adminUser);
 
       router.push('/admin');
 
