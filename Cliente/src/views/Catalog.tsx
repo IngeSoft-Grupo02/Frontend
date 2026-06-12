@@ -63,8 +63,12 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
 
   // Filter and sort products
   const storeProducts = useMemo(() => {
-    let filtered = PRODUCTS.filter(p => !p.storeId || p.storeId === store.id);
-    
+    // Las tiendas reales usan slugs como id; los productos mock siguen referenciando
+    // storeId de tiendas de prueba (s4/ur/df/la). Si no hay match, mostramos todo el
+    // catálogo mock en el contexto de la tienda seleccionada.
+    const byStore = PRODUCTS.filter(p => !p.storeId || p.storeId === store.id);
+    let filtered = byStore.length > 0 ? byStore : PRODUCTS;
+
     if (searchQuery) {
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

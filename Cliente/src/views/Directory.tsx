@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { MessageCircle, Mail } from 'lucide-react';
+import { MessageCircle, Mail, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, View } from '../types';
-import { STORES } from '../constants';
+import { fetchPublicStores, toStore, ApiError } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 
@@ -31,11 +31,36 @@ interface DirectoryProps {
 
 export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate, onLogout }) => {
   const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const categories = ['Todas', 'POLO', 'CAMISA', 'VESTIDO', 'CASACA'];
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredStores = selectedCategory === 'Todas' 
-    ? STORES 
-    : STORES.filter(store => store.category === selectedCategory);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(null);
+    fetchPublicStores()
+      .then((data) => {
+        if (!active) return;
+        setStores(data.map(toStore));
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof ApiError ? err.message : 'No se pudieron cargar las tiendas. Intenta nuevamente.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const categories = ['Todas', ...Array.from(new Set(stores.map((store) => store.category).filter(Boolean)))];
+
+  const filteredStores = selectedCategory === 'Todas'
+    ? stores
+    : stores.filter(store => store.category === selectedCategory);
 
   return (
     <div className="min-h-screen pb-20 transition-colors duration-300 animate-fade-in" style={{ backgroundColor: '#FDFBF7', color: '#0F1011' }}>
@@ -100,6 +125,27 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
       </div>
 
       {/* Store Grid */}
+      {loading && (
+        <div className="max-w-7xl mx-auto px-10 mt-12 flex flex-col items-center justify-center py-20 gap-3 text-[#0F1011]">
+          <Loader2 size={32} className="animate-spin opacity-60" />
+          <p className="text-[14px] font-semibold opacity-60">Cargando tiendas...</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="max-w-7xl mx-auto px-10 mt-12 flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <AlertTriangle size={32} className="text-red-500" />
+          <p className="text-[14px] font-semibold text-red-600">{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && filteredStores.length === 0 && (
+        <div className="max-w-7xl mx-auto px-10 mt-12 flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <p className="text-[14px] font-semibold opacity-60">No hay tiendas disponibles por el momento.</p>
+        </div>
+      )}
+
+      {!loading && !error && filteredStores.length > 0 && (
       <div className="max-w-7xl mx-auto px-10 mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredStores.map((store, i) => {
           const storeBgColor = store.primaryColor || store.color;
@@ -177,6 +223,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
           );
         })}
       </div>
+      )}
 
       {/* Footer Info Section */}
       <footer className="max-w-7xl mx-auto px-10 mt-32 pb-20 text-center">

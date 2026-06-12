@@ -52,6 +52,22 @@ export interface Store {
   primaryColor?: string;
   secondaryColor?: string;
   tertiaryColor?: string;
+  slug?: string;
+  storeName?: string;
+  logoUrl?: string | null;
+}
+
+// DTO real expuesto por GET /stores/public y GET /stores/public/{slug}
+export interface StorePublicDTO {
+  id: number;
+  storeName: string;
+  slug: string;
+  description: string | null;
+  logoUrl: string | null;
+  category: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  tertiaryColor: string | null;
 }
 
 export interface Product {
@@ -77,6 +93,48 @@ export interface User {
   documentType?: TipoDocumento;
   documentId?: string;
   storeId: string;
+}
+
+// Perfil real devuelto por GET /stores/{slug}/customers/me
+export interface CustomerUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  documentType: string;
+  documentNumber: string;
+  role: string;
+  storeSlug: string;
+}
+
+// Body de POST /stores/{slug}/auth/login
+export interface LoginRequestDTO {
+  email: string;
+  password: string;
+}
+
+// Respuesta de POST /stores/{slug}/auth/login
+export interface LoginResponseDTO {
+  id: number;
+  email: string;
+  role: string;
+  storeSlug: string;
+  token: string;
+}
+
+// Body de POST /stores/{slug}/customers/register
+export interface RegisterCustomerDTO {
+  email: string;
+  password: string;
+  documentNumber: string;
+  documentType: string;
+  firstName: string;
+  paternalSurname: string;
+  maternalSurname: string;
+  birthDate: string;
+  phone: string;
+  gender: string;
 }
 
 export interface Quote {

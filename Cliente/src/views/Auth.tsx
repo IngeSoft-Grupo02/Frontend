@@ -5,30 +5,53 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, Lock, Mail, ArrowRight, ArrowLeft, Store as StoreIcon, ShieldCheck, CreditCard, Phone, Calendar } from 'lucide-react';
-import { Store, View, TipoDocumento } from '../types';
+import { User, Lock, Mail, ArrowRight, ArrowLeft, Store as StoreIcon, ShieldCheck, CreditCard, Phone, Calendar, Users, AlertCircle } from 'lucide-react';
+import { Store, View, RegisterCustomerDTO } from '../types';
 import { Button } from '../components/ui/Button';
+
+type Gender = 'MALE' | 'FEMALE' | 'NOT_SPECIFIED';
+type DocumentTypeValue = 'DNI' | 'PASSPORT' | 'FOREIGN_ID_CARD';
+
+const DOCUMENT_TYPE_OPTIONS: { value: DocumentTypeValue; label: string }[] = [
+  { value: 'DNI', label: 'DNI' },
+  { value: 'PASSPORT', label: 'Pasaporte' },
+  { value: 'FOREIGN_ID_CARD', label: 'Carné de extranjería' },
+];
+
+// Longitud máxima del número de documento según tipo (DNI=8, CE=9-15, Pasaporte=6-20)
+const DOCUMENT_NUMBER_MAX_LENGTH: Record<DocumentTypeValue, number> = {
+  DNI: 8,
+  FOREIGN_ID_CARD: 15,
+  PASSPORT: 20,
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_REGEX = /^[A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-\s]+$/;
 
 interface AuthProps {
   store: Store;
   type: 'login' | 'register' | 'forgot-password' | 'verification' | 'reset-password';
   onNavigate: (view: View) => void;
-  onLogin: () => void;
+  onLogin: (email: string, password: string) => void;
+  onRegister?: (dto: RegisterCustomerDTO) => void;
+  authError?: string | null;
+  authLoading?: boolean;
 }
 
-export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) => {
+export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, onRegister, authError, authLoading }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
     numeroDocumento: '',
-    tipoDocumento: TipoDocumento.DNI,
+    documentType: 'DNI' as DocumentTypeValue,
     nombres: '',
     apellidoPaterno: '',
     apellidoMaterno: '',
     fechaNacimiento: '',
     telefono: '',
+    genero: 'NOT_SPECIFIED' as Gender,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,51 +61,78 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
   const passwordRequirements = {
     length: formData.password.length >= 8,
     uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
     number: /[0-9]/.test(formData.password),
+    special: /[^A-Za-z0-9]/.test(formData.password),
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // Email validation
+    const email = formData.email.trim();
+    if (!email || !EMAIL_REGEX.test(email)) {
+      newErrors.email = 'Ingresa un correo electrónico válido';
+    }
+
     // Password validation
-    if (!passwordRequirements.length || !passwordRequirements.uppercase || !passwordRequirements.number) {
-      newErrors.password = 'La contraseña no cumple con los requisitos';
+    if (!passwordRequirements.length) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     }
 
     if (type === 'reset-password' && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
-    // Document validation
-    const docLength = formData.numeroDocumento.length;
-    if (formData.tipoDocumento === TipoDocumento.DNI && docLength !== 8) {
-      newErrors.numeroDocumento = 'El DNI debe tener 8 dígitos';
-    } else if (formData.tipoDocumento === TipoDocumento.CE && (docLength < 9 || docLength > 12)) {
-      newErrors.numeroDocumento = 'El CE debe tener entre 9 y 12 caracteres';
-    } else if (formData.tipoDocumento === TipoDocumento.RUC && docLength !== 11) {
-      newErrors.numeroDocumento = 'El RUC debe tener 11 dígitos';
-    }
+    if (type === 'register') {
+      // Nombres y apellidos
+      const nameFields: { key: 'nombres' | 'apellidoPaterno' | 'apellidoMaterno'; label: string }[] = [
+        { key: 'nombres', label: 'El nombre' },
+        { key: 'apellidoPaterno', label: 'El apellido paterno' },
+        { key: 'apellidoMaterno', label: 'El apellido materno' },
+      ];
+      nameFields.forEach(({ key, label }) => {
+        const value = formData[key].trim();
+        if (!value) {
+          newErrors[key] = `${label} es obligatorio`;
+        } else if (value.length < 2 || value.length > 50) {
+          newErrors[key] = `${label} debe tener entre 2 y 50 caracteres`;
+        } else if (!NAME_REGEX.test(value)) {
+          newErrors[key] = `${label} solo puede contener letras, espacios, guiones y apóstrofes`;
+        }
+      });
 
-    // Phone validation (Peru: 9 digits)
-    const phoneRegex = /^[9][0-9]{8}$/;
-    if (!phoneRegex.test(formData.telefono)) {
-      newErrors.telefono = 'El teléfono debe tener 9 dígitos y empezar con 9';
-    }
+      // Documento: solo dígitos, longitud según tipo
+      const docNumber = formData.numeroDocumento.trim();
+      if (!docNumber) {
+        newErrors.numeroDocumento = 'El número de documento es obligatorio';
+      } else if (!/^\d+$/.test(docNumber)) {
+        newErrors.numeroDocumento = 'El número de documento solo debe contener dígitos';
+      } else if (formData.documentType === 'DNI' && docNumber.length !== 8) {
+        newErrors.numeroDocumento = 'El DNI debe tener 8 dígitos';
+      } else if (formData.documentType === 'FOREIGN_ID_CARD' && (docNumber.length < 9 || docNumber.length > 15)) {
+        newErrors.numeroDocumento = 'El carné de extranjería debe tener entre 9 y 15 dígitos';
+      } else if (formData.documentType === 'PASSPORT' && (docNumber.length < 6 || docNumber.length > 20)) {
+        newErrors.numeroDocumento = 'El pasaporte debe tener entre 6 y 20 dígitos';
+      }
 
-    // Age validation (> 18 years)
-    if (formData.fechaNacimiento) {
-      const birthDate = new Date(formData.fechaNacimiento);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
+      // Teléfono: exactamente 9 dígitos
+      const phone = formData.telefono.trim();
+      if (!/^\d{9}$/.test(phone)) {
+        newErrors.telefono = 'El celular debe tener 9 dígitos';
       }
-      if (age < 18) {
-        newErrors.fechaNacimiento = 'Debes ser mayor de 18 años para registrarte';
+
+      // Fecha de nacimiento: formato válido y no futura
+      if (!formData.fechaNacimiento) {
+        newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
+      } else {
+        const birthDate = new Date(formData.fechaNacimiento);
+        if (Number.isNaN(birthDate.getTime())) {
+          newErrors.fechaNacimiento = 'La fecha de nacimiento no es válida';
+        } else if (birthDate.getTime() > Date.now()) {
+          newErrors.fechaNacimiento = 'La fecha de nacimiento no puede ser una fecha futura';
+        }
       }
-    } else {
-      newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
     }
 
     setErrors(newErrors);
@@ -91,10 +141,25 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (type === 'register' || type === 'reset-password') {
+    if (type === 'register') {
       if (validateForm()) {
-        if (type === 'register') onLogin();
-        else onNavigate(View.AUTH_LOGIN);
+        const dto: RegisterCustomerDTO = {
+          email: formData.email.trim(),
+          password: formData.password,
+          documentNumber: formData.numeroDocumento.trim(),
+          documentType: formData.documentType,
+          firstName: formData.nombres.trim(),
+          paternalSurname: formData.apellidoPaterno.trim(),
+          maternalSurname: formData.apellidoMaterno.trim(),
+          birthDate: formData.fechaNacimiento,
+          phone: formData.telefono.trim(),
+          gender: formData.genero,
+        };
+        onRegister?.(dto);
+      }
+    } else if (type === 'reset-password') {
+      if (validateForm()) {
+        onNavigate(View.AUTH_LOGIN);
       }
     } else if (type === 'forgot-password') {
       // Simulate sending email
@@ -102,7 +167,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
     } else if (type === 'verification') {
       onNavigate(View.AUTH_RESET_PASSWORD);
     } else {
-      onLogin();
+      onLogin(formData.email, formData.password);
     }
   };
 
@@ -137,9 +202,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
         <div className={`w-1.5 h-1.5 rounded-full ${passwordRequirements.uppercase ? 'bg-green-500' : 'bg-gray-300'}`} />
         Al menos 1 mayúscula
       </div>
+      <div className={`flex items-center gap-2 text-[10px] font-bold transition-colors ${passwordRequirements.lowercase ? 'text-green-500' : 'text-gray-400'}`}>
+        <div className={`w-1.5 h-1.5 rounded-full ${passwordRequirements.lowercase ? 'bg-green-500' : 'bg-gray-300'}`} />
+        Al menos 1 minúscula
+      </div>
       <div className={`flex items-center gap-2 text-[10px] font-bold transition-colors ${passwordRequirements.number ? 'text-green-500' : 'text-gray-400'}`}>
         <div className={`w-1.5 h-1.5 rounded-full ${passwordRequirements.number ? 'bg-green-500' : 'bg-gray-300'}`} />
         Al menos 1 número
+      </div>
+      <div className={`flex items-center gap-2 text-[10px] font-bold transition-colors ${passwordRequirements.special ? 'text-green-500' : 'text-gray-400'}`}>
+        <div className={`w-1.5 h-1.5 rounded-full ${passwordRequirements.special ? 'bg-green-500' : 'bg-gray-300'}`} />
+        Al menos 1 caracter especial
       </div>
     </div>
   );
@@ -236,19 +309,30 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <CreditCard size={12} className="opacity-70" /> Tipo de Documento
                   </label>
-                  <select 
-                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border transition-all appearance-none ${errors.tipoDocumento ? 'border-red-500' : 'border-transparent'}`}
-                    value={formData.tipoDocumento}
-                    onChange={(e) => setFormData({...formData, tipoDocumento: e.target.value as TipoDocumento})}
+                  <select
+                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border transition-all appearance-none ${errors.documentType ? 'border-red-500' : 'border-transparent'}`}
+                    value={formData.documentType}
+                    onChange={(e) => {
+                      const documentType = e.target.value as DocumentTypeValue;
+                      const maxLength = DOCUMENT_NUMBER_MAX_LENGTH[documentType];
+                      setFormData({
+                        ...formData,
+                        documentType,
+                        numeroDocumento: formData.numeroDocumento.slice(0, maxLength),
+                      });
+                      setErrors((prev) => ({ ...prev, numeroDocumento: '', documentType: '' }));
+                    }}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
                     }}
                     required
                   >
-                    <option value={TipoDocumento.DNI} className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">DNI</option>
-                    <option value={TipoDocumento.CE} className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">CE</option>
-                    <option value={TipoDocumento.RUC} className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">RUC</option>
+                    {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -256,12 +340,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <CreditCard size={12} className="opacity-70" /> Número de Documento
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={DOCUMENT_NUMBER_MAX_LENGTH[formData.documentType]}
                     placeholder="Número de documento"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.numeroDocumento ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.numeroDocumento}
-                    onChange={(e) => setFormData({...formData, numeroDocumento: e.target.value})}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, DOCUMENT_NUMBER_MAX_LENGTH[formData.documentType]);
+                      setFormData({...formData, numeroDocumento: digitsOnly});
+                    }}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -275,10 +364,10 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <User size={12} className="opacity-70" /> Nombres
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Tus nombres"
-                    className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.nombres ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.nombres}
                     onChange={(e) => setFormData({...formData, nombres: e.target.value})}
                     style={{
@@ -287,16 +376,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     }}
                     required
                   />
+                  {errors.nombres && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.nombres}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <User size={12} className="opacity-70" /> Apellido Paterno
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Primer apellido"
-                    className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.apellidoPaterno ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.apellidoPaterno}
                     onChange={(e) => setFormData({...formData, apellidoPaterno: e.target.value})}
                     style={{
@@ -305,16 +395,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     }}
                     required
                   />
+                  {errors.apellidoPaterno && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.apellidoPaterno}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <User size={12} className="opacity-70" /> Apellido Materno
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Segundo apellido"
-                    className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.apellidoMaterno ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.apellidoMaterno}
                     onChange={(e) => setFormData({...formData, apellidoMaterno: e.target.value})}
                     style={{
@@ -323,6 +414,26 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     }}
                     required
                   />
+                  {errors.apellidoMaterno && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.apellidoMaterno}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
+                    <Users size={12} className="opacity-70" /> Género
+                  </label>
+                  <select
+                    className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent transition-all appearance-none"
+                    value={formData.genero}
+                    onChange={(e) => setFormData({ ...formData, genero: e.target.value as Gender })}
+                    style={{
+                      backgroundColor: 'var(--color-primary)',
+                      color: 'var(--text-on-primary)'
+                    }}
+                  >
+                    <option value="FEMALE" className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">Femenino</option>
+                    <option value="MALE" className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">Masculino</option>
+                    <option value="NOT_SPECIFIED" className="bg-[var(--color-primary)] text-[var(--text-on-primary)]">Prefiero no decir</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
@@ -347,12 +458,14 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <Phone size={12} className="opacity-70" /> Teléfono
                   </label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={9}
                     placeholder="999 999 999"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.telefono ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.telefono}
-                    onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                    onChange={(e) => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 9)})}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -366,10 +479,10 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <Mail size={12} className="opacity-70" /> Correo electrónico
                   </label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     placeholder="tu@correo.com"
-                    className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.email ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     style={{
@@ -378,14 +491,15 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     }}
                     required
                   />
+                  {errors.email && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <Lock size={12} className="opacity-70" /> Contraseña
                   </label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     placeholder="********"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all ${errors.password ? 'border-red-500' : 'border-transparent'}`}
                     value={formData.password}
@@ -396,6 +510,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     }}
                     required
                   />
+                  {errors.password && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.password}</p>}
                   <PasswordHint />
                 </div>
               </div>
@@ -499,10 +614,12 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <Mail size={12} className="opacity-70" /> Correo electrónico
                   </label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     placeholder="tu@correo.com"
                     className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -516,8 +633,8 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                     <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>
                       <Lock size={12} className="opacity-70" /> Contraseña
                     </label>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="text-[11px] font-bold hover:underline cursor-pointer"
                       style={{ color: 'var(--color-tertiary)' }}
                       onClick={() => onNavigate(View.AUTH_FORGOT_PASSWORD)}
@@ -525,10 +642,12 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
                       ¿Olvidaste tu contraseña?
                     </button>
                   </div>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     placeholder="********"
                     className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-tertiary)]/10 transition-all"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -539,13 +658,31 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin }) 
               </>
             )}
 
+            {authError && (
+              <div
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-[13px] font-bold"
+                style={{ backgroundColor: 'rgba(220, 38, 38, 0.12)', color: '#dc2626' }}
+              >
+                <AlertCircle size={16} />
+                <span>{authError}</span>
+              </div>
+            )}
 
-            <Button type="submit" variant="primary" fullWidth className="py-4.5 mt-4 uppercase tracking-widest text-[14px]">
+
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              className="py-4.5 mt-4 uppercase tracking-widest text-[14px]"
+              disabled={(type === 'login' || type === 'register') && authLoading}
+            >
               <span>
-                {type === 'login' ? 'Iniciar sesión' : 
-                 type === 'register' ? 'Crear cuenta ahora' : 
-                 type === 'forgot-password' ? 'Enviar código' : 
-                 type === 'verification' ? 'Verificar código' : 'Restablecer contraseña'}
+                {(type === 'login' || type === 'register') && authLoading
+                  ? 'Procesando...'
+                  : type === 'login' ? 'Iniciar sesión' :
+                    type === 'register' ? 'Crear cuenta ahora' :
+                    type === 'forgot-password' ? 'Enviar código' :
+                    type === 'verification' ? 'Verificar código' : 'Restablecer contraseña'}
               </span>
               <ArrowRight size={18} />
             </Button>
