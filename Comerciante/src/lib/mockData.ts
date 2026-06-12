@@ -35,10 +35,10 @@ export const mockStores: Store[] = [
 ];
 
 export const mockOrders: Order[] = [
-  { id: '#P-00241', storeId: '1', customer: 'Jorge Mendoza', status: 'Aprobado', items: 3, total: 267.00, date: '2026-05-10', hasCustomization: true },
+  { id: '#P-00241', storeId: '1', customer: 'Jorge Mendoza', status: 'Pagado', items: 3, total: 267.00, date: '2026-05-10', hasCustomization: true },
   { id: '#P-00240', storeId: '1', customer: 'Carmen Ríos', status: 'En proceso', items: 12, total: 912.00, date: '2026-05-10', isUrgent: true },
   { id: '#P-00239', storeId: '2', customer: 'Luis Apaza', status: 'Enviado', items: 2, total: 178.00, date: '2026-05-09', hasCustomization: true },
-  { id: '#P-00238', storeId: '2', customer: 'Daniel Ortiz', status: 'Aprobado', items: 1, total: 89.00, date: '2026-05-09' },
+  { id: '#P-00238', storeId: '2', customer: 'Daniel Ortiz', status: 'Pagado', items: 1, total: 89.00, date: '2026-05-09' },
   { id: '#P-00237', storeId: '3', customer: 'Ana Bravo', status: 'Entregado', items: 5, total: 423.00, date: '2026-05-08' },
   { id: '#P-00236', storeId: '3', customer: 'Rafael Soto', status: 'En proceso', items: 8, total: 672.00, date: '2026-05-08' }
 ];

@@ -58,7 +58,6 @@ export default function OrdersPage() {
   }, [storeOrders, filter, searchTerm]);
 
   const nextStatusMap: Record<Order['status'], Order['status'] | null> = {
-    'Aprobado': 'Pagado',
     'Pagado': 'En proceso',
     'En proceso': 'Enviado',
     'Enviado': 'Entregado',
@@ -82,7 +81,6 @@ export default function OrdersPage() {
 
   const handleStepClick = async (stepLabel: string) => {
     const statusMap: Record<string, Order['status']> = {
-      'Aprobado': 'Aprobado',
       'Pagado': 'Pagado',
       'En proceso': 'En proceso',
       'Enviado': 'Enviado',
@@ -100,14 +98,13 @@ export default function OrdersPage() {
   };
 
   const getStatusSteps = (status: Order['status']) => {
-    const allSteps = ['Aprobado', 'Pagado', 'En proceso', 'Enviado', 'Entregado'];
+    const allSteps = ['Pagado', 'En proceso', 'Enviado', 'Entregado'];
     const currentIdx = allSteps.indexOf(status);
     return [
-      { label: 'Aprobado', icon: Check, completed: currentIdx >= 0, active: status === 'Aprobado' },
-      { label: 'Pagado', icon: Check, completed: currentIdx >= 1, active: status === 'Pagado' },
-      { label: 'En proceso', icon: PackageIcon, completed: currentIdx >= 2, active: status === 'En proceso' },
-      { label: 'Enviado', icon: Truck, completed: currentIdx >= 3, active: status === 'Enviado' },
-      { label: 'Entregado', icon: ShoppingBag, completed: currentIdx >= 4, active: status === 'Entregado' },
+      { label: 'Pagado', icon: Check, completed: currentIdx >= 0, active: status === 'Pagado' },
+      { label: 'En proceso', icon: PackageIcon, completed: currentIdx >= 1, active: status === 'En proceso' },
+      { label: 'Enviado', icon: Truck, completed: currentIdx >= 2, active: status === 'Enviado' },
+      { label: 'Entregado', icon: ShoppingBag, completed: currentIdx >= 3, active: status === 'Entregado' },
     ];
   };
 
@@ -148,7 +145,7 @@ export default function OrdersPage() {
                 backgroundSize: '1rem'
               }}
             >
-              {['Todos', 'Aprobado', 'Pagado', 'En proceso', 'Enviado', 'Entregado', 'Cancelado'].map(item => (
+              {['Todos', 'Pagado', 'En proceso', 'Enviado', 'Entregado', 'Cancelado'].map(item => (
                 <option key={item} value={item}>{item === 'Todos' ? 'Ver Todos' : item}</option>
               ))}
             </select>
@@ -194,8 +191,7 @@ export default function OrdersPage() {
                         <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{order.date}</p>
                       </div>
                       <Badge variant={
-                        order.status === 'Aprobado' ? 'info' :
-                        order.status === 'Pagado' ? 'success' :
+                        order.status === 'Pagado' ? 'info' :
                         order.status === 'En proceso' ? 'warning' :
                         order.status === 'Enviado' ? 'secondary' :
                         order.status === 'Entregado' ? 'success' : 'outline'
@@ -240,7 +236,7 @@ export default function OrdersPage() {
                     <div className="space-y-5">
                       <div className="flex flex-wrap items-center gap-3">
                         <p className="text-[12px] font-black text-brand-text-muted uppercase tracking-[0.2em]">{selectedOrder.id} • {selectedOrder.date}</p>
-                        {selectedOrder.status === 'Aprobado' && (
+                        {selectedOrder.status === 'Pagado' && (
                           <Badge variant="danger" className="animate-pulse !py-1 !px-3 font-black">NUEVO PEDIDO</Badge>
                         )}
                       </div>
@@ -248,8 +244,7 @@ export default function OrdersPage() {
                         <h2 className="text-[40px] font-black tracking-tighter text-brand-black leading-none">{selectedOrder.customer}</h2>
                         <div className="flex items-center gap-4 pt-1">
                           <Badge variant={
-                            selectedOrder.status === 'Aprobado' ? 'info' :
-                            selectedOrder.status === 'Pagado' ? 'success' :
+                            selectedOrder.status === 'Pagado' ? 'info' :
                             selectedOrder.status === 'En proceso' ? 'warning' :
                             selectedOrder.status === 'Enviado' ? 'secondary' :
                             selectedOrder.status === 'Entregado' ? 'success' : 'outline'
@@ -290,10 +285,9 @@ export default function OrdersPage() {
                         <div
                           className="absolute left-[5%] top-[20px] h-[3px] bg-brand-black z-0 transition-all duration-700"
                           style={{
-                            width: selectedOrder.status === 'Aprobado' ? '0%' :
-                              selectedOrder.status === 'Pagado' ? '25%' :
-                              selectedOrder.status === 'En proceso' ? '50%' :
-                              selectedOrder.status === 'Enviado' ? '75%' : '95%'
+                            width: selectedOrder.status === 'Pagado' ? '0%' :
+                              selectedOrder.status === 'En proceso' ? '33%' :
+                              selectedOrder.status === 'Enviado' ? '66%' : '95%'
                           }}
                         ></div>
                         {currentSteps.map((step, idx) => (
@@ -372,28 +366,17 @@ export default function OrdersPage() {
                     <section className="space-y-6">
                       <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em]">Detalle de Compra • {selectedOrder.items} ítems</h4>
                       <div className="bg-white border-2 border-brand-neutral-border rounded-[32px] overflow-hidden">
-                        {[1, 2].map((_, idx) => (
-                          <div key={idx} className="p-6 flex items-center justify-between border-b border-brand-neutral-border last:border-0 hover:bg-brand-neutral-light transition-colors">
-                            <div className="flex items-center gap-5">
-                              <div className="w-16 h-20 bg-brand-black rounded-2xl flex items-center justify-center p-2">
-                                <div className="w-full h-full rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                                  <Box size={24} className="text-white/20" />
-                                </div>
-                              </div>
-                              <div>
-                                <h5 className="text-[16px] font-black text-brand-black">Polo Oversized {idx === 0 ? 'Onyx' : 'Vintage Black'}</h5>
-                                <div className="flex items-center gap-3 mt-1">
-                                  <span className="text-[11px] font-black bg-brand-neutral-mid px-2 py-0.5 rounded text-brand-black">M</span>
-                                  <span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">Jersey Algodón • 240gsm</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-[12px] font-black text-brand-text-muted">1 × S/ 89.00</span>
-                              <p className="text-[18px] font-black text-brand-black">S/ 89.00</p>
+                        <div className="p-6 flex items-center gap-5 border-b border-brand-neutral-border">
+                          <div className="w-16 h-20 bg-brand-black rounded-2xl flex items-center justify-center p-2">
+                            <div className="w-full h-full rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                              <Box size={24} className="text-white/20" />
                             </div>
                           </div>
-                        ))}
+                          <div>
+                            <h5 className="text-[16px] font-black text-brand-black">{selectedOrder.items} {selectedOrder.items === 1 ? 'artículo' : 'artículos'}</h5>
+                            <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest mt-1">Pedido {selectedOrder.id}</p>
+                          </div>
+                        </div>
 
                         <div className="p-8 space-y-3 bg-brand-neutral-light border-t-2 border-brand-neutral-border">
                           <span className="text-[14px] font-black uppercase tracking-[0.3em] text-brand-black">Total Transacción</span>

@@ -30,7 +30,7 @@ export interface Store {
   };
 }
 
-export type OrderStatus = 'Aprobado' | 'Pagado' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
+export type OrderStatus = 'Pagado' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
 
 export interface Order {
   id: string;
@@ -61,6 +61,7 @@ export interface Quote {
     price: number;
   }[];
   message?: string;
+  observations?: string;
   hasCustomization?: boolean;
   files?: {
     name: string;

@@ -337,7 +337,7 @@ export const mapOrder = (raw: JsonValue): Order => ({
   id: String(raw.id),
   storeId: String(raw.storeId || ''),
   customer: raw.customer || 'Cliente',
-  status: raw.statusLabel || 'Aprobado',
+  status: raw.statusLabel || 'Pagado',
   items: Number(raw.items || 0),
   total: Number(raw.total || 0),
   date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10)
@@ -357,8 +357,23 @@ export const mapQuote = (raw: JsonValue): Quote => ({
     quantity: Number(item.quantity || 0),
     price: Number(item.price || 0)
   })),
-  message: raw.description || raw.observations || ''
+  message: raw.description || raw.observations || '',
+  observations: raw.observations || undefined
 });
+
+const ORDER_STATUS_TO_BACKEND: Record<Order['status'], string> = {
+  'Pagado': 'PAYMENT_CONFIRMED',
+  'En proceso': 'IN_PREPARATION',
+  'Enviado': 'IN_TRANSIT',
+  'Entregado': 'DELIVERED',
+  'Cancelado': 'CANCELLED'
+};
+
+const QUOTE_STATUS_TO_BACKEND: Record<Quote['status'], string> = {
+  'Pendiente': 'PENDING',
+  'Aprobada': 'APPROVED',
+  'Rechazada': 'REJECTED'
+};
 
 export const merchantApi = {
   async login(email: string, password: string): Promise<LoginResult> {
@@ -498,11 +513,11 @@ export const merchantApi = {
   orders: (storeId?: string) => request<JsonValue[]>(`/merchant/orders${withStore(storeId)}`).then(list => list.map(mapOrder)),
   updateOrderStatus: (id: string, status: Order['status'], storeId?: string) => request<JsonValue>(`/merchant/orders/${id}/status${withStore(storeId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status: ORDER_STATUS_TO_BACKEND[status] })
   }).then(mapOrder),
   quotes: (storeId?: string) => request<JsonValue[]>(`/merchant/quotations${withStore(storeId)}`).then(list => list.map(mapQuote)),
-  updateQuoteStatus: (id: string, status: Quote['status'], storeId?: string) => request<JsonValue>(`/merchant/quotations/${id}/respond${withStore(storeId)}`, {
+  updateQuoteStatus: (id: string, status: Quote['status'], observations?: string, storeId?: string) => request<JsonValue>(`/merchant/quotations/${id}/respond${withStore(storeId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status: QUOTE_STATUS_TO_BACKEND[status], observations: observations ?? null })
   }).then(mapQuote)
 };

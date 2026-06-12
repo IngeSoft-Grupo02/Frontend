@@ -301,7 +301,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setQuotes(prev => prev.map(quote => quote.id === id ? merged : quote));
       return merged;
     }
-    const updated = await merchantApi.updateQuoteStatus(id, updates.status, store.id);
+    const updated = await merchantApi.updateQuoteStatus(id, updates.status, updates.observations, store.id);
     setQuotes(prev => prev.map(quote => quote.id === id ? updated : quote));
     return updated;
   }, [hasBackendSession, quotes, store.id]);

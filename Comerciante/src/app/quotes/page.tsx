@@ -83,15 +83,37 @@ export default function QuotesPage() {
     };
   }, [storeQuotes, store.customizationIncrement]);
 
-  const handleStatusUpdate = async (status: Quote['status']) => {
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
+
+  const handleStatusUpdate = async (status: Quote['status'], observations?: string) => {
     if (selectedQuoteId) {
       try {
         setActionError('');
-        await updateQuote(selectedQuoteId, { status });
+        await updateQuote(selectedQuoteId, { status, observations });
       } catch (error) {
         setActionError(error instanceof Error ? error.message : 'No se pudo actualizar la cotización');
       }
     }
+  };
+
+  const handleOpenRejectModal = () => {
+    setRejectReason('');
+    setRejectError('');
+    setIsRejectModalOpen(true);
+  };
+
+  const handleConfirmReject = async () => {
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setRejectError('Debes indicar un motivo de rechazo');
+      return;
+    }
+    await handleStatusUpdate('Rechazada', reason);
+    setIsRejectModalOpen(false);
+    setRejectReason('');
+    setRejectError('');
   };
 
   return (
@@ -370,7 +392,7 @@ export default function QuotesPage() {
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                      <Button onClick={() => handleStatusUpdate('Rechazada')} variant="outline" className="h-14 px-8 !border-white/10 !bg-white/5 !text-white hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[13px]">
+                      <Button onClick={handleOpenRejectModal} variant="outline" className="h-14 px-8 !border-white/10 !bg-white/5 !text-white hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[13px]">
                         <X size={20} /> Rechazar
                       </Button>
                       <Button onClick={() => handleStatusUpdate('Aprobada')} variant="camel" className="h-14 px-10 gap-2 !rounded-xl font-black text-[14px] uppercase tracking-widest shadow-lg shadow-brand-camel/20 hover:scale-105 active:scale-95 transition-all">
@@ -390,6 +412,48 @@ export default function QuotesPage() {
           </div>
         </div>
       </div>
+
+      {isRejectModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-brand-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-white rounded-[36px] shadow-2xl border-4 border-white overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-8 border-b border-brand-neutral-border flex items-start justify-between gap-6">
+              <div>
+                <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.2em]">Rechazar cotización</p>
+                <h3 className="text-[28px] font-black tracking-tighter text-brand-black">Motivo del rechazo</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRejectModalOpen(false)}
+                className="w-11 h-11 rounded-full border-2 border-brand-neutral-border flex items-center justify-center hover:bg-brand-neutral-light transition-all"
+              >
+                <X size={22} />
+              </button>
+            </div>
+            <div className="p-8 space-y-5">
+              <div className="flex flex-col gap-1.5 w-full">
+                <label className="text-[11px] font-bold text-brand-black uppercase tracking-wider">Motivo (obligatorio)</label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Explica al cliente por qué se rechaza esta cotización..."
+                  rows={4}
+                  className={`bg-white border rounded-xl px-4 py-2.5 text-[13px] outline-none focus:ring-2 focus:ring-brand-black/5 focus:border-brand-black transition-all resize-none ${rejectError ? 'border-red-500' : 'border-brand-neutral-border'}`}
+                  autoFocus
+                />
+                {rejectError && <span className="text-[10px] text-red-500 font-bold uppercase">{rejectError}</span>}
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button variant="secondary" onClick={() => setIsRejectModalOpen(false)} className="h-12 px-6 font-black uppercase text-[13px] !rounded-xl">
+                  Cancelar
+                </Button>
+                <Button onClick={handleConfirmReject} className="h-12 px-8 font-black uppercase text-[13px] !rounded-xl">
+                  Confirmar rechazo
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </MerchantLayout>
   );
 }

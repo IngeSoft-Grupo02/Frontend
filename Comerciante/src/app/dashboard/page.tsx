@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const { user, store, orders, quotes, products } = useStore();
   const stats = useMemo(() => {
     const storeQuotes = quotes.filter(q => q.storeId === store.id);
-    const pendingOrders = orders.filter(o => o.status === 'En proceso' || o.status === 'Aprobado').length;
+    const pendingOrders = orders.filter(o => o.status === 'Pagado' || o.status === 'En proceso' || o.status === 'Enviado').length;
     const pendingQuotes = storeQuotes.filter(q => q.status === 'Pendiente').length;
     const drafts = products.filter(p => p.status === 'Borrador').length;
     return { pendingOrders, pendingQuotes, drafts };
@@ -48,7 +48,7 @@ export default function DashboardPage() {
                       <tr key={order.id} className="hover:bg-brand-neutral-light transition-all group cursor-pointer" onClick={() => router.push('/orders')}>
                         <td className="px-6 py-5 text-[14px] font-black text-brand-black">{order.id}</td>
                         <td className="px-6 py-5"><div className="flex flex-col"><span className="text-[14px] font-black text-brand-black">{order.customer}</span><span className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tight">Perú • Lima</span></div></td>
-                        <td className="px-6 py-5"><Badge variant={order.status === 'Aprobado' ? 'info' : order.status === 'Pagado' ? 'success' : order.status === 'En proceso' ? 'warning' : order.status === 'Enviado' ? 'secondary' : order.status === 'Entregado' ? 'success' : 'outline'}>{order.status}</Badge></td>
+                        <td className="px-6 py-5"><Badge variant={order.status === 'Pagado' ? 'info' : order.status === 'En proceso' ? 'warning' : order.status === 'Enviado' ? 'secondary' : order.status === 'Entregado' ? 'success' : 'outline'}>{order.status}</Badge></td>
                         <td className="px-6 py-5 text-[14px] font-black text-right text-brand-black">S/ {order.total.toFixed(2)}</td>
                       </tr>
                     ))}
