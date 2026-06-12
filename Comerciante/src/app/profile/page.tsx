@@ -60,7 +60,7 @@ export default function ProfilePage() {
     if (!paternalSurname.trim()) newErrors.paternalSurname = 'El apellido paterno es obligatorio';
     if (!email.trim()) newErrors.email = 'El correo es obligatorio';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Formato de correo invalido';
+      newErrors.email = 'Formato de correo inválido';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -87,13 +87,13 @@ export default function ProfilePage() {
   const handleChangePassword = async () => {
     const newErrors: Record<string, string> = {};
 
-    if (!currentPassword) newErrors.currentPassword = 'La contrase?a actual es obligatoria';
-    if (!newPassword) newErrors.newPassword = 'La nueva contrase?a es obligatoria';
-    else if (newPassword.length < 8) newErrors.newPassword = 'Minimo 8 caracteres';
-    else if (!/[A-Z]/.test(newPassword)) newErrors.newPassword = 'La nueva contrase?a debe incluir una may?scula';
-    else if (!/[0-9]/.test(newPassword)) newErrors.newPassword = 'La nueva contrase?a debe incluir al menos un n?mero';
-    if (!confirmPassword) newErrors.confirmPassword = 'Confirma la nueva contrase?a';
-    else if (newPassword !== confirmPassword) newErrors.confirmPassword = 'Las contrase?as no coinciden';
+    if (!currentPassword) newErrors.currentPassword = 'La contraseña actual es obligatoria';
+    if (!newPassword) newErrors.newPassword = 'La nueva contraseña es obligatoria';
+    else if (newPassword.length < 8) newErrors.newPassword = 'Mínimo 8 caracteres';
+    else if (!/[A-Z]/.test(newPassword)) newErrors.newPassword = 'La nueva contraseña debe incluir una mayúscula';
+    else if (!/[0-9]/.test(newPassword)) newErrors.newPassword = 'La nueva contraseña debe incluir al menos un número';
+    if (!confirmPassword) newErrors.confirmPassword = 'Confirma la nueva contraseña';
+    else if (newPassword !== confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -108,13 +108,13 @@ export default function ProfilePage() {
       setErrors({});
       showSavedMessage();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo actualizar la contrase?a';
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar la contraseña';
       setErrors(getPasswordFieldError(message));
     }
   };
 
   return (
-    <MerchantLayout title="Mi Perfil" subtitle="Gestiona tu informaci?n personal y seguridad" noSidebar={true}>
+    <MerchantLayout title="Mi Perfil" subtitle="Gestiona tu información personal y seguridad" noSidebar={true}>
       <div className="max-w-6xl mx-auto space-y-8 pb-16">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
@@ -127,7 +127,7 @@ export default function ProfilePage() {
             </button>
             <h1 className="text-[40px] md:text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">Perfil de Usuario</h1>
             <p className="text-brand-text-muted text-[15px] font-bold max-w-2xl leading-relaxed">
-              Actualiza tus datos personales y cambia tu contrase?a desde una sola pantalla.
+              Actualiza tus datos personales y cambia tu contraseña desde una sola pantalla.
             </p>
           </div>
         </header>
@@ -139,13 +139,13 @@ export default function ProfilePage() {
             </div>
             <div>
               <h4 className="text-[16px] font-black text-green-800">Cambios guardados exitosamente</h4>
-              <p className="text-[13px] font-bold text-green-700">Tu informaci?n se ha actualizado correctamente.</p>
+              <p className="text-[13px] font-bold text-green-700">Tu información se ha actualizado correctamente.</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-          <Card title="Informaci?n Personal" subtitle="Datos de contacto e identificaci?n" className="shadow-2xl shadow-brand-black/5">
+          <Card title="Información Personal" subtitle="Datos de contacto e identificación" className="shadow-2xl shadow-brand-black/5">
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
@@ -179,7 +179,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Correo electronico *"
+                  label="Correo electrónico *"
                   type="email"
                   value={email}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                   className="h-14 rounded-2xl font-bold"
                 />
                 <Input
-                  label="Telefono"
+                  label="Teléfono"
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -206,16 +206,16 @@ export default function ProfilePage() {
                   onClick={handleSavePersonal}
                   className="h-14 px-10 gap-3 rounded-2xl font-black shadow-xl shadow-brand-black/20"
                 >
-                  <Save size={20} /> Guardar informaci?n
+                  <Save size={20} /> Guardar información
                 </Button>
               </div>
             </div>
           </Card>
 
-          <Card title="Seguridad" subtitle="Actualiza la contrase?a de acceso" className="shadow-2xl shadow-brand-black/5">
+          <Card title="Seguridad" subtitle="Actualiza la contraseña de acceso" className="shadow-2xl shadow-brand-black/5">
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Contrase?a actual</label>
+                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Contraseña actual</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-muted" size={18} />
                   <input
@@ -225,7 +225,7 @@ export default function ProfilePage() {
                       setCurrentPassword(e.target.value);
                       if (errors.currentPassword) setErrors({ ...errors, currentPassword: '' });
                     }}
-                    placeholder="Contrase?a actual"
+                    placeholder="Contraseña actual"
                     className={`w-full h-14 pl-12 pr-12 bg-white border rounded-2xl text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all ${
                       errors.currentPassword ? 'border-red-500' : 'border-brand-neutral-border'
                     }`}
@@ -242,7 +242,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Nueva contrase?a</label>
+                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Nueva contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-muted" size={18} />
                   <input
@@ -252,7 +252,7 @@ export default function ProfilePage() {
                       setNewPassword(e.target.value);
                       if (errors.newPassword) setErrors({ ...errors, newPassword: '' });
                     }}
-                    placeholder="Minimo 8 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     className={`w-full h-14 pl-12 pr-12 bg-white border rounded-2xl text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all ${
                       errors.newPassword ? 'border-red-500' : 'border-brand-neutral-border'
                     }`}
@@ -269,7 +269,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Confirmar nueva contrase?a</label>
+                <label className="text-[11px] font-black text-brand-black uppercase tracking-widest">Confirmar nueva contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-muted" size={18} />
                   <input
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                       setConfirmPassword(e.target.value);
                       if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' });
                     }}
-                    placeholder="Repite la nueva contrase?a"
+                    placeholder="Repite la nueva contraseña"
                     className={`w-full h-14 pl-12 pr-12 bg-white border rounded-2xl text-[14px] font-bold outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all ${
                       errors.confirmPassword ? 'border-red-500' : 'border-brand-neutral-border'
                     }`}
@@ -300,7 +300,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <p className="text-[12px] font-black text-blue-900 uppercase tracking-wider">Requisitos de seguridad</p>
                   <div className="space-y-1.5">
-                    <PasswordRule active={newPassword.length >= 8} label="Minimo 8 caracteres" />
+                    <PasswordRule active={newPassword.length >= 8} label="Mínimo 8 caracteres" />
                     <PasswordRule active={/[A-Z]/.test(newPassword)} label="Al menos una mayúscula" />
                     <PasswordRule active={/[0-9]/.test(newPassword)} label="Al menos un número" />
                   </div>
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                   onClick={handleChangePassword}
                   className="h-14 px-10 gap-3 rounded-2xl font-black shadow-xl shadow-brand-black/20"
                 >
-                  <Key size={20} /> Actualizar contrase?a
+                  <Key size={20} /> Actualizar contraseña
                 </Button>
               </div>
             </div>

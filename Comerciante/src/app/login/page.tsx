@@ -23,7 +23,7 @@ export default function LoginPage() {
     }
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     if (!isEmail) {
-      setEmailError('Formato de correo invalido');
+      setEmailError('Formato de correo inválido');
       return false;
     }
     setEmailError('');
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
     if (!validateEmail(email)) return;
     if (!password) {
-      setLoginError('La contrase?a es obligatoria');
+      setLoginError('La contraseña es obligatoria');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/store-selection');
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesion');
+      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesión');
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <span className="text-brand-camel">tus ventas.</span>
           </h2>
           <p className="text-white/60 text-[13px] font-medium mt-6 leading-relaxed">
-            Gestion inteligente para marcas independientes.<br />
+            Gestión inteligente para marcas independientes.<br />
             Control total de stock, pedidos y cotizaciones corporativas.
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Correo electronico</label>
+              <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Correo electrónico</label>
               <div className="relative group">
                 <Mail className={`absolute left-4 top-6 -translate-y-1/2 transition-colors ${emailError ? 'text-red-500' : 'text-brand-text-muted'}`} size={18} />
                 <input
@@ -114,13 +114,13 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Contrase?a</label>
+                <label className="text-[11px] font-extrabold text-brand-black uppercase tracking-widest">Contraseña</label>
                 <button
                   type="button"
                   onClick={() => router.push('/recovery')}
                   className="text-[11px] font-extrabold text-brand-camel hover:underline"
                 >
-                  ?Olvidaste tu contrase?a?
+                  ¿Olvidaste tu contraseña?
                 </button>
               </div>
               <div className="relative">
@@ -148,7 +148,7 @@ export default function LoginPage() {
               className={`w-full h-12 !text-[14px] !rounded-[18px] transition-all ${isLoading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : ''}`}
               disabled={isLoading}
             >
-              {isLoading ? 'Verificando...' : 'Iniciar sesion'}
+              {isLoading ? 'Verificando...' : 'Iniciar sesión'}
             </Button>
           </form>
 

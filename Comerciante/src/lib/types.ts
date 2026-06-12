@@ -97,5 +97,5 @@ export interface Discount {
   minUnits: number;
   status: 'Activa' | 'Pausada';
   usageCount: number;
-  appliesTo: 'Todo el cat?logo' | 'Producto espec?fico';
+  appliesTo: 'Todo el catálogo' | 'Producto específico';
 }

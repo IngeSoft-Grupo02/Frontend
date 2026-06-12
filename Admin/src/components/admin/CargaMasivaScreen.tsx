@@ -324,7 +324,7 @@ function triggerDownload(blob: Blob, filename: string) {
 function downloadMerchantsTemplate() {
   const csv = [
     'email,password,firstName,paternalSurname,maternalSurname,documentType,documentNumber,birthDate,phone,gender,ruc',
-    '# INSTRUCCIONES:,min 8 chars,Obligatorio,Obligatorio,Obligatorio,DNI|PASSPORT|FOREIGN_ID_CARD,Sin puntos,yyyy-MM-dd,9 digitos,MALE|FEMALE|NOT_SPECIFIED,11 digitos exactos',
+    '# INSTRUCCIONES:,min 8 chars,Obligatorio,Obligatorio,Obligatorio,DNI|PASSPORT|FOREIGN_ID_CARD,Sin puntos,yyyy-MM-dd,9 dígitos,MALE|FEMALE|NOT_SPECIFIED,11 dígitos exactos',
     'juan.perez@ejemplo.com,Pass1234!,Juan,Perez,Garcia,DNI,12345678,1988-05-15,987654321,MALE,20100000001',
     'maria.torres@ejemplo.com,Pass5678!,Maria,Torres,Lopez,DNI,87654321,1992-11-20,912345678,FEMALE,20200000002',
   ].join('\n');
@@ -334,8 +334,8 @@ function downloadMerchantsTemplate() {
 function downloadStoresTemplate() {
   const csv = [
     'storeName,slug,categoryId,primaryColor,secondaryColor,tertiaryColor,description,merchantEmail,logoFileName',
-    '# INSTRUCCIONES:,minusculas-sin-espacios,CORESTREET|ATELIERMONO|UTILITYDROP|LUXECAPSULE,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
-    'Mi Tienda Urbana,mi-tienda-urbana,1,ONYX_BLACK,OLIVE_DRAB,RICH_CAMEL,Ropa urbana para jovenes,juan.perez@ejemplo.com,MiTiendaUrbana.png',
+    '# INSTRUCCIONES:,minúsculas-sin-espacios,CORESTREET|ATELIERMONO|UTILITYDROP|LUXECAPSULE,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
+    'Mi Tienda Urbana,mi-tienda-urbana,1,ONYX_BLACK,OLIVE_DRAB,RICH_CAMEL,Ropa urbana para jóvenes,juan.perez@ejemplo.com,MiTiendaUrbana.png',
     'Luxe Moda,luxe-moda,2,MIDNIGHT,SAGE,RAW_GOLD,Alta costura accesible,maria.torres@ejemplo.com,',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_tiendas.csv');
@@ -354,7 +354,7 @@ function downloadLogosInstructions() {
     '  luxe-moda.jpg         ->  logo de la tienda con slug "luxe-moda"',
     '',
     'Formatos permitidos: .jpg  .jpeg  .png  .webp',
-    'Tamano maximo por imagen: 2 MB',
+    'Tamaño máximo por imagen: 2 MB',
   ].join('\n');
   triggerDownload(new Blob([txt], { type:'text/plain;charset=utf-8;' }), 'instrucciones_logos.txt');
 }

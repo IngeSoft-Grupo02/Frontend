@@ -255,7 +255,7 @@ function ProductFormPageContent() {
 
   if (isWaitingForProduct) {
     return (
-      <MerchantLayout title="Editar producto" subtitle="Cargando informaci?n del cat?logo">
+      <MerchantLayout title="Editar producto" subtitle="Cargando información del catálogo">
         <div className="grid gap-6 animate-pulse">
           <div className="h-12 w-80 rounded-2xl bg-brand-neutral-mid" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -276,9 +276,9 @@ function ProductFormPageContent() {
         <Card>
           <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
             <AlertCircle size={36} className="text-red-500" />
-            <h2 className="text-[24px] font-black text-brand-black">No se encontro el producto</h2>
-            <p className="text-[14px] font-bold text-brand-text-muted">Vuelve al cat?logo y selecciona un producto existente.</p>
-            <Button onClick={() => router.push('/products')}>Volver al cat?logo</Button>
+            <h2 className="text-[24px] font-black text-brand-black">No se encontró el producto</h2>
+            <p className="text-[14px] font-bold text-brand-text-muted">Vuelve al catálogo y selecciona un producto existente.</p>
+            <Button onClick={() => router.push('/products')}>Volver al catálogo</Button>
           </div>
         </Card>
       </MerchantLayout>
@@ -307,7 +307,7 @@ function ProductFormPageContent() {
               <Save size={18} className="mr-2" /> {isSaving ? 'Guardando...' : 'Guardar como borrador'}
             </Button>
             <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-              <Check size={20} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} cat?logo`}
+              <Check size={20} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} catálogo`}
             </Button>
           </div>
         </header>
@@ -364,7 +364,7 @@ function ProductFormPageContent() {
                       <div className="md:w-1/3">
                         <Input
                           label="Talla"
-                          placeholder="Ej: S, 30, Unica..."
+                          placeholder="Ej: S, 30, Única..."
                           value={block.talla}
                           onChange={(e) => updateTallaName(index, e.target.value)}
                         />

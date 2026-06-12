@@ -116,7 +116,7 @@ function StoreFormPageContent() {
         if (isMounted) setCategories(loaded);
       } catch (error) {
         if (!isMounted) return;
-        const message = error instanceof Error ? error.message : 'No se pudieron cargar las categor?as';
+        const message = error instanceof Error ? error.message : 'No se pudieron cargar las categorías';
         if (merchantSession.getToken()) {
           setCategoryLoadError(message);
           setCategories([]);
@@ -177,10 +177,10 @@ function StoreFormPageContent() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!formData.name.trim()) nextErrors.name = 'El nombre de la tienda es obligatorio';
-    if (!formData.categoryId) nextErrors.categoryId = 'Selecciona una categor?a existente';
-    if (!PRIMARY_COLORS.some(color => color.value === formData.primaryColor)) nextErrors.primaryColor = 'Color principal invalido';
-    if (!SECONDARY_COLORS.some(color => color.value === formData.secondaryColor)) nextErrors.secondaryColor = 'Color secundario invalido';
-    if (!TERTIARY_COLORS.some(color => color.value === formData.tertiaryColor)) nextErrors.tertiaryColor = 'Color terciario invalido';
+    if (!formData.categoryId) nextErrors.categoryId = 'Selecciona una categoría existente';
+    if (!PRIMARY_COLORS.some(color => color.value === formData.primaryColor)) nextErrors.primaryColor = 'Color principal inválido';
+    if (!SECONDARY_COLORS.some(color => color.value === formData.secondaryColor)) nextErrors.secondaryColor = 'Color secundario inválido';
+    if (!TERTIARY_COLORS.some(color => color.value === formData.tertiaryColor)) nextErrors.tertiaryColor = 'Color terciario inválido';
     return nextErrors;
   };
 
@@ -191,7 +191,7 @@ function StoreFormPageContent() {
       return;
     }
     if (file.size > LOGO_MAX_SIZE_BYTES) {
-      setErrors(prev => ({ ...prev, logo: 'El logo no puede pesar mas de 2MB' }));
+      setErrors(prev => ({ ...prev, logo: 'El logo no puede pesar más de 2MB' }));
       return;
     }
 
@@ -252,7 +252,7 @@ function StoreFormPageContent() {
 
       if (editId) {
         const currentStore = stores.find(s => s.id === editId);
-        if (!currentStore) throw new Error('No se encontro la tienda a editar');
+        if (!currentStore) throw new Error('No se encontró la tienda a editar');
         const updatedStore = await saveStore({ ...currentStore, ...payload });
         if (updatedStore) setStore(updatedStore);
       } else {
@@ -303,7 +303,7 @@ function StoreFormPageContent() {
   );
 
   return (
-    <MerchantLayout title={editId ? 'Editar Tienda' : 'Crear Tienda'} subtitle="Configuraci?n de unidad de negocio" noSidebar={true}>
+    <MerchantLayout title={editId ? 'Editar Tienda' : 'Crear Tienda'} subtitle="Configuración de unidad de negocio" noSidebar={true}>
       <div className="space-y-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
@@ -330,7 +330,7 @@ function StoreFormPageContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
-            <Card title="Informaci?n b?sica" subtitle="01 - MODELO DE TIENDA">
+            <Card title="Información básica" subtitle="01 - MODELO DE TIENDA">
               <div className="space-y-6">
                 <Input
                   label="Nombre de la tienda *"
@@ -345,14 +345,14 @@ function StoreFormPageContent() {
                 />
 
                 <div>
-                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Categor?a *</label>
+                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Categoría *</label>
                   <button
                     type="button"
                     onClick={() => setShowCategoryModal(true)}
                     className={`w-full min-h-14 bg-white border rounded-2xl px-5 py-4 text-left outline-none focus:ring-4 focus:ring-brand-black/5 transition-all flex items-center justify-between ${errors.categoryId ? 'border-red-500' : 'border-brand-neutral-border hover:border-brand-black'}`}
                   >
                     <span className={`text-[14px] font-bold ${formData.categoryName ? 'text-brand-black' : 'text-brand-text-muted'}`}>
-                      {formData.categoryName || 'Selecciona una categor?a existente'}
+                      {formData.categoryName || 'Selecciona una categoría existente'}
                     </span>
                     <Search size={18} className="text-brand-text-muted" />
                   </button>
@@ -379,7 +379,7 @@ function StoreFormPageContent() {
                         <div>
                           <p className="text-[13px] font-black text-brand-black uppercase tracking-wide">Sube el archivo del logo</p>
                           <p className="text-[11px] font-bold text-brand-text-muted mt-1">
-                            Formatos permitidos: JPG, PNG o WEBP. Peso maximo: 2MB.
+                            Formatos permitidos: JPG, PNG o WEBP. Peso máximo: 2MB.
                           </p>
                           {logoFile && (
                             <p className="text-[11px] font-black text-brand-black mt-2">
@@ -413,7 +413,7 @@ function StoreFormPageContent() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Descripcion</label>
+                  <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2 block">Descripción</label>
                   <textarea
                     value={formData.description}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
@@ -428,7 +428,7 @@ function StoreFormPageContent() {
             <Card title="Paleta de colores" subtitle="02 - IDENTIDAD VISUAL">
               <div className="space-y-8">
                 <div>
-                  <h4 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2">Configuraci?n de marca</h4>
+                  <h4 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] mb-2">Configuración de marca</h4>
                   <p className="text-[13px] font-bold text-brand-text-muted">Selecciona los colores permitidos por el modelo de tienda. Estos valores se guardan como enums del backend.</p>
                 </div>
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -461,7 +461,7 @@ function StoreFormPageContent() {
                 <div className="h-40 flex items-center justify-center relative" style={{ backgroundColor: selectedPrimaryHex }}>
                   <div className="absolute top-4 left-4">
                     <Badge variant="black" className="!px-4 !py-1.5 font-black text-[11px]">
-                      {formData.categoryName || 'Categor?a'}
+                      {formData.categoryName || 'Categoría'}
                     </Badge>
                   </div>
                   <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden">
@@ -478,10 +478,10 @@ function StoreFormPageContent() {
                 <div className="p-6 space-y-4">
                   <div>
                     <h3 className="text-[22px] font-black text-brand-black leading-none mb-1">{formData.name || 'Nombre de la tienda'}</h3>
-                    <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{formData.categoryName || 'Sin categor?a'}</p>
+                    <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{formData.categoryName || 'Sin categoría'}</p>
                   </div>
                   <p className="text-[13px] font-medium text-brand-text-muted leading-relaxed">
-                    {formData.description || 'Sin descripcion disponible para esta tienda.'}
+                    {formData.description || 'Sin descripción disponible para esta tienda.'}
                   </p>
                   <div className="pt-4 border-t border-brand-neutral-border space-y-3">
                     <div className="flex items-center justify-between">
@@ -501,15 +501,15 @@ function StoreFormPageContent() {
               </div>
             </Card>
 
-            <Card title="Resumen de configuraci?n">
+            <Card title="Resumen de configuración">
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[12px] font-bold text-brand-text-muted uppercase">Nombre</span>
                   <span className="text-[13px] font-black text-brand-black text-right">{formData.name || 'Sin nombre'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-[12px] font-bold text-brand-text-muted uppercase">Categor?a</span>
-                  <span className="text-[13px] font-black text-brand-black text-right">{formData.categoryName || 'Sin categor?a'}</span>
+                  <span className="text-[12px] font-bold text-brand-text-muted uppercase">Categoría</span>
+                  <span className="text-[13px] font-black text-brand-black text-right">{formData.categoryName || 'Sin categoría'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[12px] font-bold text-brand-text-muted uppercase">Principal</span>
@@ -534,8 +534,8 @@ function StoreFormPageContent() {
           <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden border border-brand-neutral-border">
             <div className="p-8 border-b border-brand-neutral-border flex items-start justify-between gap-6">
               <div>
-                <h3 className="text-[26px] font-black text-brand-black tracking-tight">Seleccionar categor?a</h3>
-                <p className="text-[13px] font-bold text-brand-text-muted mt-1">Busca una categor?a existente en la base de datos.</p>
+                <h3 className="text-[26px] font-black text-brand-black tracking-tight">Seleccionar categoría</h3>
+                <p className="text-[13px] font-bold text-brand-text-muted mt-1">Busca una categoría existente en la base de datos.</p>
               </div>
               <button type="button" onClick={() => setShowCategoryModal(false)} className="p-2 rounded-full hover:bg-brand-neutral-mid transition-colors">
                 <X size={22} />
@@ -543,14 +543,14 @@ function StoreFormPageContent() {
             </div>
             <div className="p-8 space-y-6">
               <Input
-                label="Buscar categor?a"
-                placeholder="Nombre de categor?a..."
+                label="Buscar categoría"
+                placeholder="Nombre de categoría..."
                 value={categorySearch}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCategorySearch(e.target.value)}
                 className="h-12 rounded-2xl font-bold"
               />
               <div className="max-h-[360px] overflow-y-auto space-y-2 pr-2">
-                {isLoadingCategories && <p className="py-12 text-center text-brand-text-muted font-bold">Cargando categor?as...</p>}
+                {isLoadingCategories && <p className="py-12 text-center text-brand-text-muted font-bold">Cargando categorías...</p>}
                 {!isLoadingCategories && filteredCategories.map(category => (
                   <button
                     type="button"
@@ -571,7 +571,7 @@ function StoreFormPageContent() {
                 ))}
                 {!isLoadingCategories && filteredCategories.length === 0 && (
                   <div className="py-16 text-center text-brand-text-muted font-bold italic">
-                    No se encontraron categor?as.
+                    No se encontraron categorías.
                   </div>
                 )}
               </div>

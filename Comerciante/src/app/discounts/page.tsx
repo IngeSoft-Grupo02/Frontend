@@ -42,7 +42,7 @@ export default function DiscountsPage() {
     type: 'Porcentaje',
     value: 5,
     minUnits: 20,
-    appliesTo: 'Todo el cat?logo',
+    appliesTo: 'Todo el catálogo',
     status: 'Activa'
   });
 
@@ -54,20 +54,20 @@ export default function DiscountsPage() {
   const formatMoney = (value: number) => `S/ ${value.toFixed(2)}`;
 
   const discountScopeLabel = (discount: Discount) => {
-    const scopeLabel = discount.appliesTo === 'Producto espec?fico' ? 'Producto específico' : 'Todo el catálogo';
-    return discount.appliesTo === 'Producto espec?fico' && discount.productName
+    const scopeLabel = discount.appliesTo === 'Producto específico' ? 'Producto específico' : 'Todo el catálogo';
+    return discount.appliesTo === 'Producto específico' && discount.productName
       ? `${scopeLabel} - ${discount.productName}`
       : scopeLabel;
   };
 
   const productDiscountPreview = useMemo(() => {
-    if (formData.appliesTo !== 'Producto espec?fico' || !formData.productId) return null;
+    if (formData.appliesTo !== 'Producto específico' || !formData.productId) return null;
     const product = products.find((item: Product) => item.id === formData.productId);
     if (!product) return null;
 
     const existingDiscounts = discounts.filter((discount: Discount) =>
       discount.status === 'Activa'
-      && (discount.appliesTo === 'Todo el cat?logo' || discount.productId === product.id)
+      && (discount.appliesTo === 'Todo el catálogo' || discount.productId === product.id)
       && discount.id !== editingId
     );
     const draftDiscount: Discount = {
@@ -76,7 +76,7 @@ export default function DiscountsPage() {
       type: 'Porcentaje',
       value: Number(formData.value || 0),
       minUnits: Number(formData.minUnits || 0),
-      appliesTo: 'Producto espec?fico',
+      appliesTo: 'Producto específico',
       productId: product.id,
       productName: product.name,
       status: formData.status || 'Activa',
@@ -123,7 +123,7 @@ export default function DiscountsPage() {
     const newErrors: Record<string, string> = {};
     const value = Number(formData.value || 0);
     const minUnits = Number(formData.minUnits || 0);
-    const appliesTo = formData.appliesTo || 'Todo el cat?logo';
+    const appliesTo = formData.appliesTo || 'Todo el catálogo';
     const selectedProduct = products.find((product: Product) => product.id === formData.productId);
 
     if (!formData.name?.trim()) newErrors.name = 'La etiqueta es obligatoria';
@@ -131,7 +131,7 @@ export default function DiscountsPage() {
     if (value <= 0) newErrors.value = 'El descuento debe ser mayor a 0';
     if (value > 100) newErrors.value = 'El porcentaje no puede superar 100%';
     if (!editingId && !canCreateMoreDiscounts) newErrors.form = 'Solo puedes configurar hasta 5 descuentos por tienda';
-    if (appliesTo === 'Producto espec?fico' && !selectedProduct) newErrors.productId = 'Selecciona el producto al que se aplicará el descuento';
+    if (appliesTo === 'Producto específico' && !selectedProduct) newErrors.productId = 'Selecciona el producto al que se aplicará el descuento';
 
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors);
@@ -145,8 +145,8 @@ export default function DiscountsPage() {
       value,
       minUnits,
       appliesTo: appliesTo as Discount['appliesTo'],
-      productId: appliesTo === 'Producto espec?fico' ? selectedProduct?.id : undefined,
-      productName: appliesTo === 'Producto espec?fico' ? selectedProduct?.name : undefined,
+      productId: appliesTo === 'Producto específico' ? selectedProduct?.id : undefined,
+      productName: appliesTo === 'Producto específico' ? selectedProduct?.name : undefined,
       status: (formData.status || 'Activa') as Discount['status']
     };
 
@@ -173,7 +173,7 @@ export default function DiscountsPage() {
       type: 'Porcentaje',
       value: 5,
       minUnits: 20,
-      appliesTo: 'Todo el cat?logo',
+      appliesTo: 'Todo el catálogo',
       productId: undefined,
       productName: undefined,
       status: 'Activa'
@@ -305,10 +305,10 @@ export default function DiscountsPage() {
                       setFormData({
                         ...formData,
                         appliesTo,
-                        productId: appliesTo === 'Producto espec?fico' ? formData.productId : undefined,
-                        productName: appliesTo === 'Producto espec?fico' ? formData.productName : undefined
+                        productId: appliesTo === 'Producto específico' ? formData.productId : undefined,
+                        productName: appliesTo === 'Producto específico' ? formData.productName : undefined
                       });
-                      if (appliesTo !== 'Producto espec?fico') {
+                      if (appliesTo !== 'Producto específico') {
                         setIsProductPickerOpen(false);
                         setProductSearchTerm('');
                       }
@@ -320,7 +320,7 @@ export default function DiscountsPage() {
                     <option>Todo el catálogo</option>
                     <option>Producto específico</option>
                   </select>
-                  {formData.appliesTo === 'Producto espec?fico' && (
+                  {formData.appliesTo === 'Producto específico' && (
                     <div className="space-y-3">
                       <label className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em] leading-none">Producto</label>
                       <button

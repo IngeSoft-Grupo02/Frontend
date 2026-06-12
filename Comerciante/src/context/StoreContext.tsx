@@ -340,7 +340,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addStore = useCallback(async (s: Omit<Store, 'id'>) => {
     if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesion como comerciante para crear una tienda en la base de datos.');
+      throw new Error('Debes iniciar sesión como comerciante para crear una tienda en la base de datos.');
     }
     if (!shouldSyncStoresWithBackend) {
       const newStore: Store = createLocalStore(s);
@@ -354,7 +354,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const saveStore = useCallback(async (s: Store) => {
     if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesion como comerciante para actualizar una tienda en la base de datos.');
+      throw new Error('Debes iniciar sesión como comerciante para actualizar una tienda en la base de datos.');
     }
     if (!shouldSyncStoresWithBackend) {
       setStores(prev => prev.map(item => item.id === s.id ? s : item));
@@ -369,7 +369,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteStore = useCallback(async (id: string) => {
     if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesion como comerciante para eliminar una tienda en la base de datos.');
+      throw new Error('Debes iniciar sesión como comerciante para eliminar una tienda en la base de datos.');
     }
     if (shouldSyncStoresWithBackend) {
       await merchantApi.deleteStore(id);

@@ -236,7 +236,7 @@ export const mapStore = (raw: JsonValue): Store => {
 
 export const mapStoreCategory = (raw: JsonValue): StoreCategory => ({
   id: Number(raw.id),
-  name: raw.name || raw.storeCategoryName || raw.categoryName || 'Categor?a'
+  name: raw.name || raw.storeCategoryName || raw.categoryName || 'Categoría'
 });
 
 export const mapProduct = (raw: JsonValue): Product => {
@@ -302,7 +302,7 @@ const normalizeDiscountAppliesTo = (value: unknown): Discount['appliesTo'] => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-  return text.includes('producto') ? 'Producto espec?fico' : 'Todo el cat?logo';
+  return text.includes('producto') ? 'Producto específico' : 'Todo el catálogo';
 };
 
 export const mapDiscount = (raw: JsonValue): Discount => ({
@@ -328,8 +328,8 @@ export const discountPayload = (discount: Discount | Partial<Discount>) => ({
   volumeType: 'UNIT',
   active: (discount.status || 'Activa') === 'Activa',
   status: discount.status || 'Activa',
-  appliesTo: discount.appliesTo === 'Producto espec?fico' ? 'Producto espec?fico' : 'Todo el cat?logo',
-  productId: discount.appliesTo === 'Producto espec?fico' && discount.productId ? Number(discount.productId) : null,
+  appliesTo: discount.appliesTo === 'Producto específico' ? 'Producto específico' : 'Todo el catálogo',
+  productId: discount.appliesTo === 'Producto específico' && discount.productId ? Number(discount.productId) : null,
   usageCount: discount.usageCount || 0
 });
 
