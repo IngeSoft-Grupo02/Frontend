@@ -8,6 +8,23 @@ export function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
+function handleUnauthorized() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
+  localStorage.removeItem('adminUser');
+  window.dispatchEvent(new Event('admin:session-expired'));
+}
+
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   auth?: boolean;
@@ -26,6 +43,7 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
     ...rest,
   });
   if (!response.ok) {
+    if (auth && (response.status === 401 || response.status === 403)) handleUnauthorized();
     const msg = await response.text().catch(() => `Error ${response.status}`);
     throw new Error(msg || `Error ${response.status}: ${endpoint}`);
   }
@@ -38,6 +56,7 @@ async function requestMultipart<T>(endpoint: string, body: FormData): Promise<T>
     method: 'POST', headers: { ...getAuthHeader() }, body,
   });
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) handleUnauthorized();
     const msg = await response.text().catch(() => `Error ${response.status}`);
     throw new Error(msg || `Error ${response.status}`);
   }

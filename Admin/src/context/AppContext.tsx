@@ -1,6 +1,7 @@
 'use client';
 
 import { MOCK_AUDIT, MOCK_CATEGORIES, MOCK_STORES, MOCK_USERS } from '@/lib/mockData';
+import { isTokenExpired } from '@/lib/api';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Define los tipos
@@ -78,7 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const token = localStorage.getItem('token');
       const storedUser = localStorage.getItem('adminUser');
-      if (token && storedUser) {
+      if (token && storedUser && !isTokenExpired(token)) {
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser?.role === 'Super admin') {
           setCurrentUser(parsedUser);
@@ -87,6 +88,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('token');
           localStorage.removeItem('adminUser');
         }
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('adminUser');
       }
     } catch {
       localStorage.removeItem('token');
@@ -94,6 +98,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsAuthInitialized(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+    };
+    window.addEventListener('admin:session-expired', onSessionExpired);
+    return () => window.removeEventListener('admin:session-expired', onSessionExpired);
   }, []);
 
   const login = (email: string, password: string, userData?: any) => {

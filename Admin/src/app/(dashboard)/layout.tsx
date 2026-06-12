@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isAuthInitialized && !isLoggedIn) router.push('/login');
+    if (isAuthInitialized && !isLoggedIn) router.replace('/login');
   }, [isAuthInitialized, isLoggedIn, router]);
 
   if (!isAuthInitialized || !isLoggedIn) return null;
