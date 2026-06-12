@@ -1,0 +1,16 @@
+{
+  "name": "kingstore-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Scripts utilitarios para levantar Cliente, Admin, Comerciante y el gateway local",
+  "scripts": {
+    "dev:cliente": "pnpm -C Cliente dev",
+    "dev:admin": "pnpm -C Admin exec next dev -p 3001",
+    "dev:comerciante": "pnpm -C Comerciante exec next dev -p 3003",
+    "dev:gateway-server": "pnpm -C Gateway dev",
+    "dev:gateway": "concurrently -n cliente,admin,comerciante,gateway -c green,blue,yellow,magenta \"pnpm dev:cliente\" \"pnpm dev:admin\" \"pnpm dev:comerciante\" \"pnpm dev:gateway-server\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
