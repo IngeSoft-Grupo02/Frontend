@@ -331,10 +331,10 @@ export default function TiendasPage() {
           </div>
           <div className="flex gap-3 w-full md:w-auto">
             <Button variant="secondary" className="flex-1 md:flex-none rounded-full shadow-sm px-6"
-                    onClick={()=>router.push('/admin/carga-masiva')}>
+                    onClick={()=>router.push('/carga-masiva')}>
               <UploadCloud size={14} className="mr-2"/> Carga masiva
             </Button>
-            <Button onClick={()=>router.push('/admin/tiendas/nueva')} className="flex-1 md:flex-none rounded-full px-6">
+            <Button onClick={()=>router.push('/tiendas/nueva')} className="flex-1 md:flex-none rounded-full px-6">
               <Plus size={14} className="mr-2"/> Nueva tienda
             </Button>
           </div>

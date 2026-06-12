@@ -13,12 +13,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', path: '/admin', label: 'PANEL', icon: LayoutDashboard },
-  { id: 'tiendas', path: '/admin/tiendas', label: 'Tiendas', icon: Store },
-  { id: 'usuarios', path: '/admin/usuarios', label: 'Usuarios', icon: Users },
-  { id: 'carga-masiva', path: '/admin/carga-masiva', label: 'Carga masiva', icon: UploadCloud },
-  { id: 'categorias', path: '/admin/categorias', label: 'Categorías', icon: Tag },
-  { id: 'auditoria', path: '/admin/auditoria', label: 'Auditoría', icon: History },
+  { id: 'dashboard', path: '/', label: 'PANEL', icon: LayoutDashboard },
+  { id: 'tiendas', path: '/tiendas', label: 'Tiendas', icon: Store },
+  { id: 'usuarios', path: '/usuarios', label: 'Usuarios', icon: Users },
+  { id: 'carga-masiva', path: '/carga-masiva', label: 'Carga masiva', icon: UploadCloud },
+  { id: 'categorias', path: '/categorias', label: 'Categorías', icon: Tag },
+  { id: 'auditoria', path: '/auditoria', label: 'Auditoría', icon: History },
 ];
 
 export default function Sidebar() {

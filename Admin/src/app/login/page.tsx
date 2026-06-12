@@ -64,7 +64,7 @@ export default function LoginPage() {
       // Actualizar contexto con datos reales del backend
       login(email, password, adminUser);
 
-      router.push('/admin');
+      router.push('/');
 
     } catch (err: any) {
       const msg = err.message || '';

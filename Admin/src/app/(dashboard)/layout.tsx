@@ -18,13 +18,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!isAuthInitialized || !isLoggedIn) return null;
 
   const getPageMeta = () => {
-    if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
-    if (pathname === '/admin/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
-    if (pathname === '/admin/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
-    if (pathname === '/admin/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
-    if (pathname === '/admin/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
-    if (pathname === '/admin/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
-    if (pathname === '/admin/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
+    if (pathname === '/') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
+    if (pathname === '/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname === '/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
+    if (pathname === '/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
+    if (pathname === '/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
+    if (pathname === '/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
+    if (pathname === '/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 

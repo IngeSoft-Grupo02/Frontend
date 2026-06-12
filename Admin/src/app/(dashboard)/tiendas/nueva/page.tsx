@@ -93,7 +93,7 @@ export default function NuevaTiendaPage() {
         tertiaryColor: form.tertiaryColor,
         merchantId:    selectedMerchant!.id,
       });
-      router.push('/admin/tiendas');
+      router.push('/tiendas');
     } catch (err:any) { setGlobalError(err.message); } finally { setSaving(false); }
   };
 

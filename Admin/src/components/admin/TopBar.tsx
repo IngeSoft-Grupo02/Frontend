@@ -19,14 +19,14 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
 
   // Obtener título y subtítulo según la ruta
   const getPageMeta = () => {
-    if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
-    if (pathname === '/admin/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
-    if (pathname === '/admin/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
-    if (pathname === '/admin/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
-    if (pathname === '/admin/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
-    if (pathname === '/admin/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
-    if (pathname === '/admin/perfil') return { title: 'Configuración de cuenta', subtitle: 'Personaliza tu experiencia y seguridad' };
-    if (pathname === '/admin/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
+    if (pathname === '/') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
+    if (pathname === '/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname === '/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
+    if (pathname === '/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
+    if (pathname === '/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
+    if (pathname === '/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
+    if (pathname === '/perfil') return { title: 'Configuración de cuenta', subtitle: 'Personaliza tu experiencia y seguridad' };
+    if (pathname === '/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 
@@ -95,7 +95,7 @@ export default function TopBar({ title: titleProp, subtitle: subtitleProp }: Top
                   <button 
                     onClick={() => {
                       setShowUserMenu(false);
-                      router.push('/admin/perfil');
+                      router.push('/perfil');
                     }}
                     className="w-full px-4 py-2.5 text-[13px] font-bold text-neutral-700 flex items-center gap-3 hover:bg-neutral-50 transition-colors text-left cursor-pointer"
                   >

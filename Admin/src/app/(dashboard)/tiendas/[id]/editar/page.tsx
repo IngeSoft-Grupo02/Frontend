@@ -127,7 +127,7 @@ export default function EditarTiendaPage() {
         tertiaryColor: form.tertiaryColor,
         merchantId:    selectedMerchant!.id,
       });
-      router.push('/admin/tiendas');
+      router.push('/tiendas');
     } catch (err:any) { setGlobalError(err.message); } finally { setSaving(false); }
   };
 
@@ -144,7 +144,7 @@ export default function EditarTiendaPage() {
   return (
       <div className="space-y-12 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
         <div>
-          <button onClick={() => router.push('/admin/tiendas')}
+          <button onClick={() => router.push('/tiendas')}
                   className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline">
             <ArrowLeft size={16}/> Volver al listado
           </button>
@@ -264,7 +264,7 @@ export default function EditarTiendaPage() {
           </div>
 
           <div className="flex justify-end gap-3 border-t border-neutral-100 pt-10">
-            <Button variant="secondary" className="rounded-full px-10" onClick={() => router.push('/admin/tiendas')}>Cancelar</Button>
+            <Button variant="secondary" className="rounded-full px-10" onClick={() => router.push('/tiendas')}>Cancelar</Button>
             <Button className={`rounded-full px-10 transition-opacity ${!isFormReady() ? 'opacity-40 cursor-not-allowed' : ''}`}
                     onClick={handleSave} disabled={saving || !isFormReady()}>
               {saving ? <><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</> : 'Guardar cambios'}

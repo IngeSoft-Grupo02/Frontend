@@ -168,7 +168,7 @@ export default function NuevoUsuarioPage() {
         ruc:             form.role === 'MERCHANT' ? form.ruc : undefined,
         storeId:         form.role === 'CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
-      router.push('/admin/usuarios');
+      router.push('/usuarios');
     } catch (err: any) { setGlobalError(err.message); }
     finally { setLoading(false); }
   };
@@ -194,7 +194,7 @@ export default function NuevoUsuarioPage() {
   return (
       <div className="space-y-12 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
         <div>
-          <button onClick={() => router.push('/admin/usuarios')}
+          <button onClick={() => router.push('/usuarios')}
                   className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline">
             <ArrowLeft size={16}/> Volver a usuarios
           </button>
@@ -353,7 +353,7 @@ export default function NuevoUsuarioPage() {
                     </p>
                 )}
                 <Button variant="secondary" className="w-full h-14 rounded-2xl"
-                        onClick={() => router.push('/admin/usuarios')}>
+                        onClick={() => router.push('/usuarios')}>
                   Cancelar
                 </Button>
               </div>

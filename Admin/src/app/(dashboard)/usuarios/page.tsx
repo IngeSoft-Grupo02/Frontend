@@ -86,10 +86,10 @@ export default function UsuariosPage() {
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/>
             </Button>
             <Button variant="secondary" className="flex-1 md:flex-none rounded-full h-12 px-8 shadow-sm"
-                    onClick={() => router.push('/admin/carga-masiva')}>
+                    onClick={() => router.push('/carga-masiva')}>
               <UploadCloud size={14} className="mr-2"/> Carga masiva
             </Button>
-            <Button onClick={() => router.push('/admin/usuarios/nuevo')}
+            <Button onClick={() => router.push('/usuarios/nuevo')}
                     className="flex-1 md:flex-none rounded-full h-12 px-8 shadow-lg">
               <Plus size={16} className="mr-2"/> Nuevo usuario
             </Button>
@@ -223,7 +223,7 @@ export default function UsuariosPage() {
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-3">
                         <Button className="flex-1 rounded-2xl h-14"
-                                onClick={() => { router.push(`/admin/usuarios/${showDetail.id}/editar`); setShowDetail(null); }}>
+                                onClick={() => { router.push(`/usuarios/${showDetail.id}/editar`); setShowDetail(null); }}>
                           Editar usuario
                         </Button>
                         {showDetail.active && (

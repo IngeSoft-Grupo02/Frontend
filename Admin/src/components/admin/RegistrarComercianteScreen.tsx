@@ -141,7 +141,7 @@ export function RegistrarComercianteScreen() {
     if (isFormValid()) {
       console.log('✅ Datos válidos listos para API:', formData);
       // Aquí irá: await axios.post('/api/merchants', formData)
-      router.push('/admin/usuarios');
+      router.push('/usuarios');
     }
   };
 
