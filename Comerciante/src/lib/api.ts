@@ -389,6 +389,8 @@ const mapOrderItemDetail = (item: JsonValue) => ({
   productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
   size: item.size || undefined,
   color: item.color || undefined,
+  // ?? para no romper stock 0 (0 es válido); solo null/undefined cae a null.
+  stock: (item.stockAvailable ?? item.stock ?? null) as number | null,
   quantity: Number(item.quantity || 0),
   unitPrice: Number(item.unitPrice ?? item.price ?? 0),
   subTotal: Number(item.subTotal ?? 0)
@@ -457,7 +459,9 @@ const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
 };
 
 const mapQuoteItemStock = (item: JsonValue): number | null => {
-  const value = item.stock ?? item.availableStock ?? item.variantStock ?? item.stockDisponible;
+  // El backend expone el stock como `stockAvailable`. Se prioriza ese nombre.
+  // ?? para no romper stock 0 (0 es un valor válido, no "No registrado").
+  const value = item.stockAvailable ?? item.stock ?? item.availableStock ?? item.variantStock ?? item.stockDisponible;
   return value == null ? null : Number(value);
 };
 
@@ -475,6 +479,8 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   total: Number(raw.totalAmount || 0),
   subtotal: Number(raw.subTotal || 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+  // responseAt es null mientras está pendiente; queda undefined para mostrar "Pendiente".
+  responseDate: raw.responseAt ? String(raw.responseAt).slice(0, 10) : undefined,
   items: (raw.items || []).map((item: JsonValue) => ({
     product: item.productName || item.name || item.product || 'Producto sin nombre registrado',
     variant: buildVariantLabel(item),

@@ -170,6 +170,7 @@ export default function QuotesPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4 bg-brand-neutral-mid/20 p-2 rounded-[24px] border border-brand-neutral-border w-fit">
             <div className="flex items-center gap-3 pl-4 pr-1">
               <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest whitespace-nowrap">Estado:</span>
@@ -241,6 +242,7 @@ export default function QuotesPage() {
                 Limpiar fechas
               </button>
             )}
+          </div>
           </div>
 
           {isInvalidRange && (
@@ -361,6 +363,9 @@ export default function QuotesPage() {
                       </div>
                       <p className="text-[12px] font-black text-brand-text-muted uppercase tracking-[0.2em] font-mono">Número de Proforma • {selectedQuote.id}</p>
                       <p className="text-[12px] font-bold text-brand-text-muted">Fecha de solicitud: {formatRequestDate(selectedQuote.date)}</p>
+                      <p className="text-[12px] font-bold text-brand-text-muted">
+                        Fecha de respuesta: {selectedQuote.status !== 'Pendiente' && selectedQuote.responseDate ? formatRequestDate(selectedQuote.responseDate) : 'Pendiente'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-start gap-2 bg-brand-neutral-light p-4 rounded-2xl border border-brand-neutral-border md:min-w-[260px]">

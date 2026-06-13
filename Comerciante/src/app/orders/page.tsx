@@ -201,6 +201,7 @@ export default function OrdersPage() {
         </header>
 
         <div className="flex flex-col gap-3">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4 bg-brand-neutral-mid/20 p-2 rounded-[24px] border border-brand-neutral-border w-fit">
             <div className="flex items-center gap-3 pl-4 pr-1">
               <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest whitespace-nowrap">Estado:</span>
@@ -272,6 +273,7 @@ export default function OrdersPage() {
                 Limpiar fechas
               </button>
             )}
+          </div>
           </div>
 
           {isInvalidRange && (
@@ -534,6 +536,7 @@ export default function OrdersPage() {
                               <tr className="bg-brand-neutral-mid/30 border-b border-brand-neutral-border">
                                 <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider whitespace-nowrap">Producto</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-center whitespace-nowrap">Cantidad</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-center whitespace-nowrap">Stock disponible</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-right whitespace-nowrap">P. Unitario</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-right whitespace-nowrap">Subtotal</th>
                               </tr>
@@ -548,6 +551,11 @@ export default function OrdersPage() {
                                       {variantLabel && <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">{variantLabel}</p>}
                                     </td>
                                     <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">{item.quantity}</td>
+                                    <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">
+                                      {item.stock == null
+                                        ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
+                                        : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></span>}
+                                    </td>
                                     <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.unitPrice.toFixed(2)}</td>
                                     <td className="px-4 py-3 text-right text-[13px] font-black text-brand-black whitespace-nowrap">S/ {item.subTotal.toFixed(2)}</td>
                                   </tr>

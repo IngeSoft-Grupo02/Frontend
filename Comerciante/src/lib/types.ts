@@ -38,6 +38,7 @@ export interface OrderItemDetail {
   productVariantId?: string;
   size?: string;
   color?: string;
+  stock?: number | null;
   quantity: number;
   unitPrice: number;
   subTotal: number;
@@ -84,6 +85,7 @@ export interface Quote {
   total: number;
   subtotal: number;
   date: string;
+  responseDate?: string;
   items: {
     product: string;
     variant: string;
