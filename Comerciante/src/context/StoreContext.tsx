@@ -1,6 +1,6 @@
 'use client';
 import { mockDiscounts, mockOrders, mockProducts, mockQuotes, mockStores } from '@/lib/mockData';
-import { merchantApi, merchantSession, MerchantUser, BulkUploadResult } from '@/lib/api';
+import { merchantApi, merchantSession, isTokenExpired, MerchantUser, BulkUploadResult } from '@/lib/api';
 import { Discount, Order, Product, Quote, Store } from '@/lib/types';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
@@ -13,6 +13,8 @@ interface StoreState {
   stores: Store[];
   user: MerchantUser | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  isAuthInitialized: boolean;
   apiError: string | null;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -74,9 +76,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [user, setUser] = useState<MerchantUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const hasBackendSession = Boolean(token);
+  const isAuthenticated = Boolean(token);
   const shouldUseStoreApi = STORE_SYNC_MODE === 'api';
   const shouldSyncStoresWithBackend = hasBackendSession && shouldUseStoreApi;
 
@@ -149,17 +153,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [loadScopedData]);
 
+  const clearSession = useCallback(() => {
+    merchantSession.clear();
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(USER_KEY);
+      localStorage.removeItem(STORE_KEY);
+    }
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  // Hidratación inicial: solo se considera autenticado si hay un token válido (no vencido).
   useEffect(() => {
     const savedToken = merchantSession.getToken();
+    if (!savedToken || isTokenExpired(savedToken)) {
+      // Sin token o token vencido/malformado: limpiar cualquier rastro de sesión.
+      clearSession();
+      setIsAuthInitialized(true);
+      return;
+    }
+
     const savedUser = sessionStorage.getItem(USER_KEY);
     const savedStore = localStorage.getItem(STORE_KEY);
-
     if (savedUser) setUser(JSON.parse(savedUser));
     if (savedStore) setStore(JSON.parse(savedStore));
-    if (savedToken) {
-      setToken(savedToken);
-    }
-  }, []);
+    setToken(savedToken);
+    setIsAuthInitialized(true);
+  }, [clearSession]);
+
+  // Sesión expirada detectada por una request 401/403: limpiar y volver a estado deslogueado.
+  useEffect(() => {
+    const onSessionExpired = () => clearSession();
+    window.addEventListener('merchant:session-expired', onSessionExpired);
+    return () => window.removeEventListener('merchant:session-expired', onSessionExpired);
+  }, [clearSession]);
 
   useEffect(() => {
     if (token) {
@@ -383,7 +410,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <StoreContext.Provider value={{
-      products, orders, quotes, discounts, store, stores, user, isLoading, apiError,
+      products, orders, quotes, discounts, store, stores, user, isLoading, isAuthenticated, isAuthInitialized, apiError,
       setProducts, setOrders, setQuotes, setDiscounts, setStore, setStores, setUser,
       login, logout, refreshData, updateProfile, updatePassword,
       addProduct, updateProduct, deleteProduct, bulkUploadProducts,

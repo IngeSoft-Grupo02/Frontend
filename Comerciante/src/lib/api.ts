@@ -38,6 +38,28 @@ export const merchantSession = {
   }
 };
 
+/**
+ * Devuelve true si el JWT está vencido, malformado o no se puede decodificar.
+ * Un token sin payload válido o sin `exp` legible se trata como inválido.
+ */
+export function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
+/** Limpia la sesión del comerciante y avisa al contexto que la sesión expiró. */
+function handleUnauthorized() {
+  if (typeof window === 'undefined') return;
+  merchantSession.clear();
+  window.dispatchEvent(new Event('merchant:session-expired'));
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = merchantSession.getToken();
   const headers = new Headers(options.headers);
@@ -60,6 +82,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    // Sesión inválida/expirada en una request autenticada: limpiar y notificar.
+    if (token && (response.status === 401 || response.status === 403)) {
+      handleUnauthorized();
+    }
     const raw = await response.text();
     let message = raw || `Error HTTP ${response.status}`;
     try {
