@@ -29,15 +29,15 @@ const formatRequestDate = (value?: string) => {
 const StatCard = ({ title, value, icon: Icon, onClick }: any) => (
   <div
     onClick={onClick}
-    className="bg-white rounded-2xl border border-brand-neutral-border p-6 card-shadow flex flex-col justify-between text-left transition-all"
+    className="bg-white rounded-2xl border border-brand-neutral-border p-4 card-shadow flex flex-col justify-between text-left transition-all"
   >
     <div className="flex justify-between items-start">
       <div className="space-y-1">
-        <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-wider transition-colors">{title}</p>
-        <h3 className="text-[32px] font-extrabold tracking-tight">{value}</h3>
+        <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-wider transition-colors">{title}</p>
+        <h3 className="text-[24px] font-extrabold tracking-tight">{value}</h3>
       </div>
-      <div className="w-10 h-10 rounded-xl bg-brand-neutral-light flex items-center justify-center text-brand-black border border-brand-neutral-border transition-all">
-        <Icon size={20} />
+      <div className="w-9 h-9 rounded-xl bg-brand-neutral-light flex items-center justify-center text-brand-black border border-brand-neutral-border transition-all">
+        <Icon size={18} />
       </div>
     </div>
   </div>
@@ -153,18 +153,18 @@ export default function QuotesPage() {
 
   return (
     <MerchantLayout title="Cotizaciones" subtitle="Gestión de solicitudes especiales y ventas B2B">
-      <div className="flex flex-col gap-10">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4">
-            <p className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Canal Especializado</p>
-            <h1 className="text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">Tickets Recibidos</h1>
-            <p className="text-brand-text-muted text-[15px] font-bold max-w-2xl leading-relaxed">
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Canal Especializado</p>
+            <h1 className="text-[28px] font-black tracking-tighter text-brand-black leading-none uppercase">Tickets Recibidos</h1>
+            <p className="text-brand-text-muted text-[13px] font-bold max-w-2xl leading-relaxed">
               Analiza los detalles, revisa los archivos de diseño y emite una respuesta formal para cada cliente.
             </p>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StatCard title="Cotizaciones Enviadas" value={stats.sent.toString().padStart(2, '0')} icon={FileText} />
           <StatCard title="Total Solicitado" value={`S/ ${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={TrendingUp} />
         </div>
@@ -250,7 +250,7 @@ export default function QuotesPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start min-h-[800px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {actionError && (
             <div className="lg:col-span-12 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-[13px] font-bold">
               {actionError}
@@ -277,11 +277,11 @@ export default function QuotesPage() {
                   <div
                     key={quote.id}
                     onClick={() => setSelectedQuoteId(quote.id)}
-                    className={`p-7 cursor-pointer transition-all flex flex-col gap-4 group relative ${
+                    className={`p-5 cursor-pointer transition-all flex flex-col gap-3 group relative ${
                       selectedQuoteId === quote.id ? 'bg-brand-neutral-light' : 'bg-white hover:bg-brand-neutral-light/30'
                     }`}
                   >
-                    {selectedQuoteId === quote.id && <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-brand-black"></div>}
+                    {selectedQuoteId === quote.id && <div className="absolute left-0 top-0 bottom-0 w-2 bg-brand-black"></div>}
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
                         <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.1em]">Número de Proforma</p>
@@ -347,73 +347,75 @@ export default function QuotesPage() {
           <div className="lg:col-span-8">
             {selectedQuote ? (
               <Card className="flex flex-col !p-0 shadow-2xl shadow-brand-black/10 border-2 border-brand-neutral-border overflow-hidden">
-                <div className="p-10 border-b border-brand-neutral-border bg-white flex flex-col md:flex-row md:items-center justify-between gap-8">
-                  <div className="flex items-center gap-7">
-                    <div className="w-20 h-20 rounded-[28px] bg-brand-black text-white flex items-center justify-center font-black text-[24px] shadow-2xl shadow-brand-black/20">
+                <div className="p-6 border-b border-brand-neutral-border bg-white flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-black text-white flex items-center justify-center font-black text-[18px] shadow-lg shadow-brand-black/20">
                       {selectedQuote.customer?.split(' ').map(n => n[0]).join('') || '?'}
                     </div>
                     <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <h2 className="text-[40px] font-black tracking-tighter text-brand-black leading-none">{selectedQuote.customer}</h2>
-                        <Badge variant={selectedQuote.status === 'Pendiente' ? 'warning' : selectedQuote.status === 'Aprobada' ? 'success' : 'danger'} className="px-5 py-1.5 text-[12px]">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-[24px] font-black tracking-tighter text-brand-black leading-none">{selectedQuote.customer}</h2>
+                        <Badge variant={selectedQuote.status === 'Pendiente' ? 'warning' : selectedQuote.status === 'Aprobada' ? 'success' : 'danger'} className="px-4 py-1 text-[11px]">
                           {selectedQuote.status}
                         </Badge>
                       </div>
-                      <p className="text-[13px] font-black text-brand-text-muted uppercase tracking-[0.3em] font-mono">Número de Proforma • {selectedQuote.id}</p>
-                      <p className="text-[13px] font-bold text-brand-text-muted">Fecha de solicitud: {formatRequestDate(selectedQuote.date)}</p>
+                      <p className="text-[12px] font-black text-brand-text-muted uppercase tracking-[0.2em] font-mono">Número de Proforma • {selectedQuote.id}</p>
+                      <p className="text-[12px] font-bold text-brand-text-muted">Fecha de solicitud: {formatRequestDate(selectedQuote.date)}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col md:items-end gap-3 bg-brand-neutral-light p-5 rounded-3xl border border-brand-neutral-border">
-                    <div className="flex items-center gap-3 text-brand-black font-black text-[13px]">
-                      <Mail size={16} className="text-brand-text-muted" /> {selectedQuote.customer.toLowerCase().replace(' ', '.')}@correo.pe
+                  <div className="flex flex-col items-start gap-2 bg-brand-neutral-light p-4 rounded-2xl border border-brand-neutral-border md:min-w-[260px]">
+                    <div className="flex items-center gap-2.5 text-brand-black font-bold text-[12px] text-left">
+                      <Mail size={15} className="text-brand-text-muted shrink-0" /> {selectedQuote.customerEmail || 'No registrado'}
                     </div>
-                    <div className="flex items-center gap-3 text-brand-black font-black text-[13px]">
-                      <Phone size={16} className="text-brand-text-muted" /> +51 912 345 678
+                    <div className="flex items-center gap-2.5 text-brand-black font-bold text-[12px] text-left">
+                      <Phone size={15} className="text-brand-text-muted shrink-0" /> {selectedQuote.customerPhone || 'No registrado'}
+                    </div>
+                    <div className="flex items-center gap-2.5 text-brand-black font-bold text-[12px] text-left">
+                      <FileText size={15} className="text-brand-text-muted shrink-0" /> {selectedQuote.documentNumber ? `${selectedQuote.documentType || 'Doc'}: ${selectedQuote.documentNumber}` : 'Documento no registrado'}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-10 space-y-14">
+                <div className="p-6 space-y-10">
                   {/* Products List */}
                   <section className="space-y-6">
                     <div className="flex items-center gap-3">
                       <div className="w-1.5 h-6 bg-brand-black rounded-full"></div>
                       <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Configuración de Artículos</h4>
                     </div>
-                    <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[32px] overflow-hidden">
+                    <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[24px] overflow-x-auto">
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-brand-neutral-mid/30 border-b border-brand-neutral-border">
-                            <th className="px-8 py-5 text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Base de Prenda</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">Volumen</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">Stock disponible</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-right">P. Unitario</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-right">Calculado</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider whitespace-nowrap">Producto</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-center whitespace-nowrap">Volumen</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-center whitespace-nowrap">Stock disponible</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-right whitespace-nowrap">P. Unitario</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-brand-text-muted uppercase tracking-wider text-right whitespace-nowrap">Calculado</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y border-brand-neutral-border">
                           {selectedQuote.items.map((item, idx) => (
                             <tr key={idx} className="hover:bg-white transition-colors">
-                              <td className="px-8 py-6">
-                                <div className="flex items-center gap-5">
-                                  <div className="w-14 h-16 bg-brand-black rounded-2xl flex items-center justify-center p-2 group overflow-hidden relative">
-                                    <div className="w-full h-full rounded-full bg-white/10 border border-white/20 group-hover:scale-150 transition-transform duration-500"></div>
-                                    <TrendingUp size={20} className="text-white relative z-10 opacity-30" />
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-11 bg-brand-black rounded-xl flex items-center justify-center shrink-0">
+                                    <TrendingUp size={16} className="text-white opacity-30" />
                                   </div>
-                                  <div>
-                                    <h5 className="text-[15px] font-black text-brand-black tracking-tight">{item.product}</h5>
-                                    <p className="text-[12px] text-brand-text-muted font-bold uppercase tracking-tighter">{item.variant}</p>
+                                  <div className="min-w-0">
+                                    <h5 className="text-[13px] font-black text-brand-black tracking-tight">{item.product}</h5>
+                                    <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">{item.variant}</p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-8 py-6 text-center text-[15px] font-black">{item.quantity} <span className="text-[11px] text-brand-text-muted uppercase font-bold ml-1">UDS</span></td>
-                              <td className="px-8 py-6 text-center text-[15px] font-black">
+                              <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">{item.quantity} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></td>
+                              <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">
                                 {item.stock == null
-                                  ? <span className="text-[12px] font-bold text-brand-text-muted opacity-50 normal-case">No disponible</span>
-                                  : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[11px] text-brand-text-muted uppercase font-bold ml-1">UDS</span></span>}
+                                  ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
+                                  : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></span>}
                               </td>
-                              <td className="px-8 py-6 text-right text-[15px] font-bold text-brand-text-muted opacity-60">S/ {item.price.toFixed(2)}</td>
-                              <td className="px-8 py-6 text-right text-[18px] font-black tracking-tighter text-brand-black">S/ {(item.quantity * item.price).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.price.toFixed(2)}</td>
+                              <td className="px-4 py-3 text-right text-[15px] font-black tracking-tight text-brand-black whitespace-nowrap">S/ {(item.quantity * item.price).toFixed(2)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -421,28 +423,28 @@ export default function QuotesPage() {
                     </div>
 
                     {/* Summary Breakdown */}
-                    <div className="mt-8 flex justify-end">
-                      <div className="w-full md:w-96 space-y-4">
-                        <div className="flex justify-between items-center text-[13px] font-bold text-brand-text-muted uppercase tracking-widest">
+                    <div className="mt-5 flex justify-end">
+                      <div className="w-full md:w-80 space-y-2.5">
+                        <div className="flex justify-between items-center text-[12px] font-bold text-brand-text-muted uppercase tracking-wider whitespace-nowrap gap-3">
                           <span>Subtotal Base</span>
                           <span>S/ {selectedQuote.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                         </div>
                         {(selectedQuote.hasCustomization || (selectedQuote.files && selectedQuote.files.length > 0)) && (
-                          <div className="flex justify-between items-center text-[13px] font-bold text-brand-camel uppercase tracking-widest">
+                          <div className="flex justify-between items-center text-[12px] font-bold text-brand-camel uppercase tracking-wider whitespace-nowrap gap-3">
                             <div className="flex items-center gap-2">
-                              <Layers size={14} />
-                              <span>Incremento Personalización ({store.customizationIncrement || 10}%)</span>
+                              <Layers size={13} />
+                              <span>Personalización ({store.customizationIncrement || 10}%)</span>
                             </div>
                             <span>+ S/ {(selectedQuote.total * (store.customizationIncrement || 10) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center text-[13px] font-bold text-brand-text-muted uppercase tracking-widest">
+                        <div className="flex justify-between items-center text-[12px] font-bold text-brand-text-muted uppercase tracking-wider whitespace-nowrap gap-3">
                           <span>IGV (18%)</span>
                           <span>S/ {(selectedQuote.total * ((selectedQuote.hasCustomization || (selectedQuote.files && selectedQuote.files.length > 0)) ? (1 + (store.customizationIncrement || 10) / 100) : 1) * 0.18).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="pt-4 border-t-2 border-brand-neutral-border flex justify-between items-center">
-                          <span className="text-[14px] font-black text-brand-black uppercase tracking-widest">Subtotal con IGV</span>
-                          <span className="text-[22px] font-black text-brand-black tracking-tighter">
+                        <div className="pt-3 border-t-2 border-brand-neutral-border flex justify-between items-center gap-3">
+                          <span className="text-[13px] font-black text-brand-black uppercase tracking-wider">Subtotal con IGV</span>
+                          <span className="text-[18px] font-black text-brand-black tracking-tight whitespace-nowrap">
                             S/ {(selectedQuote.total * ((selectedQuote.hasCustomization || (selectedQuote.files && selectedQuote.files.length > 0)) ? (1 + (store.customizationIncrement || 10) / 100) : 1) * 1.18).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -451,8 +453,8 @@ export default function QuotesPage() {
                   </section>
 
                   {/* Graphics & Message Side by Side */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <section className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section className="space-y-4">
                       <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Diseño</h4>
                       <div className="flex flex-col gap-4">
                         {selectedQuote.files?.map((file, idx) => {
@@ -493,26 +495,28 @@ export default function QuotesPage() {
                       </div>
                     </section>
 
-                    <section className="space-y-6">
+                    <section className="space-y-4">
                       <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Requerimiento del cliente</h4>
-                      <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[32px] p-8 relative min-h-[140px] flex items-center shadow-inner">
-                        <MessageSquare size={24} className="absolute left-[-12px] top-1/2 -translate-y-1/2 bg-brand-neutral-light text-brand-neutral-border p-1 border-2 border-brand-neutral-border rounded-full" />
-                        <p className="text-[15px] text-brand-black font-bold leading-relaxed italic opacity-80 pl-4">
-                          {selectedQuote.message ? `"${selectedQuote.message}"` : 'El cliente no dejó un requerimiento adicional.'}
-                        </p>
+                      <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[20px] p-5 relative min-h-[100px] flex items-center shadow-inner">
+                        <MessageSquare size={20} className="absolute left-[-10px] top-1/2 -translate-y-1/2 bg-brand-neutral-light text-brand-neutral-border p-1 border-2 border-brand-neutral-border rounded-full" />
+                        {selectedQuote.message ? (
+                          <p className="text-[13px] text-brand-black font-bold leading-relaxed pl-3">{selectedQuote.message}</p>
+                        ) : (
+                          <p className="text-[13px] text-brand-text-muted font-bold leading-relaxed pl-3">El cliente no dejó una descripción para esta cotización.</p>
+                        )}
                       </div>
                     </section>
                   </div>
 
                   {/* Pricing Model Summary */}
-                  <div className="bg-brand-black rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between text-white shadow-2xl shadow-brand-black/30 border border-white/10 ring-1 ring-white/5">
-                    <div className="space-y-1 mb-8 md:mb-0">
-                      <p className="text-[11px] font-black text-white/50 uppercase tracking-[0.4em] mb-2">Presupuesto Final Sugerido</p>
-                      <h3 className="text-[44px] font-black tracking-tighter leading-none flex items-baseline gap-2">
-                        <span className="text-[28px] opacity-60">S/</span>
+                  <div className="bg-brand-black rounded-[24px] p-6 flex flex-col md:flex-row items-center justify-between gap-5 text-white shadow-xl shadow-brand-black/30 border border-white/10">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">Presupuesto Final</p>
+                      <h3 className="text-[30px] font-black tracking-tighter leading-none flex items-baseline gap-1.5">
+                        <span className="text-[20px] opacity-60">S/</span>
                         {(selectedQuote.total * ((selectedQuote.hasCustomization || (selectedQuote.files && selectedQuote.files.length > 0)) ? (1 + (store.customizationIncrement || 10) / 100) : 1) * 1.18).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-5 text-[10px] font-black text-white/70 uppercase tracking-[0.2em] pt-4">
+                      <div className="flex flex-wrap items-center gap-4 text-[10px] font-black text-white/70 uppercase tracking-[0.15em] pt-3">
                         <div className="flex flex-col">
                           <span className="text-white/70">Base de Cotización:</span>
                           <span className="text-white">S/ {selectedQuote.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
@@ -531,11 +535,11 @@ export default function QuotesPage() {
                     </div>
                     {selectedQuote.status === 'Pendiente' ? (
                       <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                        <Button onClick={handleOpenRejectModal} variant="outline" className="h-14 px-8 !border-white/10 !bg-white/5 !text-white hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[13px]">
-                          <X size={20} /> Rechazar
+                        <Button onClick={handleOpenRejectModal} variant="outline" className="h-12 px-6 !border-white/10 !bg-white/5 !text-white hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[12px]">
+                          <X size={18} /> Rechazar
                         </Button>
-                        <Button onClick={() => handleStatusUpdate('Aprobada')} variant="camel" className="h-14 px-10 gap-2 !rounded-xl font-black text-[14px] uppercase tracking-widest shadow-lg shadow-brand-camel/20 hover:scale-105 active:scale-95 transition-all">
-                          <Check size={20} /> Aceptar
+                        <Button onClick={() => handleStatusUpdate('Aprobada')} variant="camel" className="h-12 px-8 gap-2 !rounded-xl font-black text-[13px] uppercase tracking-widest shadow-lg shadow-brand-camel/20 hover:scale-105 active:scale-95 transition-all">
+                          <Check size={18} /> Aceptar
                         </Button>
                       </div>
                     ) : (

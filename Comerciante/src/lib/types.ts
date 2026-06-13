@@ -32,6 +32,25 @@ export interface Store {
 
 export type OrderStatus = 'Pagado' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
 
+export interface OrderItemDetail {
+  productId?: string;
+  productName?: string;
+  productVariantId?: string;
+  size?: string;
+  color?: string;
+  quantity: number;
+  unitPrice: number;
+  subTotal: number;
+}
+
+export interface ShippingInfo {
+  address?: string;
+  district?: string;
+  reference?: string;
+  estimatedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+}
+
 export interface Order {
   id: string;
   storeId: string;
@@ -42,6 +61,17 @@ export interface Order {
   date: string;
   isUrgent?: boolean;
   hasCustomization?: boolean;
+  // Datos reales expuestos por el backend (contrato Comerciante).
+  itemsDetail?: OrderItemDetail[];
+  customerEmail?: string;
+  customerPhone?: string;
+  documentType?: string;
+  documentNumber?: string;
+  shippingDetail?: ShippingInfo | null;
+  partialTotal?: number;
+  totalDiscount?: number;
+  finalTotal?: number;
+  observations?: string;
 }
 
 export type QuoteStatus = 'Pendiente' | 'Aprobada' | 'Rechazada';
@@ -60,6 +90,12 @@ export interface Quote {
     quantity: number;
     price: number;
     stock?: number | null;
+    productId?: string;
+    productVariantId?: string;
+    size?: string;
+    color?: string;
+    unitPrice?: number;
+    subTotal?: number;
   }[];
   message?: string;
   observations?: string;
@@ -69,6 +105,11 @@ export interface Quote {
     type: string;
     url: string;
   }[];
+  // Datos reales del cliente expuestos por el backend.
+  customerEmail?: string;
+  customerPhone?: string;
+  documentType?: string;
+  documentNumber?: string;
 }
 
 export interface Product {

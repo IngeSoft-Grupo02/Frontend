@@ -333,15 +333,75 @@ export const discountPayload = (discount: Discount | Partial<Discount>) => ({
   usageCount: discount.usageCount || 0
 });
 
-export const mapOrder = (raw: JsonValue): Order => ({
-  id: String(raw.id),
-  storeId: String(raw.storeId || ''),
-  customer: raw.customer || 'Cliente',
-  status: raw.statusLabel || 'Pagado',
-  items: Number(raw.items || 0),
-  total: Number(raw.total || 0),
-  date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10)
+const orderStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Order['status'] => {
+  const normalized = String(rawLabel ?? rawStatus ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (normalized === 'in_preparation' || normalized === 'en proceso') return 'En proceso';
+  if (normalized === 'in_transit' || normalized === 'enviado') return 'Enviado';
+  if (normalized === 'delivered' || normalized === 'entregado') return 'Entregado';
+  if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado') return 'Cancelado';
+  return 'Pagado'; // PAYMENT_CONFIRMED / Pagado
+};
+
+// Detecta enums internos del backend que no deben mostrarse como texto del cliente.
+const INTERNAL_ENUM_TOKENS = /\b(APPROVED|PENDING|REJECTED|PAYMENT_CONFIRMED|IN_PREPARATION|IN_TRANSIT|DELIVERED|CANCELLED)\b/;
+
+// Devuelve una descripci\u00f3n real del cliente o '' si est\u00e1 vac\u00eda / es texto t\u00e9cnico de seeds.
+const cleanCustomerDescription = (value: unknown): string => {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  if (INTERNAL_ENUM_TOKENS.test(text)) return '';
+  return text;
+};
+
+const mapOrderItemDetail = (item: JsonValue) => ({
+  productId: item.productId != null ? String(item.productId) : undefined,
+  productName: item.productName || undefined,
+  productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
+  size: item.size || undefined,
+  color: item.color || undefined,
+  quantity: Number(item.quantity || 0),
+  unitPrice: Number(item.unitPrice ?? item.price ?? 0),
+  subTotal: Number(item.subTotal ?? 0)
 });
+
+const mapShippingDetail = (raw: JsonValue): Order['shippingDetail'] => {
+  const shipping = raw.shippingDetail;
+  if (!shipping || typeof shipping !== 'object') return null;
+  return {
+    address: shipping.address || undefined,
+    district: shipping.district || undefined,
+    reference: shipping.reference || undefined,
+    estimatedDeliveryDate: shipping.estimatedDeliveryDate || undefined,
+    actualDeliveryDate: shipping.actualDeliveryDate || undefined
+  };
+};
+
+export const mapOrder = (raw: JsonValue): Order => {
+  const itemsDetail = Array.isArray(raw.itemsDetail) ? raw.itemsDetail.map(mapOrderItemDetail) : undefined;
+  return {
+    id: String(raw.id),
+    storeId: String(raw.storeId || ''),
+    customer: raw.customerName || raw.customer || 'Cliente',
+    status: orderStatusFromBackend(raw.status, raw.statusLabel),
+    items: Number(raw.items ?? (itemsDetail ? itemsDetail.length : 0)),
+    total: Number(raw.finalTotal ?? raw.total ?? 0),
+    date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    itemsDetail,
+    customerEmail: raw.customerEmail || undefined,
+    customerPhone: raw.customerPhone || undefined,
+    documentType: raw.documentType || undefined,
+    documentNumber: raw.documentNumber || undefined,
+    shippingDetail: mapShippingDetail(raw),
+    partialTotal: raw.partialTotal != null ? Number(raw.partialTotal) : undefined,
+    totalDiscount: raw.totalDiscount != null ? Number(raw.totalDiscount) : undefined,
+    finalTotal: raw.finalTotal != null ? Number(raw.finalTotal) : undefined,
+    observations: cleanCustomerDescription(raw.observations) || undefined
+  };
+};
 
 const quoteStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Quote['status'] => {
   const normalized = String(rawLabel ?? rawStatus ?? '')
@@ -375,25 +435,42 @@ const mapQuoteItemStock = (item: JsonValue): number | null => {
   return value == null ? null : Number(value);
 };
 
+const buildVariantLabel = (item: JsonValue): string => {
+  if (item.variant) return String(item.variant);
+  const parts = [item.size, item.color].filter(Boolean);
+  return parts.join(' · ');
+};
+
 export const mapQuote = (raw: JsonValue): Quote => ({
   id: String(raw.id),
   storeId: String(raw.storeId || ''),
-  customer: raw.customer || 'Cliente',
+  customer: raw.customerName || raw.customer || 'Cliente',
   status: quoteStatusFromBackend(raw.status, raw.statusLabel),
   total: Number(raw.totalAmount || 0),
   subtotal: Number(raw.subTotal || 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
   items: (raw.items || []).map((item: JsonValue) => ({
-    product: item.productName || item.name || item.product || 'Producto',
-    variant: item.variant || '',
+    product: item.productName || item.name || item.product || 'Producto sin nombre registrado',
+    variant: buildVariantLabel(item),
     quantity: Number(item.quantity || 0),
-    price: Number(item.price || 0),
-    stock: mapQuoteItemStock(item)
+    price: Number(item.unitPrice ?? item.price ?? 0),
+    stock: mapQuoteItemStock(item),
+    productId: item.productId != null ? String(item.productId) : undefined,
+    productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
+    size: item.size || undefined,
+    color: item.color || undefined,
+    unitPrice: item.unitPrice != null ? Number(item.unitPrice) : undefined,
+    subTotal: item.subTotal != null ? Number(item.subTotal) : undefined
   })),
-  message: raw.description || raw.observations || '',
+  // "Requerimiento del cliente" usa solo description real (no observations ni texto técnico de seeds).
+  message: cleanCustomerDescription(raw.description),
   observations: raw.observations || undefined,
   hasCustomization: raw.hasCustomization === true || undefined,
-  files: mapQuoteFiles(raw)
+  files: mapQuoteFiles(raw),
+  customerEmail: raw.customerEmail || undefined,
+  customerPhone: raw.customerPhone || undefined,
+  documentType: raw.documentType || undefined,
+  documentNumber: raw.documentNumber || undefined
 });
 
 const ORDER_STATUS_TO_BACKEND: Record<Order['status'], string> = {
