@@ -1,0 +1,5 @@
+# core-js (transitiva de jspdf/canvg) trae un postinstall de financiación que no
+# necesitamos ejecutar. Se marca como false para no ejecutar su build y evitar
+# el error ERR_PNPM_IGNORED_BUILDS durante el build de Next.
+allowBuilds:
+  core-js: false
