@@ -59,6 +59,7 @@ export interface Quote {
     variant: string;
     quantity: number;
     price: number;
+    stock?: number | null;
   }[];
   message?: string;
   observations?: string;

@@ -343,22 +343,57 @@ export const mapOrder = (raw: JsonValue): Order => ({
   date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10)
 });
 
+const quoteStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Quote['status'] => {
+  const normalized = String(rawLabel ?? rawStatus ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (normalized === 'approved' || normalized === 'aprobada' || normalized === 'aprobado') return 'Aprobada';
+  if (normalized === 'rejected' || normalized === 'rechazada' || normalized === 'rechazado') return 'Rechazada';
+  return 'Pendiente';
+};
+
+// Posibles campos de archivos/diseño que el backend podría enviar a futuro.
+// Hoy el backend NO devuelve archivos en la cotización (ver brecha documentada),
+// por lo que esto queda preparado para cuando exista el dato real.
+const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
+  const source = raw.files || raw.attachments || raw.designFiles || raw.customDesigns || raw.designs;
+  if (!Array.isArray(source)) return undefined;
+  return source
+    .map((file: JsonValue) => {
+      const url = String(file.url || file.fileUrl || file.designUrl || file.imageUrl || '').trim();
+      const name = String(file.name || file.fileName || file.filename || 'archivo').trim();
+      const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
+      return { name, type: String(file.type || ext || 'file'), url };
+    })
+    .filter((file: { url: string }) => Boolean(file.url));
+};
+
+const mapQuoteItemStock = (item: JsonValue): number | null => {
+  const value = item.stock ?? item.availableStock ?? item.variantStock ?? item.stockDisponible;
+  return value == null ? null : Number(value);
+};
+
 export const mapQuote = (raw: JsonValue): Quote => ({
   id: String(raw.id),
   storeId: String(raw.storeId || ''),
   customer: raw.customer || 'Cliente',
-  status: raw.statusLabel || 'Pendiente',
+  status: quoteStatusFromBackend(raw.status, raw.statusLabel),
   total: Number(raw.totalAmount || 0),
   subtotal: Number(raw.subTotal || 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
   items: (raw.items || []).map((item: JsonValue) => ({
-    product: item.product || 'Producto',
+    product: item.productName || item.name || item.product || 'Producto',
     variant: item.variant || '',
     quantity: Number(item.quantity || 0),
-    price: Number(item.price || 0)
+    price: Number(item.price || 0),
+    stock: mapQuoteItemStock(item)
   })),
   message: raw.description || raw.observations || '',
-  observations: raw.observations || undefined
+  observations: raw.observations || undefined,
+  hasCustomization: raw.hasCustomization === true || undefined,
+  files: mapQuoteFiles(raw)
 });
 
 const ORDER_STATUS_TO_BACKEND: Record<Order['status'], string> = {
