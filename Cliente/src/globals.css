@@ -19,6 +19,23 @@
   --text-on-primary: #ffffff;
   --text-on-secondary: #ffffff;
   --text-on-tertiary: #ffffff;
+  --muted-on-primary: #D1D5DB;
+  --muted-on-secondary: #E5E7EB;
+  --muted-on-tertiary: #374151;
+  --border-on-primary: #FFFFFF;
+  --border-on-secondary: #FFFFFF;
+  --border-on-tertiary: #111827;
+  --accent-on-primary: #FDE047;
+  --accent-on-secondary: #FDE047;
+  --accent-on-light: #8A6500;
+  --success-on-primary: #86EFAC;
+  --success-on-secondary: #86EFAC;
+  --error-on-primary: #FCA5A5;
+  --error-on-secondary: #FCA5A5;
+  --warning-on-primary: #FDE047;
+  --warning-on-secondary: #FDE047;
+  --info-on-primary: #93C5FD;
+  --info-on-secondary: #93C5FD;
   
   --color-olive: #86916B;
   --color-camel: #BDA37D;
@@ -59,9 +76,15 @@
     color: var(--color-text-main, #1A1A1A);
   }
   
-  input::placeholder {
-    color: #9ca3af !important;
+  input::placeholder, textarea::placeholder {
+    color: currentColor;
+    opacity: 0.72;
   }
+
+  .auth-form input, .auth-form select {
+    border-color: var(--border-on-primary);
+  }
+
 }
 
 @layer components {

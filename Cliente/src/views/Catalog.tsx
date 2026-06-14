@@ -19,18 +19,6 @@ import { PRODUCTS, AVAILABLE_SIZES, AVAILABLE_COLORS } from '../constants';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 
-// Helper to calculate perceptual brightness of a hex color
-function getBrightness(hexColor: string): number {
-  if (!hexColor) return 0;
-  const hex = hexColor.replace('#', '');
-  if (hex.length !== 6) return 0;
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return 0;
-  return (r * 299 + g * 587 + b * 114) / 1000;
-}
-
 interface CatalogProps {
   store: Store;
   user: User | null;
@@ -173,7 +161,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                         <div className="h-px w-12" style={{ backgroundColor: 'var(--color-tertiary)' }} />
                         <h3 
                           className="text-[56px] font-black leading-[0.8] tracking-tighter"
-                          style={{ color: 'var(--color-tertiary)' }}
+                          style={{ color: 'var(--accent-on-light)' }}
                         >
                           Industrial Partners
                         </h3>
@@ -333,7 +321,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 {/* Sidebar Filters */}
                 <aside className="w-full lg:w-64 space-y-6">
                   <div className="p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
-                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--color-tertiary)' }}>Ordenar por</h3>
+                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--accent-on-light)' }}>Ordenar por</h3>
                     <div className="space-y-1">
                       {[
                         { id: 'recent', label: 'Más recientes' },
@@ -361,7 +349,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                   </div>
 
                   <div className="p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
-                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--color-tertiary)' }}>Filtrar por Talla</h3>
+                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--accent-on-light)' }}>Filtrar por Talla</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {AVAILABLE_SIZES.map(size => (
                         <button 
@@ -390,7 +378,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                   </div>
 
                   <div className="p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
-                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--color-tertiary)' }}>Color</h3>
+                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--accent-on-light)' }}>Color</h3>
                     <div className="space-y-2">
                       {AVAILABLE_COLORS.map(color => (
                         <button 
@@ -489,7 +477,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       <button 
                         onClick={() => { setSelectedSizes([]); setSelectedColors([]); setSearchQuery(''); }}
                         className="mt-8 font-black text-[13px] underline decoration-2 underline-offset-4 cursor-pointer"
-                        style={{ color: 'var(--color-tertiary)' }}
+                        style={{ color: 'var(--accent-on-light)' }}
                       >
                         Limpiar todos los filtros
                       </button>

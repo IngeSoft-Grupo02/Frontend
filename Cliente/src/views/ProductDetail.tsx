@@ -140,7 +140,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                     </div>
                     <div>
                        <div className="text-[12px] font-bold mb-1">Guía de tallas</div>
-                       <button className="text-[11px] font-bold uppercase tracking-widest hover:underline cursor-pointer" style={{ color: 'var(--color-tertiary)' }}>Ver medidas</button>
+                       <button className="text-[11px] font-bold uppercase tracking-widest hover:underline cursor-pointer" style={{ color: 'var(--accent-on-secondary)' }}>Ver medidas</button>
                     </div>
                  </div>
                  <div className="flex gap-4">

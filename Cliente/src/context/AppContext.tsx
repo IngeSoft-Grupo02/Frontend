@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Store, User, Product, Quote, Order, View } from '../types';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Order, Product, Quote, Store, User, View } from '../types';
 import {
   getStoredCustomerStore,
   getStoredCustomerToken,
@@ -10,6 +10,7 @@ import {
   setStoredCustomerToken,
   setStoredCustomerUser,
 } from '../lib/session';
+import { applyThemeContrastTokens, getThemeContrastTokens } from '../lib/themeContrast';
 
 interface AppContextType {
   currentView: View;
@@ -49,7 +50,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Rehidratar sesión de cliente desde localStorage al montar (F5)
   useEffect(() => {
     const storedStore = getStoredCustomerStore();
     const storedUser = getStoredCustomerUser();
@@ -60,13 +60,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setHydrated(true);
   }, []);
 
-  // Persistir tienda seleccionada
   useEffect(() => {
     if (!hydrated) return;
     setStoredCustomerStore(selectedStore);
   }, [selectedStore, hydrated]);
 
-  // Persistir usuario y token de sesión del cliente
   useEffect(() => {
     if (!hydrated) return;
     setStoredCustomerUser(currentUser);
@@ -77,109 +75,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setStoredCustomerToken(customerToken);
   }, [customerToken, hydrated]);
 
+  useEffect(() => {
+    const tokens = getThemeContrastTokens({
+      primary: selectedStore?.primaryColor || selectedStore?.color,
+      secondary: selectedStore?.secondaryColor,
+      tertiary: selectedStore?.tertiaryColor,
+    });
+    applyThemeContrastTokens(tokens, document.documentElement);
+  }, [selectedStore]);
+
   const logout = () => {
     setCurrentUser(null);
     setCustomerToken(null);
   };
 
-  // Helper to calculate perceptual brightness of a hex color
-  const getBrightness = (hexColor: string): number => {
-    const hex = hexColor.replace('#', '');
-    if (hex.length !== 6) return 0;
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    if (isNaN(r) || isNaN(g) || isNaN(b)) return 0;
-    // Standard HSP / YIQ formula
-    return (r * 299 + g * 587 + b * 114) / 1000;
-  };
-
-  // Function to darken a color to guarantee at least 4.5:1 text contrast on white
-  const adjustColorContrast = (hexColor: string, targetBrightness = 110): string => {
-    const currentBrightness = getBrightness(hexColor);
-    if (currentBrightness <= targetBrightness) {
-      return hexColor; // No adjustment needed
-    }
-    
-    const hex = hexColor.replace('#', '');
-    let r = parseInt(hex.substring(0, 2), 16);
-    let g = parseInt(hex.substring(2, 4), 16);
-    let b = parseInt(hex.substring(4, 6), 16);
-    
-    const factor = targetBrightness / currentBrightness;
-    r = Math.max(0, Math.min(255, Math.floor(r * factor)));
-    g = Math.max(0, Math.min(255, Math.floor(g * factor)));
-    b = Math.max(0, Math.min(255, Math.floor(b * factor)));
-    
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  };
-
-  useEffect(() => {
-    if (selectedStore) {
-      const primary = selectedStore.primaryColor || selectedStore.color;
-      const secondary = selectedStore.secondaryColor || '#86916B';
-      const tertiary = selectedStore.tertiaryColor || '#BDA37D';
-
-      document.documentElement.style.setProperty('--color-primary', primary);
-      document.documentElement.style.setProperty('--color-secondary', secondary);
-      document.documentElement.style.setProperty('--color-tertiary', tertiary);
-
-      // Calcular perceptibilidad de brillo YIQ para garantizar contraste WCAG >= 4.5:1
-      const pBright = getBrightness(primary);
-      const sBright = getBrightness(secondary);
-      const tBright = getBrightness(tertiary);
-
-      const colorTextOnPrimary = pBright > 140 ? '#1a1a1a' : '#ffffff';
-      const colorTextOnSecondary = sBright > 140 ? '#1a1a1a' : '#ffffff';
-      const colorTextOnTertiary = tBright > 140 ? '#1a1a1a' : '#ffffff';
-
-      document.documentElement.style.setProperty('--color-text-on-primary', colorTextOnPrimary);
-      document.documentElement.style.setProperty('--color-text-on-secondary', colorTextOnSecondary);
-      document.documentElement.style.setProperty('--color-text-on-tertiary', colorTextOnTertiary);
-
-      // Compatibilidad con AGENTS.md
-      document.documentElement.style.setProperty('--text-on-primary', colorTextOnPrimary);
-      document.documentElement.style.setProperty('--text-on-secondary', colorTextOnSecondary);
-      document.documentElement.style.setProperty('--text-on-tertiary', colorTextOnTertiary);
-
-      // Ajuste automático de contraste para cuando se pinta texto sobre fondo blanco/claro
-      const primaryText = adjustColorContrast(primary, 110);
-      const secondaryText = adjustColorContrast(secondary, 110);
-      const tertiaryText = adjustColorContrast(tertiary, 110);
-
-      document.documentElement.style.setProperty('--color-primary-text', primaryText);
-      document.documentElement.style.setProperty('--color-secondary-text', secondaryText);
-      document.documentElement.style.setProperty('--color-tertiary-text', tertiaryText);
-
-      // Compatibilidad regresiva con herencia de estilos
-      document.documentElement.style.setProperty('--color-camel', tertiary);
-      document.documentElement.style.setProperty('--color-olive', secondary);
-      document.documentElement.style.setProperty('--color-camel-light', `${tertiary}22`);
-    } else {
-      document.documentElement.style.setProperty('--color-primary', '#000000');
-      document.documentElement.style.setProperty('--color-secondary', '#86916B');
-      document.documentElement.style.setProperty('--color-tertiary', '#BDA37D');
-      document.documentElement.style.setProperty('--color-text-on-primary', '#ffffff');
-      document.documentElement.style.setProperty('--color-text-on-secondary', '#ffffff');
-      document.documentElement.style.setProperty('--color-text-on-tertiary', '#ffffff');
-      document.documentElement.style.setProperty('--text-on-primary', '#ffffff');
-      document.documentElement.style.setProperty('--text-on-secondary', '#ffffff');
-      document.documentElement.style.setProperty('--text-on-tertiary', '#ffffff');
-      document.documentElement.style.setProperty('--color-primary-text', '#1a1a1a');
-      document.documentElement.style.setProperty('--color-secondary-text', '#475569');
-      document.documentElement.style.setProperty('--color-tertiary-text', '#BDA37D');
-      document.documentElement.style.setProperty('--color-camel', '#BDA37D');
-      document.documentElement.style.setProperty('--color-olive', '#86916B');
-      document.documentElement.style.setProperty('--color-camel-light', '#D1C0A5');
-    }
-  }, [selectedStore]);
-
   const addToCart = (item: any) => {
-    setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
+    setCartItems((previous) => [...previous, { ...item, id: `cart_${Date.now()}` }]);
   };
 
   const removeFromCart = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems((previous) => previous.filter((item) => item.id !== id));
   };
 
   return (

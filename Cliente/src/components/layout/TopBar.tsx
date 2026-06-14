@@ -179,7 +179,8 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
                     <div className="mt-1 pt-1 border-t px-2" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                        <button 
                         onClick={() => { if (onLogout) onLogout(); setIsDropdownOpen(false); }}
-                        className="w-full flex items-center gap-3 text-left px-3 py-3 rounded-xl text-[13px] font-black text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="w-full flex items-center gap-3 text-left px-3 py-3 rounded-xl text-[13px] font-black transition-all cursor-pointer"
+                        style={{ color: 'var(--error-on-secondary)' }}
                       >
                         <LogOut size={16} /> Cerrar sesión
                       </button>
