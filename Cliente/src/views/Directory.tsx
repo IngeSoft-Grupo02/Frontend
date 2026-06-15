@@ -8,20 +8,9 @@ import { motion } from 'motion/react';
 import { MessageCircle, Mail, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, View } from '../types';
 import { fetchPublicStores, toStore, ApiError } from '../lib/api';
+import { getReadableMutedTextColor, getReadableTextColor } from '../lib/themeContrast';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
-
-// Helper to calculate perceptual brightness of a hex color
-function getBrightness(hexColor: string): number {
-  if (!hexColor) return 0;
-  const hex = hexColor.replace('#', '');
-  if (hex.length !== 6) return 0;
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return 0;
-  return (r * 299 + g * 587 + b * 114) / 1000;
-}
 
 interface DirectoryProps {
   onSelectStore: (store: Store) => void;
@@ -149,11 +138,8 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
       <div className="max-w-7xl mx-auto px-10 mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredStores.map((store, i) => {
           const storeBgColor = store.primaryColor || store.color;
-          const isLightVal = getBrightness(storeBgColor) > 140;
-          const cardCoverText = isLightVal ? 'text-gray-900' : 'text-white';
-          const cardCoverSub = isLightVal ? 'text-gray-600 font-semibold' : 'text-white/70';
-          const cardLogoBg = isLightVal ? 'bg-gray-900 text-white' : 'bg-white text-primary';
-          const accentGridColor = isLightVal ? 'bg-gray-900/10' : 'bg-white/10';
+          const cardCoverText = getReadableTextColor(storeBgColor);
+          const cardCoverSub = getReadableMutedTextColor(storeBgColor);
 
           return (
             <motion.div 
@@ -170,20 +156,23 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                 className="h-32 p-6 flex items-center justify-between relative transition-all group-hover:opacity-95" 
                 style={{ backgroundColor: storeBgColor }}
               >
-                <div className={`flex items-center gap-4 ${cardCoverText}`}>
-                  <div className={`w-12 h-12 rounded-[8px] flex items-center justify-center font-extrabold text-[18px] shadow-sm transition-transform group-hover:scale-105 ${cardLogoBg}`}>
+                <div className="flex items-center gap-4" style={{ color: cardCoverText }}>
+                  <div
+                    className="w-12 h-12 rounded-[8px] flex items-center justify-center font-extrabold text-[18px] shadow-sm transition-transform group-hover:scale-105"
+                    style={{ backgroundColor: cardCoverText, color: storeBgColor }}
+                  >
                     {store.logo}
                   </div>
                   <div>
                     <h3 className="text-[18px] font-extrabold tracking-tight">{store.name}</h3>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${cardCoverSub}`} style={{ contentVisibility: 'auto' }}>{store.category}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: cardCoverSub, contentVisibility: 'auto' }}>{store.category}</span>
                   </div>
                 </div>
                 <div className="logo-accent w-8 h-8 grid grid-cols-2 gap-[2px] opacity-25">
-                  <div className={isLightVal ? 'bg-black/40' : 'bg-white/40'} />
-                  <div className={isLightVal ? 'bg-black/30' : 'bg-white/30'} />
-                  <div className={isLightVal ? 'bg-black/20' : 'bg-white/20'} />
-                  <div className={isLightVal ? 'bg-black/10' : 'bg-white/10'} />
+                  <div style={{ backgroundColor: cardCoverText }} />
+                  <div style={{ backgroundColor: cardCoverText }} />
+                  <div style={{ backgroundColor: cardCoverText }} />
+                  <div style={{ backgroundColor: cardCoverText }} />
                 </div>
               </div>
               <div className="p-6">

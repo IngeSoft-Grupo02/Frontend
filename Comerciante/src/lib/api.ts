@@ -38,6 +38,28 @@ export const merchantSession = {
   }
 };
 
+/**
+ * Devuelve true si el JWT está vencido, malformado o no se puede decodificar.
+ * Un token sin payload válido o sin `exp` legible se trata como inválido.
+ */
+export function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
+/** Limpia la sesión del comerciante y avisa al contexto que la sesión expiró. */
+function handleUnauthorized() {
+  if (typeof window === 'undefined') return;
+  merchantSession.clear();
+  window.dispatchEvent(new Event('merchant:session-expired'));
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = merchantSession.getToken();
   const headers = new Headers(options.headers);
@@ -60,6 +82,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    // Sesión inválida/expirada en una request autenticada: limpiar y notificar.
+    if (token && (response.status === 401 || response.status === 403)) {
+      handleUnauthorized();
+    }
     const raw = await response.text();
     let message = raw || `Error HTTP ${response.status}`;
     try {
@@ -333,32 +359,150 @@ export const discountPayload = (discount: Discount | Partial<Discount>) => ({
   usageCount: discount.usageCount || 0
 });
 
-export const mapOrder = (raw: JsonValue): Order => ({
-  id: String(raw.id),
-  storeId: String(raw.storeId || ''),
-  customer: raw.customer || 'Cliente',
-  status: raw.statusLabel || 'Pagado',
-  items: Number(raw.items || 0),
-  total: Number(raw.total || 0),
-  date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10)
+const orderStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Order['status'] => {
+  const normalized = String(rawLabel ?? rawStatus ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (normalized === 'in_preparation' || normalized === 'en proceso') return 'En proceso';
+  if (normalized === 'in_transit' || normalized === 'enviado') return 'Enviado';
+  if (normalized === 'delivered' || normalized === 'entregado') return 'Entregado';
+  if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado') return 'Cancelado';
+  return 'Pagado'; // PAYMENT_CONFIRMED / Pagado
+};
+
+// Detecta enums internos del backend que no deben mostrarse como texto del cliente.
+const INTERNAL_ENUM_TOKENS = /\b(APPROVED|PENDING|REJECTED|PAYMENT_CONFIRMED|IN_PREPARATION|IN_TRANSIT|DELIVERED|CANCELLED)\b/;
+
+// Devuelve una descripci\u00f3n real del cliente o '' si est\u00e1 vac\u00eda / es texto t\u00e9cnico de seeds.
+const cleanCustomerDescription = (value: unknown): string => {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  if (INTERNAL_ENUM_TOKENS.test(text)) return '';
+  return text;
+};
+
+const mapOrderItemDetail = (item: JsonValue) => ({
+  productId: item.productId != null ? String(item.productId) : undefined,
+  productName: item.productName || undefined,
+  productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
+  size: item.size || undefined,
+  color: item.color || undefined,
+  // ?? para no romper stock 0 (0 es válido); solo null/undefined cae a null.
+  stock: (item.stockAvailable ?? item.stock ?? null) as number | null,
+  quantity: Number(item.quantity || 0),
+  unitPrice: Number(item.unitPrice ?? item.price ?? 0),
+  subTotal: Number(item.subTotal ?? 0)
 });
+
+const mapShippingDetail = (raw: JsonValue): Order['shippingDetail'] => {
+  const shipping = raw.shippingDetail;
+  if (!shipping || typeof shipping !== 'object') return null;
+  return {
+    address: shipping.address || undefined,
+    district: shipping.district || undefined,
+    reference: shipping.reference || undefined,
+    estimatedDeliveryDate: shipping.estimatedDeliveryDate || undefined,
+    actualDeliveryDate: shipping.actualDeliveryDate || undefined
+  };
+};
+
+export const mapOrder = (raw: JsonValue): Order => {
+  const itemsDetail = Array.isArray(raw.itemsDetail) ? raw.itemsDetail.map(mapOrderItemDetail) : undefined;
+  return {
+    id: String(raw.id),
+    storeId: String(raw.storeId || ''),
+    customer: raw.customerName || raw.customer || 'Cliente',
+    status: orderStatusFromBackend(raw.status, raw.statusLabel),
+    items: Number(raw.items ?? (itemsDetail ? itemsDetail.length : 0)),
+    total: Number(raw.finalTotal ?? raw.total ?? 0),
+    date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    itemsDetail,
+    customerEmail: raw.customerEmail || undefined,
+    customerPhone: raw.customerPhone || undefined,
+    documentType: raw.documentType || undefined,
+    documentNumber: raw.documentNumber || undefined,
+    shippingDetail: mapShippingDetail(raw),
+    partialTotal: raw.partialTotal != null ? Number(raw.partialTotal) : undefined,
+    totalDiscount: raw.totalDiscount != null ? Number(raw.totalDiscount) : undefined,
+    finalTotal: raw.finalTotal != null ? Number(raw.finalTotal) : undefined,
+    observations: cleanCustomerDescription(raw.observations) || undefined
+  };
+};
+
+const quoteStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Quote['status'] => {
+  const normalized = String(rawLabel ?? rawStatus ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (normalized === 'approved' || normalized === 'aprobada' || normalized === 'aprobado') return 'Aprobada';
+  if (normalized === 'rejected' || normalized === 'rechazada' || normalized === 'rechazado') return 'Rechazada';
+  return 'Pendiente';
+};
+
+// Posibles campos de archivos/diseño que el backend podría enviar a futuro.
+// Hoy el backend NO devuelve archivos en la cotización (ver brecha documentada),
+// por lo que esto queda preparado para cuando exista el dato real.
+const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
+  const source = raw.files || raw.attachments || raw.designFiles || raw.customDesigns || raw.designs;
+  if (!Array.isArray(source)) return undefined;
+  return source
+    .map((file: JsonValue) => {
+      const url = String(file.url || file.fileUrl || file.designUrl || file.imageUrl || '').trim();
+      const name = String(file.name || file.fileName || file.filename || 'archivo').trim();
+      const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
+      return { name, type: String(file.type || ext || 'file'), url };
+    })
+    .filter((file: { url: string }) => Boolean(file.url));
+};
+
+const mapQuoteItemStock = (item: JsonValue): number | null => {
+  // El backend expone el stock como `stockAvailable`. Se prioriza ese nombre.
+  // ?? para no romper stock 0 (0 es un valor válido, no "No registrado").
+  const value = item.stockAvailable ?? item.stock ?? item.availableStock ?? item.variantStock ?? item.stockDisponible;
+  return value == null ? null : Number(value);
+};
+
+const buildVariantLabel = (item: JsonValue): string => {
+  if (item.variant) return String(item.variant);
+  const parts = [item.size, item.color].filter(Boolean);
+  return parts.join(' · ');
+};
 
 export const mapQuote = (raw: JsonValue): Quote => ({
   id: String(raw.id),
   storeId: String(raw.storeId || ''),
-  customer: raw.customer || 'Cliente',
-  status: raw.statusLabel || 'Pendiente',
+  customer: raw.customerName || raw.customer || 'Cliente',
+  status: quoteStatusFromBackend(raw.status, raw.statusLabel),
   total: Number(raw.totalAmount || 0),
   subtotal: Number(raw.subTotal || 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+  // responseAt es null mientras está pendiente; queda undefined para mostrar "Pendiente".
+  responseDate: raw.responseAt ? String(raw.responseAt).slice(0, 10) : undefined,
   items: (raw.items || []).map((item: JsonValue) => ({
-    product: item.product || 'Producto',
-    variant: item.variant || '',
+    product: item.productName || item.name || item.product || 'Producto sin nombre registrado',
+    variant: buildVariantLabel(item),
     quantity: Number(item.quantity || 0),
-    price: Number(item.price || 0)
+    price: Number(item.unitPrice ?? item.price ?? 0),
+    stock: mapQuoteItemStock(item),
+    productId: item.productId != null ? String(item.productId) : undefined,
+    productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
+    size: item.size || undefined,
+    color: item.color || undefined,
+    unitPrice: item.unitPrice != null ? Number(item.unitPrice) : undefined,
+    subTotal: item.subTotal != null ? Number(item.subTotal) : undefined
   })),
-  message: raw.description || raw.observations || '',
-  observations: raw.observations || undefined
+  // "Requerimiento del cliente" usa solo description real (no observations ni texto técnico de seeds).
+  message: cleanCustomerDescription(raw.description),
+  observations: raw.observations || undefined,
+  hasCustomization: raw.hasCustomization === true || undefined,
+  files: mapQuoteFiles(raw),
+  customerEmail: raw.customerEmail || undefined,
+  customerPhone: raw.customerPhone || undefined,
+  documentType: raw.documentType || undefined,
+  documentNumber: raw.documentNumber || undefined
 });
 
 const ORDER_STATUS_TO_BACKEND: Record<Order['status'], string> = {

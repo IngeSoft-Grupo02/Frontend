@@ -57,7 +57,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                   className="border rounded-[12px] p-6 flex items-center gap-6 group"
                   style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                 >
-                  <div className="w-20 h-20 rounded-[8px] flex items-center justify-center border text-white" style={{ backgroundColor: i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-secondary)' : 'var(--color-tertiary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                  <div className="w-20 h-20 rounded-[8px] flex items-center justify-center border" style={{ backgroundColor: i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-secondary)' : 'var(--color-tertiary)', color: i % 3 === 0 ? 'var(--color-text-on-primary)' : i % 3 === 1 ? 'var(--color-text-on-secondary)' : 'var(--color-text-on-tertiary)', borderColor: 'rgba(0,0,0,0.08)' }}>
                     <ShoppingCart size={32} />
                   </div>
                   
@@ -93,7 +93,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             <aside>
               <div className="border rounded-[12px] p-8 sticky top-[100px] shadow-sm" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                 <h3 className="text-[18px] font-extrabold mb-6 flex items-center gap-2">
-                  <FileText size={20} style={{ color: 'var(--color-tertiary)' }} /> Resumen de Solicitud
+                  <FileText size={20} style={{ color: 'var(--accent-on-light)' }} /> Resumen de Solicitud
                 </h3>
                 
                 <div className="space-y-4 mb-8">

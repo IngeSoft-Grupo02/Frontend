@@ -75,6 +75,9 @@ function resolveColor(
   if (key && key in enumObj) {
     return enumObj[key];
   }
+  if (key && (/^#[\da-f]{3,8}$/i.test(key.trim()) || /^rgba?\(/i.test(key.trim()))) {
+    return key.trim();
+  }
   return fallback;
 }
 

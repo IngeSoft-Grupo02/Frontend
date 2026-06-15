@@ -3,7 +3,7 @@ import { useStore } from '@/context/StoreContext';
 import { Building2, ChevronDown, FileText, LayoutDashboard, LogOut, Package, Plus, Settings, ShoppingBag, Tag, UploadCloud, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Store } from '@/lib/types';
 
 export const Topbar = ({ title, subtitle, noSidebar }: { title: string; subtitle?: string; noSidebar?: boolean }) => {
@@ -186,6 +186,29 @@ const Sidebar = () => {
 };
 
 export const MerchantLayout = ({ children, title, subtitle, noSidebar }: { children: React.ReactNode; title: string; subtitle?: string; noSidebar?: boolean }) => {
+  const { isAuthenticated, isAuthInitialized } = useStore();
+  const router = useRouter();
+
+  // Guard central: todas las rutas que usan MerchantLayout quedan protegidas.
+  useEffect(() => {
+    if (isAuthInitialized && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthInitialized, isAuthenticated, router]);
+
+  // No renderizar el panel mientras se verifica la sesión ni si no hay sesión válida.
+  // Evita el flicker de ver el panel (y mocks) antes de redirigir a login.
+  if (!isAuthInitialized || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-brand-neutral-light flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-brand-text-muted">
+          <div className="w-8 h-8 border-2 border-brand-neutral-border border-t-brand-black rounded-full animate-spin"></div>
+          <p className="text-[12px] font-bold uppercase tracking-widest">Verificando sesión…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-brand-neutral-light flex w-full overflow-hidden">
       {!noSidebar && <Sidebar />}

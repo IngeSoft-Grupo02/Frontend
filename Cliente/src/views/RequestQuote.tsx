@@ -99,11 +99,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
         <main className="flex-1">
           <header className="mb-12">
             <div className="flex items-center gap-3 text-[12px] font-bold uppercase tracking-widest mb-6 opacity-60">
-              <span style={step >= 1 ? { color: 'var(--color-tertiary)' } : {}} className="font-extrabold">Configuración</span>
+              <span style={step >= 1 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Configuración</span>
               <ChevronRight size={14} />
-              <span style={step >= 2 ? { color: 'var(--color-tertiary)' } : {}} className="font-extrabold">Diseño</span>
+              <span style={step >= 2 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Diseño</span>
               <ChevronRight size={14} />
-              <span style={step >= 3 ? { color: 'var(--color-tertiary)' } : {}} className="font-extrabold">Resumen</span>
+              <span style={step >= 3 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Resumen</span>
             </div>
             <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Solicitar cotización</h2>
             <p className="font-medium text-[15px] opacity-75" style={{ color: '#475569' }}>Personaliza tu pedido por volumen. El equipo de {store.name} revisará tu solicitud.</p>
@@ -118,7 +118,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <div className="flex items-start gap-6 mb-10">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-tertiary)', border: '1px solid rgba(0,0,0,0.05)' }}>1</div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>1</div>
                 <div>
                   <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Detalles del Producto</h3>
                   <p className="text-[14px] opacity-60">Selecciona las características técnicas para la producción.</p>
@@ -139,16 +139,16 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     style={{ 
                       backgroundColor: 'var(--color-primary)', 
                       borderColor: 'rgba(0,0,0,0.05)',
-                      color: quantity < 60 ? '#ef4444' : 'var(--color-tertiary)' 
+                      color: quantity < 60 ? 'var(--error-on-primary)' : 'var(--accent-on-primary)'
                     }}
                   >
                     {quantity} unidades
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-bold">
                     {quantity < 60 ? (
-                      <span className="text-red-500 flex items-center gap-1"><Info size={12} /> Mínimo de producción: 60 unidades</span>
+                      <span className="flex items-center gap-1" style={{ color: 'var(--error-on-secondary)' }}><Info size={12} /> Mínimo de producción: 60 unidades</span>
                     ) : (
-                      <span className="flex items-center gap-1 font-bold animate-pulse-subtle" style={{ color: 'var(--color-tertiary)' }}><CheckCircle2 size={12} /> Cantidad válida para producción</span>
+                      <span className="flex items-center gap-1 font-bold" style={{ color: 'var(--success-on-secondary)' }}><CheckCircle2 size={12} /> Cantidad válida para producción</span>
                     )}
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   <Button 
                     variant="ghost" 
                     className="text-[11px] h-8 px-3 flex items-center gap-2 font-black cursor-pointer" 
-                    style={{ color: 'var(--color-tertiary)' }}
+                    style={{ color: 'var(--accent-on-secondary)' }}
                     onClick={addRow}
                   >
                     <Plus size={14} /> Agregar combinación
@@ -235,7 +235,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <div className="flex items-start gap-6 mb-10">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-tertiary)', border: '1px solid rgba(0,0,0,0.05)' }}>2</div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>2</div>
                 <div>
                   <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Referencias de Diseño</h3>
                   <p className="text-[14px] opacity-60">Sube tu logo, ficha técnica o fotos de referencia.</p>
@@ -292,9 +292,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                             <div className="text-[10px] opacity-60 font-bold">{file.size}</div>
                           </div>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                          className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+                          className="p-2 hover:text-red-500 transition-colors cursor-pointer"
+                          style={{ color: 'var(--muted-on-primary)' }}
                         >
                           <X size={16} />
                         </button>
