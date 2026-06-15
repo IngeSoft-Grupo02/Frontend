@@ -1,0 +1,58 @@
+services:
+  cliente:
+    build:
+      context: ./Cliente
+    expose:
+      - "3002"
+    environment:
+      PORT: "3002"
+      HOSTNAME: "0.0.0.0"
+    networks:
+      - kingstore
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./Admin
+    expose:
+      - "3001"
+    environment:
+      PORT: "3001"
+      HOSTNAME: "0.0.0.0"
+    networks:
+      - kingstore
+    restart: unless-stopped
+
+  comerciante:
+    build:
+      context: ./Comerciante
+    expose:
+      - "3003"
+    environment:
+      PORT: "3003"
+      HOSTNAME: "0.0.0.0"
+    networks:
+      - kingstore
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./Gateway
+    ports:
+      - "80:3000"
+    environment:
+      GATEWAY_PORT: "3000"
+      CLIENTE_TARGET: "http://cliente:3002"
+      ADMIN_TARGET: "http://admin:3001"
+      COMERCIANTE_TARGET: "http://comerciante:3003"
+    depends_on:
+      - cliente
+      - admin
+      - comerciante
+    networks:
+      - kingstore
+    restart: unless-stopped
+
+networks:
+  kingstore:
+    driver: bridge
