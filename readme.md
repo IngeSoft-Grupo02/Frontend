@@ -2,16 +2,71 @@
 
 ## Overview
 Esta guia es para poder orientar a los desarrolladores el flujo de trabajo para la integración del proyecto.
-Principalmente contamos con 2 ramas base
-1. Development
-2. Main
+El repositorio debe mantenerse con dos ramas permanentes:
+1. `main`
+2. `development`
 
-## Development
-Esta rama está orientada para el desarrollo de tareas y pruebas antes de agregarlo al producto final.
-Los desarrolladores tendrán que crear sus ramas basadas en esta para poder realizar el proceso de **integración**
+El resto de ramas deben ser temporales. Una vez que el Pull Request sea aprobado y fusionado, la rama temporal debe eliminarse tanto en remoto como en local.
 
-## Main
-Está es la rama produción y se usará unicamente para las presentaciones del proyecto. Todo lo que se integre aca tendrá que estar debidamente probado en **Development**
+## `main`
+`main` es la rama de producción. Solo debe recibir cambios estables, probados y listos para presentación o despliegue final.
+
+Reglas:
+- No trabajar directamente sobre `main`.
+- No subir commits directos a `main`.
+- Integrar a `main` únicamente desde `development`, mediante Pull Request aprobado.
+- Mantener `main` como la versión más estable del frontend.
+
+## `development`
+`development` es la rama de integración. Todo cambio nuevo debe pasar primero por esta rama antes de llegar a producción.
+
+Reglas:
+- Todas las ramas de trabajo deben crearse desde `development`.
+- Todo cambio debe entrar a `development` mediante Pull Request.
+- `development` debe estar protegida contra pushes directos.
+- Los Pull Requests hacia `development` solo deben ser aprobados y fusionados por `@ChillLiz`.
+- Después de fusionar un Pull Request, eliminar la rama temporal usada para ese cambio.
+
+## Ramas temporales
+Usar ramas temporales para features, fixes, pruebas o ajustes puntuales.
+
+Convención recomendada:
+```bash
+feature/descripcion-corta
+fix/descripcion-corta
+hotfix/descripcion-corta
+chore/descripcion-corta
+```
+
+Ejemplos:
+```bash
+feature/catalogo-cliente
+fix/contraste-tema-cliente
+hotfix/login-admin
+chore/docker-compose
+```
+
+## Protección requerida en GitHub
+Configurar una regla de protección para `development` con estas opciones:
+- Require a pull request before merging.
+- Require approvals.
+- Require review from Code Owners.
+- Do not allow bypassing the above settings.
+- Block force pushes.
+- Block deletions.
+
+El archivo `.github/CODEOWNERS` define a `@ChillLiz` como responsable del código. Con la opción **Require review from Code Owners**, GitHub exigirá su aprobación para poder fusionar cambios en `development`.
+
+## Flujo recomendado
+Todo cambio debe seguir este recorrido:
+```text
+development -> rama temporal -> Pull Request a development -> pruebas -> aprobación de @ChillLiz -> merge -> eliminar rama temporal
+```
+
+Cuando `development` esté estable y lista para producción:
+```text
+development -> Pull Request a main -> pruebas finales -> merge a main
+```
 
 ![Flujo de trabajo en repositorio](Diagramas/git_workflow_springboot.svg)
 
@@ -19,34 +74,36 @@ Está es la rama produción y se usará unicamente para las presentaciones del p
 
 ### 1. Creación de la rama de trabajo
 ```bash
-git checkout Development
-git pull origin Development
-git checkout -b KS-feature-description
+git checkout development
+git pull origin development
+git checkout -b feature/descripcion-corta
 ```
 
 ### 2. Desarrollo y regular Rebasing
 
-* El desarrollador debe trabajar en su rama creada para el respectivo task que se le asignó
-* Ejecuten un rebase cada día o cuando se le informé que la rama **Development** fue actualizada
+* El desarrollador debe trabajar en su rama temporal para el task asignado.
+* Ejecutar un rebase cada día o cuando se informe que `development` fue actualizada.
 
 ```bash
 git fetch origin
-git rebase -i origin/Development
+git rebase origin/development
 ```
 
-* Cree commits constantemente con mensajes claros para tener conocimiento de lo desarrollado
+* Crear commits constantes con mensajes claros.
 ```bash
-git commit -m "KS-feature-description: implement user authentication"
+git commit -m "feature: implement user authentication"
 ```
 
 ### 3. Push & Create Pull Request
 
 ```bash
-git push origin feature/JIRA-123-feature-description
+git push origin feature/descripcion-corta
 ```
 
-* Crear un Pull Request hacia **Development**
-* Agregue detalles sobre lo que se hizo para ese ticket
+* Crear un Pull Request hacia `development`.
+* Agregar detalles sobre lo que se hizo para ese ticket.
+* Esperar aprobación de `@ChillLiz`.
+* Después del merge, eliminar la rama temporal.
 
 ---
 
