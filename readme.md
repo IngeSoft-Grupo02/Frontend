@@ -51,11 +51,72 @@ Configurar una regla de protección para `development` con estas opciones:
 - Require a pull request before merging.
 - Require approvals.
 - Require review from Code Owners.
+- Require status checks to pass: `Frontend CI`.
 - Do not allow bypassing the above settings.
 - Block force pushes.
 - Block deletions.
 
 El archivo `.github/CODEOWNERS` define a `@ChillLiz` como responsable del código. Con la opción **Require review from Code Owners**, GitHub exigirá su aprobación para poder fusionar cambios en `development`.
+
+## Integración continua
+El repositorio usa GitHub Actions para validar automáticamente que el frontend compile antes de permitir que un cambio entre a una rama protegida.
+
+El workflow se encuentra en:
+```text
+.github/workflows/frontend-ci.yml
+```
+
+El status check que debe quedar como obligatorio en GitHub es:
+```text
+Frontend CI
+```
+
+### Cuándo se ejecuta
+`Frontend CI` se ejecuta automáticamente en estos casos:
+- Cuando se abre o actualiza un Pull Request hacia `development`.
+- Cuando se abre o actualiza un Pull Request hacia `main`.
+- Cuando hay un push a `development` o `main`.
+
+### Qué valida
+El workflow ejecuta validaciones sobre las aplicaciones principales del frontend:
+
+| Proyecto | Validación |
+|----------|------------|
+| `Cliente` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
+| `Admin` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
+| `Comerciante` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
+| `Gateway` | Instala dependencias y valida la sintaxis de `server.js` con `node --check`. |
+
+Si cualquiera de estos pasos falla, el Pull Request no debe fusionarse hasta corregir el error.
+
+### Cómo debe configurarse la protección de `development`
+Sí, es necesario ajustar la protección de `development` para que use la integración continua.
+
+En GitHub:
+1. Ir a `Settings -> Branches` o `Settings -> Rules -> Rulesets`.
+2. Editar la regla que protege `development`.
+3. Activar **Require a pull request before merging**.
+4. Activar **Require approvals**.
+5. Activar **Require review from Code Owners**.
+6. Activar **Require status checks to pass**.
+7. Seleccionar el check **Frontend CI**.
+8. Activar **Require branches to be up to date before merging** si aparece disponible.
+9. Bloquear force pushes y eliminación de rama.
+10. Guardar los cambios.
+
+Con esta configuración, GitHub solo permitirá fusionar un Pull Request hacia `development` cuando:
+- El PR tenga la aprobación requerida.
+- `@ChillLiz` apruebe como Code Owner.
+- El check `Frontend CI` termine en verde.
+- La rama temporal esté actualizada con `development`, si se activó la opción de ramas actualizadas.
+
+### Qué hacer si falla
+Cuando `Frontend CI` falla:
+1. Abrir el Pull Request.
+2. Entrar al check fallido `Frontend CI`.
+3. Revisar cuál paso falló: instalación, typecheck, build o validación del Gateway.
+4. Corregir el error en la misma rama temporal.
+5. Hacer push nuevamente para que GitHub Actions vuelva a ejecutar el workflow.
 
 ## Flujo recomendado
 Todo cambio debe seguir este recorrido:

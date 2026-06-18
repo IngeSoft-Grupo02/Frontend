@@ -1,0 +1,75 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+  push:
+    branches:
+      - development
+      - main
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+      NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE: local
+      NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE: local
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.0 --activate
+          pnpm --version
+
+      - name: Install Cliente dependencies
+        run: pnpm --dir Cliente install --frozen-lockfile
+
+      - name: Typecheck Cliente
+        run: pnpm --dir Cliente run lint
+
+      - name: Build Cliente
+        run: pnpm --dir Cliente run build
+
+      - name: Install Admin dependencies
+        run: pnpm --dir Admin install --frozen-lockfile
+
+      - name: Typecheck Admin
+        run: pnpm --dir Admin run lint
+
+      - name: Build Admin
+        run: pnpm --dir Admin run build
+
+      - name: Install Comerciante dependencies
+        run: pnpm --dir Comerciante install --frozen-lockfile
+
+      - name: Typecheck Comerciante
+        run: pnpm --dir Comerciante run lint
+
+      - name: Build Comerciante
+        run: pnpm --dir Comerciante run build
+
+      - name: Install Gateway dependencies
+        run: pnpm --dir Gateway install --frozen-lockfile
+
+      - name: Check Gateway syntax
+        run: node --check Gateway/server.js
