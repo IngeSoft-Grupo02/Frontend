@@ -51,11 +51,29 @@ Configurar una regla de protección para `development` con estas opciones:
 - Require a pull request before merging.
 - Require approvals.
 - Require review from Code Owners.
+- Require status checks to pass: `Frontend CI`.
 - Do not allow bypassing the above settings.
 - Block force pushes.
 - Block deletions.
 
 El archivo `.github/CODEOWNERS` define a `@ChillLiz` como responsable del código. Con la opción **Require review from Code Owners**, GitHub exigirá su aprobación para poder fusionar cambios en `development`.
+
+## Integración continua
+El repositorio usa GitHub Actions para validar los Pull Requests hacia `development` y `main`.
+
+El workflow obligatorio es:
+```text
+Frontend CI
+```
+
+Este check instala dependencias, ejecuta typecheck y construye las apps `Cliente`, `Admin` y `Comerciante`. También valida la sintaxis del `Gateway`.
+
+Para activar el bloqueo en GitHub:
+1. Ir a `Settings -> Rules -> Rulesets` o `Settings -> Branches`.
+2. Editar la protección de `development`.
+3. Activar **Require status checks to pass**.
+4. Seleccionar el check **Frontend CI**.
+5. Guardar los cambios.
 
 ## Flujo recomendado
 Todo cambio debe seguir este recorrido:
