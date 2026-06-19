@@ -166,6 +166,7 @@ export default function LoginPage() {
                     </button>
                   </div>
                   <button
+                      type="button"
                       onClick={() => router.push('/admin/recuperar-contrasena')}
                       className="text-brand-camel font-bold text-[14px] hover:underline underline-offset-4 tracking-tight block"
                   >

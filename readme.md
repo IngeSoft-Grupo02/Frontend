@@ -193,6 +193,9 @@ domains/
 | `/comerciante` | Redirección al login del comerciante |
 | `/comerciante/login` | Login del comerciante |
 | `/comerciante/dashboard` | Panel del comerciante |
+| `/recuperacion` | Recuperación de contraseña del cliente |
+| `/admin/recuperar-contrasena` | Recuperación de contraseña del administrador |
+| `/comerciante/recovery` | Recuperación de contraseña del comerciante |
 
 El frontend se despliega como un único proceso Next.js y un único contenedor Docker. Ya no se usa un gateway Express ni tres apps Next separadas.
 
@@ -206,6 +209,14 @@ El frontend se despliega como un único proceso Next.js y un único contenedor D
 | `NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE` | Modo de sincronización del módulo comerciante |
 
 Las variables `NEXT_PUBLIC_*` quedan incluidas en el bundle del navegador durante el build. Si cambia la URL del backend, se debe reconstruir la imagen del frontend.
+
+### Recuperación de contraseña
+
+Los tres tipos de usuario comparten la API de recuperación ubicada en `domains/auth`. Cada pantalla solicita el correo al backend, recibe el enlace por Gmail y valida el token antes de permitir una nueva contraseña.
+
+El frontend solo necesita que `NEXT_PUBLIC_API_URL` o `NEXT_PUBLIC_API_BASE_URL` apunte al backend. La cuenta Gmail y su contraseña de aplicación se configuran únicamente en el backend; nunca deben incluirse en variables `NEXT_PUBLIC_*`.
+
+La nueva contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula, número y símbolo. Los enlaces caducan en 30 minutos por defecto y solo pueden utilizarse una vez.
 
 ## Despliegue con Docker
 

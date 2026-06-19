@@ -3,6 +3,13 @@ import { Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { AlertCircle, ArrowLeft, Check, CheckCircle2, Eye, EyeOff, Key, Mail, RotateCcw, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  requestPasswordReset,
+  resetPassword,
+  validatePasswordResetToken,
+} from '@/domains/auth/passwordRecovery';
 
 type RecoveryStep = 'request' | 'sent' | 'reset' | 'success' | 'invalid';
 
@@ -16,12 +23,14 @@ function RecoveryPageContent() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [passError, setPassError] = useState('');
+  const [loading, setLoading] = useState(false);
   const token = searchParams.get('token');
 
   useEffect(() => {
     if (token) {
-      if (token === 'expired') setStep('invalid');
-      else setStep('reset');
+      validatePasswordResetToken(token)
+        .then(valid => setStep(valid ? 'reset' : 'invalid'))
+        .catch(() => setStep('invalid'));
     }
   }, [token]);
 
@@ -32,19 +41,35 @@ function RecoveryPageContent() {
     setEmailError(''); return true;
   };
 
-  const handleRequest = (e: React.FormEvent) => {
+  const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateEmail(email)) setStep('sent');
+    if (!validateEmail(email)) return;
+    setLoading(true);
+    try {
+      await requestPasswordReset(email);
+      setStep('sent');
+    } catch (requestError) {
+      setEmailError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReset = (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hasMinLength = password.length >= 8;
-    const hasUpper = /[A-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    if (!hasMinLength || !hasUpper || !hasNumber) { setPassError('La contraseña no cumple con los requisitos mínimos de seguridad'); return; }
+    if (!token) { setStep('invalid'); return; }
+    if (!isStrongPassword(password)) { setPassError(PASSWORD_REQUIREMENTS_MESSAGE); return; }
     if (password !== confirmPassword) { setPassError('Las contraseñas no coinciden'); return; }
-    setPassError(''); setStep('success');
+    setLoading(true);
+    setPassError('');
+    try {
+      await resetPassword(token, password);
+      setStep('success');
+    } catch (resetError) {
+      setPassError(resetError instanceof Error ? resetError.message : 'No se pudo cambiar la contraseña.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderContent = () => {
@@ -55,7 +80,7 @@ function RecoveryPageContent() {
           <form onSubmit={handleRequest} className="space-y-6">
             <Input type="email" label="Correo electrónico" placeholder="ejemplo@plataforma.com" value={email} onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }} onBlur={(e) => validateEmail(e.target.value)} error={emailError} />
             <div className="flex flex-col gap-3">
-              <Button type="submit" size="lg" className="h-14 font-extrabold text-[15px] gap-3">Enviar enlace <Mail size={18} /></Button>
+              <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3">{loading ? 'Enviando...' : 'Enviar enlace'} <Mail size={18} /></Button>
               <Button type="button" variant="ghost" size="lg" className="h-14 gap-2" onClick={() => router.push('/comerciante/login')}><ArrowLeft size={18} /> Cancelar y volver</Button>
             </div>
           </form>
@@ -88,9 +113,10 @@ function RecoveryPageContent() {
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${password.length >= 8 ? 'text-green-600' : 'text-brand-text-muted'}`}>{password.length >= 8 ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Mínimo 8 caracteres</div>
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[A-Z]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Al menos una mayúscula</div>
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[0-9]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[0-9]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Al menos un número</div>
+                <div className={`flex items-center gap-2 text-[12px] font-bold ${/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Minúscula y símbolo</div>
               </div>
             </div>
-            <Button type="submit" size="lg" className="h-14 font-extrabold text-[15px] gap-3 w-full">Guardar contraseña <Key size={18} /></Button>
+            <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3 w-full">{loading ? 'Guardando...' : 'Guardar contraseña'} <Key size={18} /></Button>
           </form>
         </div>
       );
@@ -104,7 +130,7 @@ function RecoveryPageContent() {
       case 'invalid': return (
         <div className="space-y-8 text-center animate-in fade-in duration-500">
           <div className="w-20 h-20 bg-red-50 border border-red-100 rounded-3xl flex items-center justify-center mx-auto text-red-600"><XCircle size={40} strokeWidth={2.5} /></div>
-          <header className="space-y-3"><h1 className="text-[32px] font-extrabold tracking-tight leading-none">Enlace inválido o expirado</h1><p className="text-[14px] text-brand-text-muted font-medium">Por motivos de seguridad, los enlaces tienen una validez de 1 hora o solo un solo uso.</p></header>
+          <header className="space-y-3"><h1 className="text-[32px] font-extrabold tracking-tight leading-none">Enlace inválido o expirado</h1><p className="text-[14px] text-brand-text-muted font-medium">Por motivos de seguridad, los enlaces tienen una validez de 30 minutos y un solo uso.</p></header>
           <div className="bg-red-50 border border-red-100 rounded-xl p-5 text-left">
             <h5 className="text-[12px] font-extrabold text-red-700 mb-2">Posibles motivos:</h5>
             <ul className="text-[12px] text-red-600 space-y-1 list-disc pl-4 font-medium">

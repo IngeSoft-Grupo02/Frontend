@@ -1,43 +1,86 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Input, Card } from '@/domains/admin/components/UI';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button, Input } from '@/domains/admin/components/UI';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  requestPasswordReset,
+  resetPassword,
+  validatePasswordResetToken,
+} from '@/domains/auth/passwordRecovery';
 
-export default function RecuperarContrasenaPage() {
+function RecuperarContrasenaContent() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const [step, setStep] = useState(token ? 0 : 1);
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSendLink = () => {
+  useEffect(() => {
+    if (!token) return;
+    validatePasswordResetToken(token)
+      .then(valid => {
+        if (valid) setStep(3);
+        else {
+          setError('El enlace es inválido, expiró o ya fue utilizado.');
+          setStep(1);
+        }
+      })
+      .catch(() => {
+        setError('No se pudo validar el enlace. Solicita uno nuevo.');
+        setStep(1);
+      });
+  }, [token]);
+
+  const handleSendLink = async () => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Ingresa un correo válido');
       return;
     }
+    setLoading(true);
     setError('');
-    setStep(2);
+    try {
+      await requestPasswordReset(email);
+      setStep(2);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyCode = () => {
-    setStep(3);
-  };
-
-  const handleResetPassword = () => {
-    if (newPassword.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+  const handleResetPassword = async () => {
+    if (!token) {
+      setError('Solicita un nuevo enlace de recuperación.');
+      setStep(1);
+      return;
+    }
+    if (!isStrongPassword(newPassword)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
     if (newPassword !== confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
     }
+    setLoading(true);
     setError('');
-    setStep(4);
+    try {
+      await resetPassword(token, newPassword);
+      setStep(4);
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : 'No se pudo cambiar la contraseña.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -141,9 +184,9 @@ export default function RecuperarContrasenaPage() {
                       Validaciones
                     </h4>
                     <ul className="space-y-2 text-[15px] font-medium text-neutral-700">
-                      <li>• La cuenta debe existir.</li>
-                      <li>• Debe pertenecer al rol administrador.</li>
-                      <li>• El sistema registra el intento.</li>
+                      <li>• El enlace expira en 30 minutos.</li>
+                      <li>• Solo puede utilizarse una vez.</li>
+                      <li>• La respuesta no revela si el correo existe.</li>
                     </ul>
                   </div>
 
@@ -158,8 +201,9 @@ export default function RecuperarContrasenaPage() {
                     <Button 
                       className="flex-1 rounded-2xl h-14" 
                       onClick={handleSendLink}
+                      disabled={loading}
                     >
-                      Enviar enlace
+                      {loading ? 'Enviando...' : 'Enviar enlace'}
                     </Button>
                   </div>
                 </div>
@@ -202,9 +246,9 @@ export default function RecuperarContrasenaPage() {
 
                 <Button 
                   className="w-full rounded-2xl h-14" 
-                  onClick={handleVerifyCode}
+                  onClick={handleBackToLogin}
                 >
-                  Ya revisé mi correo
+                  Volver al login
                 </Button>
               </motion.div>
             )}
@@ -265,6 +309,7 @@ export default function RecuperarContrasenaPage() {
                       <li className={newPassword !== confirmPassword || newPassword === '' ? 'text-neutral-600' : 'text-brand-green font-bold'}>
                         {newPassword !== confirmPassword && confirmPassword !== '' ? '✗' : '○'} Las contraseñas deben coincidir
                       </li>
+                      <li>○ Debe incluir mayúscula, minúscula, número y símbolo</li>
                     </ul>
                   </div>
 
@@ -279,8 +324,9 @@ export default function RecuperarContrasenaPage() {
                     <Button 
                       className="flex-1 rounded-2xl h-14" 
                       onClick={handleResetPassword}
+                      disabled={loading}
                     >
-                      Actualizar contraseña
+                      {loading ? 'Actualizando...' : 'Actualizar contraseña'}
                     </Button>
                   </div>
                 </div>
@@ -317,5 +363,13 @@ export default function RecuperarContrasenaPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RecuperarContrasenaPage() {
+  return (
+    <Suspense fallback={null}>
+      <RecuperarContrasenaContent />
+    </Suspense>
   );
 }

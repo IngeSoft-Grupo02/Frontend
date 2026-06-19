@@ -637,7 +637,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                       type="button"
                       className="text-[11px] font-bold hover:underline cursor-pointer"
                       style={{ color: 'var(--accent-on-secondary)' }}
-                      onClick={() => onNavigate(View.AUTH_FORGOT_PASSWORD)}
+                      onClick={() => window.location.assign('/recuperacion')}
                     >
                       ¿Olvidaste tu contraseña?
                     </button>

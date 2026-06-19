@@ -1,6 +1,18 @@
-import { ClienteRouteView } from '@/domains/cliente/RouteView';
-import { View } from '@/domains/cliente/types';
+'use client';
+
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PasswordRecovery } from '@/domains/cliente/components/PasswordRecovery';
+
+function RecuperacionContent() {
+  const searchParams = useSearchParams();
+  return <PasswordRecovery token={searchParams.get('token')} />;
+}
 
 export default function RecuperacionPage() {
-  return <ClienteRouteView view={View.AUTH_FORGOT_PASSWORD} />;
+  return (
+    <Suspense fallback={null}>
+      <RecuperacionContent />
+    </Suspense>
+  );
 }
