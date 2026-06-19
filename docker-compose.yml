@@ -1,20 +1,22 @@
 services:
   frontend:
-    build:
-      context: .
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
-        NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE: ${NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE:-local}
-        NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE: ${NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE:-local}
-    image: kingstore-frontend:latest
+    image: bryanpisco/kingstore-frontend:latest
     ports:
       - "80:3000"
     environment:
       PORT: "3000"
       HOSTNAME: "0.0.0.0"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
-      NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE: ${NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE:-local}
-      NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE: ${NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE:-local}
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    image: bryanpisco/kingstore-backend:latest
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: "prod"
+      JASYPT_ENCRYPTOR_PASSWORD: "${JASYPT_ENCRYPTOR_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
+      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
     restart: unless-stopped

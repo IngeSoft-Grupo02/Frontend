@@ -220,7 +220,7 @@ La nueva contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, mi
 
 ## Despliegue con Docker
 
-El despliegue usa un solo `Dockerfile`, una sola imagen y un solo contenedor llamado `frontend`. No se deben construir imágenes separadas para Cliente, Admin o Comerciante.
+La imagen del frontend se construye en la máquina local del desarrollador y se sube a Docker Hub. El servidor EC2 solo descarga la imagen ya compilada — no instala Node.js ni compila nada, lo que evita problemas de espacio en disco.
 
 ```text
 Internet :80
@@ -232,184 +232,215 @@ kingstore-frontend :3000
     `-- /comerciante       Comerciante
              |
              v
-       Backend público
+  kingstore-backend :8080
+             |
+             v
+       AWS RDS MySQL
 ```
+
+### Datos del servidor
+
+| Campo | Valor |
+|-------|-------|
+| IP EC2 | `52.205.138.95` |
+| Frontend | `http://52.205.138.95/` |
+| Admin | `http://52.205.138.95/admin` |
+| Comerciante | `http://52.205.138.95/comerciante/login` |
+| Backend | `http://52.205.138.95:8080` |
+| Conexión SSH | `ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com` |
+
+### Imágenes en Docker Hub
+
+| Servicio | Imagen |
+|----------|--------|
+| Frontend | `bryanpisco/kingstore-frontend:latest` |
+| Backend | `bryanpisco/kingstore-backend:latest` |
 
 ### Requisitos
 
-- Node.js `22` y pnpm `11.1.0` para validación local.
-- Docker Engine `24` o superior en el servidor.
-- Docker Compose v2.
-- Backend desplegado y accesible desde el navegador.
-- CORS del backend configurado para permitir el origen del frontend.
+- Docker Desktop en la máquina local para construir y publicar la imagen.
+- Docker Engine `24` y Docker Compose v2 en el servidor EC2.
 
-### Validar antes del despliegue
+---
 
-El despliegue debe hacerse desde `main` para producción. Antes de promover `development` a `main`, `Frontend CI` debe estar en verde.
+### Primer despliegue en el servidor (solo una vez)
 
-```bash
-pnpm install --frozen-lockfile
-pnpm run lint
-pnpm run build
-```
-
-### Preparar la EC2
-
-Ejecutar una vez en Ubuntu:
+**1. Preparar el servidor:**
 
 ```bash
+ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+
 sudo apt update
-sudo apt install -y docker.io docker-compose-v2 git
+sudo apt install -y docker.io docker-compose-v2
 sudo usermod -aG docker "$USER"
 ```
 
-Cerrar la sesión SSH y entrar nuevamente para aplicar el grupo `docker`.
+Cerrar la sesión SSH y volver a entrar para aplicar el grupo `docker`.
 
-Clonar el repositorio y seleccionar la rama de producción:
+**2. Crear el `docker-compose.yml`:**
 
 ```bash
-git clone git@github.com:IngeSoft-Grupo02/Frontend.git
-cd Frontend
-git switch main
-git pull --ff-only origin main
+cat > docker-compose.yml << 'EOF'
+services:
+  frontend:
+    image: bryanpisco/kingstore-frontend:latest
+    ports:
+      - "80:3000"
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    image: bryanpisco/kingstore-backend:latest
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: "prod"
+      JASYPT_ENCRYPTOR_PASSWORD: "${JASYPT_ENCRYPTOR_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
+      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
+    restart: unless-stopped
+EOF
 ```
 
-### Configurar variables
-
-Crear un archivo `.env` junto al `docker-compose.yml`:
+**3. Crear el `.env` con los secretos del backend:**
 
 ```bash
-NEXT_PUBLIC_API_URL=https://api.example.com
-NEXT_PUBLIC_API_BASE_URL=https://api.example.com
-NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local
-NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local
+cat > .env << 'EOF'
+JASYPT_ENCRYPTOR_PASSWORD=kingstore-secret-key-2024
+JWT_SECRET=kingstore-secret-key-ingesoft-2026
+SPRING_DATASOURCE_PASSWORD=<password_rds>
+EOF
 ```
 
-Consideraciones:
+> Las variables `NEXT_PUBLIC_*` no van en el `.env` del servidor — quedan bakeadas dentro de la imagen durante el build local.
 
-- La URL debe ser pública y alcanzable desde el navegador del usuario.
-- No usar `localhost:8080` en AWS: apuntaría al computador del usuario, no a la EC2.
-- Si el backend usa la IP pública de la EC2, se puede usar `http://IP_PUBLICA:8080`.
-- Las variables `NEXT_PUBLIC_*` se incorporan durante `docker compose build`. Cambiarlas exige reconstruir la imagen.
-- Este `.env` no debe contener contraseñas del backend ni secretos privados.
-
-### Primer despliegue
+**4. Levantar los servicios:**
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 docker compose ps
 ```
 
-El servicio resultante es:
+---
 
-| Servicio | Puerto externo | Puerto interno |
-|----------|----------------|----------------|
-| `frontend` | `80` | `3000` |
+### Publicar cambios del frontend
 
-### Verificar el despliegue
+Ejecutar desde la raíz del proyecto (`/Frontend`) en tu máquina local:
+
+**1. Construir la imagen con las variables de producción:**
 
 ```bash
-curl -I http://IP_PUBLICA/
-curl -I http://IP_PUBLICA/admin
-curl -I http://IP_PUBLICA/comerciante/login
-docker compose logs --tail=100 frontend
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=http://52.205.138.95:8080 \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://52.205.138.95:8080 \
+  --build-arg NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local \
+  --build-arg NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local \
+  -t bryanpisco/kingstore-frontend:latest .
 ```
 
-Las tres rutas deben responder `HTTP 200`. También se debe probar desde el navegador el login de Admin y Comerciante para confirmar conexión con el backend.
-
-### Publicar una actualización
-
-Después de fusionar cambios aprobados en `main`:
+**2. Subir la imagen a Docker Hub:**
 
 ```bash
-cd Frontend
-git switch main
-git pull --ff-only origin main
-docker compose build --pull frontend
+docker push bryanpisco/kingstore-frontend:latest
+```
+
+**3. Actualizar el servidor:**
+
+```bash
+ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+
+docker compose pull frontend
 docker compose up -d frontend
-docker compose ps
-docker compose logs --tail=100 frontend
+docker compose logs --tail=50 frontend
 ```
 
-La reconstrucción es obligatoria cuando cambian variables `NEXT_PUBLIC_*`.
+---
 
-### Despliegue continuo con GitHub Actions
-
-El workflow `.github/workflows/frontend-cd.yml` despliega automáticamente después de cada push aceptado en `main`. Los Pull Requests hacia `development` y `main` continúan siendo validados primero por `Frontend CI`.
-
-El despliegue construye una imagen inmutable identificada por el SHA del commit, la transfiere a EC2 y actualiza el servicio definido en `docker-compose.production.yml`. No es necesario clonar el repositorio ni compilar el frontend dentro de EC2.
-
-Crear un environment de GitHub llamado `production` y configurar estos secrets:
-
-| Secret | Valor |
-|--------|-------|
-| `EC2_HOST` | DNS o IP pública de EC2, sin `http://` |
-| `EC2_USER` | Usuario SSH, normalmente `ubuntu` |
-| `EC2_SSH_KEY` | Contenido completo de la clave privada de despliegue |
-| `EC2_KNOWN_HOSTS` | Entrada verificada de `known_hosts` para la instancia |
-
-Configurar estas variables del environment:
-
-| Variable | Valor recomendado |
-|----------|-------------------|
-| `NEXT_PUBLIC_API_URL` | `http://52.205.138.95:8080` |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://52.205.138.95:8080` |
-| `NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE` | `local` |
-| `NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE` | `local` |
-
-En `production`, activar **Required reviewers** para que el despliegue necesite aprobación manual después del merge a `main`. La clave privada nunca debe guardarse en el repositorio, archivos versionados, comentarios, issues o conversaciones.
-
-Preparación única del servidor:
+### Publicar cambios del backend
 
 ```bash
-sudo apt update
-sudo apt install -y docker.io docker-compose-v2
-sudo usermod -aG docker ubuntu
-mkdir -p ~/kingstore/frontend
+# En el repo del backend: compilar y publicar
+cd ../Backend
+./mvnw clean package -DskipTests
+docker build -t bryanpisco/kingstore-backend:latest .
+docker push bryanpisco/kingstore-backend:latest
+
+# En el servidor: actualizar
+ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+docker compose pull backend
+docker compose up -d backend
+docker compose logs --tail=50 backend
 ```
 
-Después de volver a iniciar sesión, comprobar que `docker ps` funcione sin `sudo` y que el puerto `80` esté libre. El primer workflow puede ejecutarse manualmente desde `Actions -> Frontend CD -> Run workflow`; los siguientes despliegues se ejecutan al actualizar `main`.
+---
 
-### Logs y mantenimiento
+### Ver logs
 
 ```bash
+# Frontend en tiempo real
 docker compose logs -f frontend
-docker compose restart frontend
+
+# Backend en tiempo real
+docker compose logs -f backend
+
+# Últimas 50 líneas de todos los servicios
+docker compose logs --tail=50
+```
+
+---
+
+### Detener los servicios
+
+**Detener solo el frontend (el backend sigue corriendo):**
+```bash
+docker compose stop frontend
+```
+
+**Detener solo el backend:**
+```bash
+docker compose stop backend
+```
+
+**Detener todos los servicios (los contenedores se conservan):**
+```bash
+docker compose stop
+```
+
+**Detener y eliminar los contenedores:**
+```bash
 docker compose down
 ```
 
-### Rollback básico
-
-Si una versión falla, regresar al commit anterior estable y reconstruir:
-
+**Detener, eliminar contenedores y limpiar imágenes (fuerza re-descarga en el próximo despliegue):**
 ```bash
-git log --oneline -10
-git switch --detach COMMIT_ESTABLE
-docker compose up -d --build frontend
+docker compose down --rmi all
 ```
 
-Después de resolver el incidente, volver a `main`:
+> Los datos en RDS no se eliminan en ningún caso. Solo se detienen los contenedores.
 
-```bash
-git switch main
-git pull --ff-only origin main
-```
+---
 
 ### Security Group de AWS
 
-Asegúrate de permitir:
+| Tipo | Puerto | Origen |
+|------|--------|--------|
+| HTTP | `80` | `0.0.0.0/0` |
+| TCP | `8080` | `0.0.0.0/0` |
+| SSH | `22` | tu IP |
 
-- HTTP -> puerto `80` -> origen `0.0.0.0/0`
-- SSH -> puerto `22` -> origen: tu IP
-- Puerto del backend, por ejemplo `8080`, solo si la API se expone directamente.
-
-Para producción real se recomienda HTTPS en el frontend y backend. Si el frontend usa HTTPS, la API también debe usar HTTPS para evitar bloqueo por contenido mixto del navegador.
+---
 
 ### Diagnóstico rápido
 
 | Problema | Revisión |
 |----------|----------|
 | El frontend no abre | `docker compose ps` y `docker compose logs frontend` |
-| Admin/Comerciante abren pero no inician sesión | URL pública del backend, CORS y estado del backend |
-| Sigue usando una URL vieja | Reconstruir con `docker compose up -d --build frontend` |
-| El puerto 80 no responde | Security Group de EC2 y mapeo `80:3000` |
+| Admin o Comerciante no inician sesión | Verificar URL del backend, CORS y estado del backend |
+| Sigue mostrando versión vieja | Reconstruir y pushear la imagen, luego `docker compose pull frontend && docker compose up -d frontend` |
+| El puerto 80 no responde | Security Group de EC2 y que el contenedor esté `Up` |
+| El backend no responde | `docker compose logs backend` y verificar variables de entorno en `.env` |
