@@ -333,6 +333,43 @@ docker compose logs --tail=100 frontend
 
 La reconstrucción es obligatoria cuando cambian variables `NEXT_PUBLIC_*`.
 
+### Despliegue continuo con GitHub Actions
+
+El workflow `.github/workflows/frontend-cd.yml` despliega automáticamente después de cada push aceptado en `main`. Los Pull Requests hacia `development` y `main` continúan siendo validados primero por `Frontend CI`.
+
+El despliegue construye una imagen inmutable identificada por el SHA del commit, la transfiere a EC2 y actualiza el servicio definido en `docker-compose.production.yml`. No es necesario clonar el repositorio ni compilar el frontend dentro de EC2.
+
+Crear un environment de GitHub llamado `production` y configurar estos secrets:
+
+| Secret | Valor |
+|--------|-------|
+| `EC2_HOST` | DNS o IP pública de EC2, sin `http://` |
+| `EC2_USER` | Usuario SSH, normalmente `ubuntu` |
+| `EC2_SSH_KEY` | Contenido completo de la clave privada de despliegue |
+| `EC2_KNOWN_HOSTS` | Entrada verificada de `known_hosts` para la instancia |
+
+Configurar estas variables del environment:
+
+| Variable | Valor recomendado |
+|----------|-------------------|
+| `NEXT_PUBLIC_API_URL` | `http://52.205.138.95:8080` |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://52.205.138.95:8080` |
+| `NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE` | `local` |
+| `NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE` | `local` |
+
+En `production`, activar **Required reviewers** para que el despliegue necesite aprobación manual después del merge a `main`. La clave privada nunca debe guardarse en el repositorio, archivos versionados, comentarios, issues o conversaciones.
+
+Preparación única del servidor:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker ubuntu
+mkdir -p ~/kingstore/frontend
+```
+
+Después de volver a iniciar sesión, comprobar que `docker ps` funcione sin `sudo` y que el puerto `80` esté libre. El primer workflow puede ejecutarse manualmente desde `Actions -> Frontend CD -> Run workflow`; los siguientes despliegues se ejecutan al actualizar `main`.
+
 ### Logs y mantenimiento
 
 ```bash
