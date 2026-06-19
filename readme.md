@@ -209,9 +209,32 @@ Las variables `NEXT_PUBLIC_*` quedan incluidas en el bundle del navegador durant
 
 ## Despliegue con Docker
 
-El despliegue del frontend usa un solo `Dockerfile` y un solo servicio en `docker-compose.yml`.
+El despliegue usa un solo `Dockerfile`, una sola imagen y un solo contenedor llamado `frontend`. No se deben construir imágenes separadas para Cliente, Admin o Comerciante.
 
-### Construir localmente
+```text
+Internet :80
+    |
+    v
+kingstore-frontend :3000
+    |-- /                  Cliente
+    |-- /admin             Administración
+    `-- /comerciante       Comerciante
+             |
+             v
+       Backend público
+```
+
+### Requisitos
+
+- Node.js `22` y pnpm `11.1.0` para validación local.
+- Docker Engine `24` o superior en el servidor.
+- Docker Compose v2.
+- Backend desplegado y accesible desde el navegador.
+- CORS del backend configurado para permitir el origen del frontend.
+
+### Validar antes del despliegue
+
+El despliegue debe hacerse desde `main` para producción. Antes de promover `development` a `main`, `Frontend CI` debe estar en verde.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -219,37 +242,85 @@ pnpm run lint
 pnpm run build
 ```
 
-### Levantar con Docker Compose
+### Preparar la EC2
+
+Ejecutar una vez en Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2 git
+sudo usermod -aG docker "$USER"
+```
+
+Cerrar la sesión SSH y entrar nuevamente para aplicar el grupo `docker`.
+
+Clonar el repositorio y seleccionar la rama de producción:
+
+```bash
+git clone git@github.com:IngeSoft-Grupo02/Frontend.git
+cd Frontend
+git switch main
+git pull --ff-only origin main
+```
+
+### Configurar variables
 
 Crear un archivo `.env` junto al `docker-compose.yml`:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://52.205.138.95:8080
-NEXT_PUBLIC_API_BASE_URL=http://52.205.138.95:8080
+NEXT_PUBLIC_API_URL=https://api.example.com
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
 NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local
 NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local
 ```
 
-Levantar el frontend:
+Consideraciones:
+
+- La URL debe ser pública y alcanzable desde el navegador del usuario.
+- No usar `localhost:8080` en AWS: apuntaría al computador del usuario, no a la EC2.
+- Si el backend usa la IP pública de la EC2, se puede usar `http://IP_PUBLICA:8080`.
+- Las variables `NEXT_PUBLIC_*` se incorporan durante `docker compose build`. Cambiarlas exige reconstruir la imagen.
+- Este `.env` no debe contener contraseñas del backend ni secretos privados.
+
+### Primer despliegue
 
 ```bash
 docker compose up -d --build
 docker compose ps
 ```
 
-El contenedor expone:
+El servicio resultante es:
 
 | Servicio | Puerto externo | Puerto interno |
 |----------|----------------|----------------|
 | `frontend` | `80` | `3000` |
 
-### Verificar rutas
+### Verificar el despliegue
 
 ```bash
-curl http://52.205.138.95/
-curl http://52.205.138.95/admin
-curl http://52.205.138.95/comerciante/login
+curl -I http://IP_PUBLICA/
+curl -I http://IP_PUBLICA/admin
+curl -I http://IP_PUBLICA/comerciante/login
+docker compose logs --tail=100 frontend
 ```
+
+Las tres rutas deben responder `HTTP 200`. También se debe probar desde el navegador el login de Admin y Comerciante para confirmar conexión con el backend.
+
+### Publicar una actualización
+
+Después de fusionar cambios aprobados en `main`:
+
+```bash
+cd Frontend
+git switch main
+git pull --ff-only origin main
+docker compose build --pull frontend
+docker compose up -d frontend
+docker compose ps
+docker compose logs --tail=100 frontend
+```
+
+La reconstrucción es obligatoria cuando cambian variables `NEXT_PUBLIC_*`.
 
 ### Logs y mantenimiento
 
@@ -259,11 +330,38 @@ docker compose restart frontend
 docker compose down
 ```
 
+### Rollback básico
+
+Si una versión falla, regresar al commit anterior estable y reconstruir:
+
+```bash
+git log --oneline -10
+git switch --detach COMMIT_ESTABLE
+docker compose up -d --build frontend
+```
+
+Después de resolver el incidente, volver a `main`:
+
+```bash
+git switch main
+git pull --ff-only origin main
+```
+
 ### Security Group de AWS
 
 Asegúrate de permitir:
 
 - HTTP -> puerto `80` -> origen `0.0.0.0/0`
 - SSH -> puerto `22` -> origen: tu IP
+- Puerto del backend, por ejemplo `8080`, solo si la API se expone directamente.
 
-Si el backend se expone desde la misma EC2, también debe estar disponible para el navegador en la URL configurada en `NEXT_PUBLIC_API_URL` y `NEXT_PUBLIC_API_BASE_URL`.
+Para producción real se recomienda HTTPS en el frontend y backend. Si el frontend usa HTTPS, la API también debe usar HTTPS para evitar bloqueo por contenido mixto del navegador.
+
+### Diagnóstico rápido
+
+| Problema | Revisión |
+|----------|----------|
+| El frontend no abre | `docker compose ps` y `docker compose logs frontend` |
+| Admin/Comerciante abren pero no inician sesión | URL pública del backend, CORS y estado del backend |
+| Sigue usando una URL vieja | Reconstruir con `docker compose up -d --build frontend` |
+| El puerto 80 no responde | Security Group de EC2 y mapeo `80:3000` |
