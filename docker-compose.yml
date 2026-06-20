@@ -1,36 +1,14 @@
 services:
-  cliente:
-    image: bryanpisco/kingstore-cliente:latest
-    expose:
-      - "3002"
+  frontend:
+    image: bryanpisco/kingstore-frontend:latest
+    ports:
+      - "80:3000"
     environment:
-      PORT: "3002"
+      PORT: "3000"
       HOSTNAME: "0.0.0.0"
-    networks:
-      - kingstore
     restart: unless-stopped
-
-  admin:
-    image: bryanpisco/kingstore-admin:latest
-    expose:
-      - "3001"
-    environment:
-      PORT: "3001"
-      HOSTNAME: "0.0.0.0"
-    networks:
-      - kingstore
-    restart: unless-stopped
-
-  comerciante:
-    image: bryanpisco/kingstore-comerciante:latest
-    expose:
-      - "3003"
-    environment:
-      PORT: "3003"
-      HOSTNAME: "0.0.0.0"
-    networks:
-      - kingstore
-    restart: unless-stopped
+    depends_on:
+      - backend
 
   backend:
     image: bryanpisco/kingstore-backend:latest
@@ -42,24 +20,3 @@ services:
       JWT_SECRET: "${JWT_SECRET}"
       SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
     restart: unless-stopped
-
-  gateway:
-    image: bryanpisco/kingstore-gateway:latest
-    ports:
-      - "80:3000"
-    environment:
-      GATEWAY_PORT: "3000"
-      CLIENTE_TARGET: "http://cliente:3002"
-      ADMIN_TARGET: "http://admin:3001"
-      COMERCIANTE_TARGET: "http://comerciante:3003"
-    depends_on:
-      - cliente
-      - admin
-      - comerciante
-    networks:
-      - kingstore
-    restart: unless-stopped
-
-networks:
-  kingstore:
-    driver: bridge

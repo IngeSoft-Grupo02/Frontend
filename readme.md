@@ -78,14 +78,13 @@ Frontend CI
 - Cuando hay un push a `development` o `main`.
 
 ### Qué valida
-El workflow ejecuta validaciones sobre las aplicaciones principales del frontend:
+El workflow valida la aplicación Next.js unificada:
 
-| Proyecto | Validación |
-|----------|------------|
-| `Cliente` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
-| `Admin` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
-| `Comerciante` | Instala dependencias, ejecuta `tsc --noEmit` y construye la app con `next build`. |
-| `Gateway` | Instala dependencias y valida la sintaxis de `server.js` con `node --check`. |
+| Paso | Validación |
+|------|------------|
+| Instalación | Ejecuta `pnpm install --frozen-lockfile`. |
+| Typecheck | Ejecuta `tsc --noEmit` mediante `pnpm run lint`. |
+| Build | Ejecuta `next build` mediante `pnpm run build`. |
 
 Si cualquiera de estos pasos falla, el Pull Request no debe fusionarse hasta corregir el error.
 
@@ -114,7 +113,7 @@ Con esta configuración, GitHub solo permitirá fusionar un Pull Request hacia `
 Cuando `Frontend CI` falla:
 1. Abrir el Pull Request.
 2. Entrar al check fallido `Frontend CI`.
-3. Revisar cuál paso falló: instalación, typecheck, build o validación del Gateway.
+3. Revisar cuál paso falló: instalación, typecheck o build.
 4. Corregir el error en la misma rama temporal.
 5. Hacer push nuevamente para que GitHub Actions vuelva a ejecutar el workflow.
 
@@ -170,147 +169,212 @@ git push origin feature/descripcion-corta
 
 ## Arquitectura del Frontend
 
-El frontend es una plataforma **multi-tenant** compuesta por tres aplicaciones Next.js independientes y un Gateway que las expone bajo una sola URL.
+El frontend ahora es una sola aplicación Next.js. Los módulos que antes estaban separados en varias apps se unificaron como rutas dentro del mismo proyecto.
 
+```text
+app/
+  (cliente)/                 -> rutas públicas del cliente
+  admin/                     -> panel administrativo
+  comerciante/               -> panel del comerciante
+
+domains/
+  cliente/                   -> componentes, vistas, contexto y API del cliente
+  admin/                     -> componentes, contexto y API del administrador
+  comerciante/               -> componentes, contexto y API del comerciante
 ```
-IP EC2:80
-      │
-   Gateway  (Express – enrutador)
-      ├──  /                →  Cliente      (app compradores)
-      ├──  /admin/**        →  Admin        (app administración)
-      └──  /comerciante/**  →  Comerciante  (app comerciantes)
-```
 
-### Servicios
+### Rutas principales
 
-| Directorio     | Puerto interno | Ruta pública        | Variable de entorno del backend   |
-|----------------|----------------|---------------------|-----------------------------------|
-| `Cliente/`     | 3002           | `/`                 | `NEXT_PUBLIC_API_URL`             |
-| `Admin/`       | 3001           | `/admin`            | `NEXT_PUBLIC_API_URL`             |
-| `Comerciante/` | 3003           | `/comerciante`      | `NEXT_PUBLIC_API_BASE_URL`        |
-| `Gateway/`     | 3000 (público) | —                   | —                                 |
+| Ruta | Módulo |
+|------|--------|
+| `/` | Cliente |
+| `/admin` | Administración |
+| `/admin/login` | Login administrativo |
+| `/comerciante` | Redirección al login del comerciante |
+| `/comerciante/login` | Login del comerciante |
+| `/comerciante/dashboard` | Panel del comerciante |
+| `/recuperacion` | Recuperación de contraseña del cliente |
+| `/admin/recuperar-contrasena` | Recuperación de contraseña del administrador |
+| `/comerciante/recovery` | Recuperación de contraseña del comerciante |
 
-- Las tres apps Next.js **nunca son accesibles desde el exterior** — solo el Gateway expone el puerto 80.
-- La comunicación entre el Gateway y las apps ocurre a través de la red interna de Docker (`kingstore`).
-- Admin y Comerciante tienen configurado `basePath` en su `next.config.js`, por lo que Next.js ya maneja internamente el prefijo de ruta.
-- `NEXT_PUBLIC_*` son variables **de build time**: quedan horneadas en el bundle de JavaScript. Cambiarlas en `.env` sin reconstruir la imagen no tiene efecto.
+El frontend se despliega como un único proceso Next.js y un único contenedor Docker. Ya no se usa un gateway Express ni tres apps Next separadas.
 
----
+### Variables de entorno
+
+| Variable | Uso |
+|----------|-----|
+| `NEXT_PUBLIC_API_URL` | URL pública del backend usada por Cliente y Admin |
+| `NEXT_PUBLIC_API_BASE_URL` | URL pública del backend usada por Comerciante |
+| `NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE` | Modo de carga de logos de tienda |
+| `NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE` | Modo de sincronización del módulo comerciante |
+
+Las variables `NEXT_PUBLIC_*` quedan incluidas en el bundle del navegador durante el build. Si cambia la URL del backend, se debe reconstruir la imagen del frontend.
+
+### Recuperación de contraseña
+
+Los tres tipos de usuario comparten la API de recuperación ubicada en `domains/auth`. Cada pantalla solicita el correo al backend, recibe el enlace por Gmail y valida el token antes de permitir una nueva contraseña.
+
+El frontend solo necesita que `NEXT_PUBLIC_API_URL` o `NEXT_PUBLIC_API_BASE_URL` apunte al backend. La cuenta Gmail y su contraseña de aplicación se configuran únicamente en el backend; nunca deben incluirse en variables `NEXT_PUBLIC_*`.
+
+La nueva contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula, número y símbolo. Los enlaces caducan en 30 minutos por defecto y solo pueden utilizarse una vez.
 
 ## Despliegue con Docker
 
-Las imágenes están publicadas en Docker Hub bajo el usuario `bryanpisco`. El servidor EC2 **no necesita el código fuente ni compilar nada** — solo necesita el archivo `docker-compose.yml` y el archivo `.env` con los secretos del backend.
+La imagen del frontend se construye en la máquina local del desarrollador y se sube a Docker Hub. El servidor EC2 solo descarga la imagen ya compilada — no instala Node.js ni compila nada, lo que evita problemas de espacio en disco.
+
+```text
+Internet :80
+    |
+    v
+kingstore-frontend :3000
+    |-- /                  Cliente
+    |-- /admin             Administración
+    `-- /comerciante       Comerciante
+             |
+             v
+  kingstore-backend :8080
+             |
+             v
+       AWS RDS MySQL
+```
 
 ### Datos del servidor
 
 | Campo | Valor |
 |-------|-------|
 | IP EC2 | `52.205.138.95` |
-| URL frontend | `http://52.205.138.95` |
-| URL backend | `http://52.205.138.95:8080` |
+| Frontend | `http://52.205.138.95/` |
+| Admin | `http://52.205.138.95/admin` |
+| Comerciante | `http://52.205.138.95/comerciante/login` |
+| Backend | `http://52.205.138.95:8080` |
 | Conexión SSH | `ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com` |
 
-### Requisitos en el servidor
-- Docker >= 24
-- Docker Compose >= 2.20
+### Imágenes en Docker Hub
 
-```bash
-sudo apt update && sudo apt install -y docker.io docker-compose-plugin
-sudo usermod -aG docker $USER   # requiere re-login para tomar efecto
-```
+| Servicio | Imagen |
+|----------|--------|
+| Frontend | `bryanpisco/kingstore-frontend:latest` |
+| Backend | `bryanpisco/kingstore-backend:latest` |
+
+### Requisitos
+
+- Docker Desktop en la máquina local para construir y publicar la imagen.
+- Docker Engine `24` y Docker Compose v2 en el servidor EC2.
 
 ---
 
 ### Primer despliegue en el servidor (solo una vez)
 
-**1. Copiar el `docker-compose.yml` al servidor:**
-```bash
-scp -i "ingesoft_key.pem" \
-    docker-compose.yml \
-    ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com:~/docker-compose.yml
-```
+**1. Preparar el servidor:**
 
-**2. Conectarse al servidor y crear el archivo `.env`:**
 ```bash
 ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
 
-cat > .env << 'EOF'
-JASYPT_ENCRYPTOR_PASSWORD=kingstore-secret-key-2024
-JWT_SECRET=kingstore-secret-key-ingesoft-2026
-SPRING_DATASOURCE_PASSWORD=<password_de_rds>
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker "$USER"
+```
+
+Cerrar la sesión SSH y volver a entrar para aplicar el grupo `docker`.
+
+**2. Crear el `docker-compose.yml`:**
+
+```bash
+cat > docker-compose.yml << 'EOF'
+services:
+  frontend:
+    image: bryanpisco/kingstore-frontend:latest
+    ports:
+      - "80:3000"
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    image: bryanpisco/kingstore-backend:latest
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: "prod"
+      JASYPT_ENCRYPTOR_PASSWORD: "${JASYPT_ENCRYPTOR_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
+      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
+    restart: unless-stopped
 EOF
 ```
 
-**3. Levantar todos los servicios:**
+**3. Crear el `.env` con los secretos del backend:**
+
 ```bash
-docker compose pull        # descarga todas las imágenes desde Docker Hub
-docker compose up -d       # levanta los contenedores en segundo plano
-docker compose ps          # verifica que todos estén "Up"
+cat > .env << 'EOF'
+JASYPT_ENCRYPTOR_PASSWORD=kingstore-secret-key-2024
+JWT_SECRET=kingstore-secret-key-ingesoft-2026
+SPRING_DATASOURCE_PASSWORD=<password_rds>
+EOF
+```
+
+> Las variables `NEXT_PUBLIC_*` no van en el `.env` del servidor — quedan bakeadas dentro de la imagen durante el build local.
+
+**4. Levantar los servicios:**
+
+```bash
+docker compose pull
+docker compose up -d
+docker compose ps
 ```
 
 ---
 
-### Publicar nueva versión (tras cada cambio de código)
+### Publicar cambios del frontend
 
-Ejecutar desde la raíz del proyecto frontend (`/Frontend`). La variable `API_URL` define la URL del backend que quedará horneada en cada imagen.
+Ejecutar desde la raíz del proyecto (`/Frontend`) en tu máquina local:
+
+**1. Construir la imagen con las variables de producción:**
 
 ```bash
-cd /ruta/al/repo/Frontend
-
-API_URL=http://52.205.138.95:8080
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=http://52.205.138.95:8080 \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://52.205.138.95:8080 \
+  --build-arg NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local \
+  --build-arg NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local \
+  -t bryanpisco/kingstore-frontend:latest .
 ```
 
-**Cliente** (usa `NEXT_PUBLIC_API_URL`):
+**2. Subir la imagen a Docker Hub:**
+
 ```bash
-docker build --build-arg NEXT_PUBLIC_API_URL=$API_URL \
-  -t bryanpisco/kingstore-cliente:latest ./Cliente
-docker push bryanpisco/kingstore-cliente:latest
+docker push bryanpisco/kingstore-frontend:latest
 ```
 
-**Admin** (usa `NEXT_PUBLIC_API_URL`):
-```bash
-docker build --build-arg NEXT_PUBLIC_API_URL=$API_URL \
-  -t bryanpisco/kingstore-admin:latest ./Admin
-docker push bryanpisco/kingstore-admin:latest
-```
+**3. Actualizar el servidor:**
 
-**Comerciante** (usa `NEXT_PUBLIC_API_BASE_URL`):
-```bash
-docker build --build-arg NEXT_PUBLIC_API_BASE_URL=$API_URL \
-  -t bryanpisco/kingstore-comerciante:latest ./Comerciante
-docker push bryanpisco/kingstore-comerciante:latest
-```
-
-**Gateway** (no necesita build args):
-```bash
-docker build -t bryanpisco/kingstore-gateway:latest ./Gateway
-docker push bryanpisco/kingstore-gateway:latest
-```
-
-**Actualizar el servidor tras el push:**
 ```bash
 ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
 
-docker compose pull          # descarga las imágenes nuevas
-docker compose up -d         # reinicia los contenedores con las imágenes nuevas
-docker compose ps            # verificar que todos estén "Up"
+docker compose pull frontend
+docker compose up -d frontend
+docker compose logs --tail=50 frontend
 ```
 
 ---
 
-### Actualizar un solo servicio
-
-Si solo cambiaste un servicio, no es necesario reconstruir todo:
+### Publicar cambios del backend
 
 ```bash
-# Ejemplo: solo cambió Admin
-docker build --build-arg NEXT_PUBLIC_API_URL=$API_URL \
-  -t bryanpisco/kingstore-admin:latest ./Admin
-docker push bryanpisco/kingstore-admin:latest
+# En el repo del backend: compilar y publicar
+cd ../Backend
+./mvnw clean package -DskipTests
+docker build -t bryanpisco/kingstore-backend:latest .
+docker push bryanpisco/kingstore-backend:latest
 
-# En el servidor:
-docker compose pull admin
-docker compose up -d admin
+# En el servidor: actualizar
+ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+docker compose pull backend
+docker compose up -d backend
+docker compose logs --tail=50 backend
 ```
 
 ---
@@ -318,85 +382,65 @@ docker compose up -d admin
 ### Ver logs
 
 ```bash
-# Todos los servicios en tiempo real (Ctrl+C para salir)
-docker compose logs -f
+# Frontend en tiempo real
+docker compose logs -f frontend
 
-# Un servicio específico
-docker compose logs gateway -f
-docker compose logs admin -f
-docker compose logs cliente -f
-docker compose logs comerciante -f
-docker compose logs backend -f
+# Backend en tiempo real
+docker compose logs -f backend
 
-# Últimas N líneas sin seguir
-docker compose logs admin --tail=50
+# Últimas 50 líneas de todos los servicios
+docker compose logs --tail=50
 ```
 
 ---
 
-### Apagar los servicios
+### Detener los servicios
 
-**Opción 1 — Detener un servicio específico (el resto sigue corriendo):**
+**Detener solo el frontend (el backend sigue corriendo):**
 ```bash
-docker compose stop admin
-docker compose stop cliente
-docker compose stop comerciante
-docker compose stop gateway
+docker compose stop frontend
+```
+
+**Detener solo el backend:**
+```bash
 docker compose stop backend
 ```
 
-**Opción 2 — Detener todos los servicios (sin eliminar contenedores):**
+**Detener todos los servicios (los contenedores se conservan):**
 ```bash
 docker compose stop
 ```
-> Los contenedores quedan detenidos. Se pueden volver a iniciar con `docker compose start`.
 
-**Opción 3 — Apagar y eliminar los contenedores:**
+**Detener y eliminar los contenedores:**
 ```bash
 docker compose down
 ```
-> Las imágenes Docker y los datos en RDS se conservan. Para volver a levantar: `docker compose up -d`.
 
-**Opción 4 — Apagar, eliminar contenedores e imágenes (limpieza total):**
+**Detener, eliminar contenedores y limpiar imágenes (fuerza re-descarga en el próximo despliegue):**
 ```bash
 docker compose down --rmi all
 ```
-> Fuerza re-descarga de todas las imágenes en el próximo despliegue.
+
+> Los datos en RDS no se eliminan en ningún caso. Solo se detienen los contenedores.
 
 ---
 
-### Comandos útiles
+### Security Group de AWS
 
-```bash
-# Ver estado de todos los contenedores
-docker compose ps
-
-# Reiniciar un servicio sin reconstruir
-docker compose restart admin
-
-# Ver uso de recursos (CPU, RAM) de los contenedores
-docker stats
-
-# Verificar que las páginas responden
-curl http://52.205.138.95/            # Cliente
-curl http://52.205.138.95/admin       # Admin
-curl http://52.205.138.95/comerciante # Comerciante
-curl http://52.205.138.95:8080        # Backend
-```
+| Tipo | Puerto | Origen |
+|------|--------|--------|
+| HTTP | `80` | `0.0.0.0/0` |
+| TCP | `8080` | `0.0.0.0/0` |
+| SSH | `22` | tu IP |
 
 ---
 
-### Puertos y red
+### Diagnóstico rápido
 
-| Servicio      | Puerto expuesto al exterior | Puerto interno Docker |
-|---------------|-----------------------------|-----------------------|
-| Gateway       | 80                          | 3000                  |
-| Backend       | 8080                        | 8080                  |
-| Admin         | ninguno                     | 3001                  |
-| Cliente       | ninguno                     | 3002                  |
-| Comerciante   | ninguno                     | 3003                  |
-
-Asegúrate de que el **Security Group** de la EC2 tenga reglas de entrada:
-- HTTP → Puerto 80 → Origen: `0.0.0.0/0`
-- TCP personalizado → Puerto 8080 → Origen: `0.0.0.0/0`
-- SSH → Puerto 22 → Origen: tu IP
+| Problema | Revisión |
+|----------|----------|
+| El frontend no abre | `docker compose ps` y `docker compose logs frontend` |
+| Admin o Comerciante no inician sesión | Verificar URL del backend, CORS y estado del backend |
+| Sigue mostrando versión vieja | Reconstruir y pushear la imagen, luego `docker compose pull frontend && docker compose up -d frontend` |
+| El puerto 80 no responde | Security Group de EC2 y que el contenedor esté `Up` |
+| El backend no responde | `docker compose logs backend` y verificar variables de entorno en `.env` |

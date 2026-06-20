@@ -1,26 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+
+  --color-brand-black: #000000;
+  --color-brand-olive: #5D634B;
+  --color-brand-camel: #B2956D;
+  --color-brand-camel-dark: #9A7F5A;
+  --color-brand-green: #5D634B;
+  --color-brand-green-dark: #4A503D;
+  --color-brand-bg: #FAFAFA;
+  --color-brand-neutral-light: #F7F7F5;
+  --color-brand-neutral-mid: #EDEDE9;
+  --color-brand-neutral-border: #E5E5E0;
+  --color-brand-neutral-dark: #333333;
+  --color-brand-text-muted: #717171;
+
+  --color-primary: #000000;
+  --color-secondary: #86916B;
+  --color-tertiary: #BDA37D;
+  --color-primary-text: #1a1a1a;
+  --color-secondary-text: #475569;
+  --color-tertiary-text: #BDA37D;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-secondary: #ffffff;
+  --color-text-on-tertiary: #ffffff;
+  --text-on-primary: #ffffff;
+  --text-on-secondary: #ffffff;
+  --text-on-tertiary: #ffffff;
+  --muted-on-primary: #D1D5DB;
+  --muted-on-secondary: #E5E7EB;
+  --muted-on-tertiary: #374151;
+  --border-on-primary: #FFFFFF;
+  --border-on-secondary: #FFFFFF;
+  --border-on-tertiary: #111827;
+  --accent-on-primary: #FDE047;
+  --accent-on-secondary: #FDE047;
+  --accent-on-light: #8A6500;
+  --success-on-primary: #86EFAC;
+  --success-on-secondary: #86EFAC;
+  --error-on-primary: #FCA5A5;
+  --error-on-secondary: #FCA5A5;
+  --warning-on-primary: #FDE047;
+  --warning-on-secondary: #FDE047;
+  --info-on-primary: #93C5FD;
+  --info-on-secondary: #93C5FD;
+
+  --color-olive: #86916B;
+  --color-camel: #BDA37D;
+  --color-camel-light: #D1C0A5;
+  --color-warm-bg: #F5F4F0;
+  --color-card: #FFFFFF;
+  --color-border-subtle: #E5E4E0;
+  --color-text-main: #1A1A1A;
+  --color-text-secondary: #666666;
+  --color-primary-onyx: #353535;
+  --color-primary-deep-zinc: #4a4a4a;
+  --color-primary-midnight: #1a1a2e;
+  --color-secondary-olive: #6b705c;
+  --color-secondary-sage: #a5a58d;
+  --color-secondary-slate: #708090;
+  --color-tertiary-camel: #c19a6b;
+  --color-tertiary-gold: #d4af37;
+  --color-tertiary-silver: #c0c0c0;
+  --color-accent-charcoal: #252525;
+  --color-accent-terra: #c35237;
+  --color-accent-copper: #9b5a2b;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    min-height: 100%;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    min-height: 100%;
+    font-family: var(--font-sans);
+    background-color: var(--color-warm-bg);
+    color: var(--color-text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  select,
+  textarea {
+    color: var(--color-text-main, #1A1A1A);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: currentColor;
+    opacity: 0.72;
+  }
+
+  .auth-form input,
+  .auth-form select {
+    border-color: var(--border-on-primary);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .card-premium {
+    @apply bg-card border border-border-subtle rounded-[12px] shadow-none transition-all duration-200 hover:shadow-sm;
+  }
+
+  .search-input {
+    @apply w-full bg-warm-bg border border-border-subtle rounded-[8px] px-4 py-[10px] pl-10 text-[13px] transition-all focus:outline-none focus:ring-1 focus:ring-primary/10;
+  }
+
+  .bg-primary-onyx,
+  .bg-primary-deep-zinc,
+  .bg-primary-midnight,
+  .bg-secondary-olive,
+  .bg-secondary-slate,
+  .bg-tertiary-camel {
+    color: #ffffff;
+  }
+
+  .bg-secondary-sage,
+  .bg-tertiary-gold,
+  .bg-tertiary-silver {
+    color: #1a1a1a;
+  }
+
+  .text-overlay {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .text-accessible-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #dcdcdc;
+  border-radius: 10px;
 }

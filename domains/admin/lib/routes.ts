@@ -1,0 +1,17 @@
+export const ADMIN_ROUTES = {
+  dashboard: '/admin',
+  stores: '/admin/stores',
+  newStore: '/admin/stores/new',
+  editStore: (id: string | number) => `/admin/stores/${id}/edit`,
+  users: '/admin/users',
+  newUser: '/admin/users/new',
+  editUser: (id: string | number) => `/admin/users/${id}/edit`,
+  categories: '/admin/categories',
+  newCategory: '/admin/categories/new',
+  editCategory: (name: string) => `/admin/categories/${encodeURIComponent(name)}/edit`,
+  audit: '/admin/audit',
+  bulk: '/admin/bulk',
+  profile: '/admin/profile',
+  login: '/admin/login',
+  passwordRecovery: '/admin/password-recovery',
+} as const;
