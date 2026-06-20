@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/domains/admin/context/AppContext'; // Solo usamos el hook, no proveemos
 import Sidebar from '@/domains/admin/components/admin/Sidebar';
 import TopBar from '@/domains/admin/components/admin/TopBar';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isAuthInitialized } = useApp();
@@ -12,19 +13,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isAuthInitialized && !isLoggedIn) router.replace('/admin/login');
+    if (isAuthInitialized && !isLoggedIn) router.replace(ADMIN_ROUTES.login);
   }, [isAuthInitialized, isLoggedIn, router]);
 
   if (!isAuthInitialized || !isLoggedIn) return null;
 
   const getPageMeta = () => {
-    if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
-    if (pathname === '/admin/tiendas') return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
-    if (pathname === '/admin/usuarios') return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
-    if (pathname === '/admin/carga-masiva') return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
-    if (pathname === '/admin/categorias') return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
-    if (pathname === '/admin/auditoria') return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
-    if (pathname === '/admin/parametros') return { title: 'Parámetros', subtitle: 'Configuración global del sistema' };
+    if (pathname === ADMIN_ROUTES.dashboard) return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
+    if (pathname.startsWith(ADMIN_ROUTES.stores)) return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname.startsWith(ADMIN_ROUTES.users)) return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
+    if (pathname === ADMIN_ROUTES.bulk) return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
+    if (pathname.startsWith(ADMIN_ROUTES.categories)) return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
+    if (pathname === ADMIN_ROUTES.audit) return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 

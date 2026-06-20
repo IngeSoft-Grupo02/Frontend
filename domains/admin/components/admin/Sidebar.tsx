@@ -11,14 +11,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', path: '/admin', label: 'PANEL', icon: LayoutDashboard },
-  { id: 'tiendas', path: '/admin/tiendas', label: 'Tiendas', icon: Store },
-  { id: 'usuarios', path: '/admin/usuarios', label: 'Usuarios', icon: Users },
-  { id: 'carga-masiva', path: '/admin/carga-masiva', label: 'Carga masiva', icon: UploadCloud },
-  { id: 'categorias', path: '/admin/categorias', label: 'Categorías', icon: Tag },
-  { id: 'auditoria', path: '/admin/auditoria', label: 'Auditoría', icon: History },
+  { id: 'dashboard', path: ADMIN_ROUTES.dashboard, label: 'PANEL', icon: LayoutDashboard },
+  { id: 'stores', path: ADMIN_ROUTES.stores, label: 'Tiendas', icon: Store },
+  { id: 'users', path: ADMIN_ROUTES.users, label: 'Usuarios', icon: Users },
+  { id: 'bulk', path: ADMIN_ROUTES.bulk, label: 'Carga masiva', icon: UploadCloud },
+  { id: 'categories', path: ADMIN_ROUTES.categories, label: 'Categorías', icon: Tag },
+  { id: 'audit', path: ADMIN_ROUTES.audit, label: 'Auditoría', icon: History },
 ];
 
 export default function Sidebar() {

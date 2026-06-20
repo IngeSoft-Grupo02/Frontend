@@ -12,6 +12,7 @@ import {
   resetPassword,
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 function RecuperarContrasenaContent() {
   const router = useRouter();
@@ -84,7 +85,7 @@ function RecuperarContrasenaContent() {
   };
 
   const handleBackToLogin = () => {
-    router.push('/admin/login');
+    router.push(ADMIN_ROUTES.login);
   };
 
   return (

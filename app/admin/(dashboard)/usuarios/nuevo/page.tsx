@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, StoreResponse } from '@/domains/admin/lib/api';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Users, Store } from 'lucide-react';
 import { Button, Input, Select, Card, Badge } from '@/domains/admin/components/UI';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 // ── Helpers de validación ─────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export default function NuevoUsuarioPage() {
         ruc:             form.role === 'MERCHANT' ? form.ruc : undefined,
         storeId:         form.role === 'CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
-      router.push('/admin/usuarios');
+      router.push(ADMIN_ROUTES.users);
     } catch (err: any) { setGlobalError(err.message); }
     finally { setLoading(false); }
   };
@@ -194,7 +195,7 @@ export default function NuevoUsuarioPage() {
   return (
       <div className="space-y-12 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
         <div>
-          <button onClick={() => router.push('/admin/usuarios')}
+          <button onClick={() => router.push(ADMIN_ROUTES.users)}
                   className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline">
             <ArrowLeft size={16}/> Volver a usuarios
           </button>
@@ -353,7 +354,7 @@ export default function NuevoUsuarioPage() {
                     </p>
                 )}
                 <Button variant="secondary" className="w-full h-14 rounded-2xl"
-                        onClick={() => router.push('/admin/usuarios')}>
+                        onClick={() => router.push(ADMIN_ROUTES.users)}>
                   Cancelar
                 </Button>
               </div>

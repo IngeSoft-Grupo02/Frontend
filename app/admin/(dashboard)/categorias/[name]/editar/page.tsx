@@ -5,6 +5,7 @@ import { useApp } from '@/domains/admin/context/AppContext';
 import { ArrowLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 export default function EditarCategoriaPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function EditarCategoriaPage() {
       description: catDesc, 
       status: catStatus 
     });
-    router.push('/admin/categorias');
+    router.push(ADMIN_ROUTES.categories);
   };
 
   return (

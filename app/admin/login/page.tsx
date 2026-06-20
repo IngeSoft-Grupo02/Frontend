@@ -5,6 +5,7 @@ import { api } from '@/domains/admin/lib/api';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/domains/admin/context/AppContext';
 import { Eye, EyeOff, LayoutDashboard, Loader2 } from 'lucide-react';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function LoginPage() {
       // Actualizar contexto con datos reales del backend
       login(email, password, adminUser);
 
-      router.push('/admin');
+      router.push(ADMIN_ROUTES.dashboard);
 
     } catch (err: any) {
       const msg = err.message || '';
@@ -167,7 +168,7 @@ export default function LoginPage() {
                   </div>
                   <button
                       type="button"
-                      onClick={() => router.push('/admin/recuperar-contrasena')}
+                      onClick={() => router.push(ADMIN_ROUTES.passwordRecovery)}
                       className="text-brand-camel font-bold text-[14px] hover:underline underline-offset-4 tracking-tight block"
                   >
                     ¿Olvidaste tu contraseña?

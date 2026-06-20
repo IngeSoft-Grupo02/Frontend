@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/domains/admin/context/AppContext';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button, Input, Select, Card } from '@/domains/admin/components/UI';
+import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 
 export default function NuevaCategoriaPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function NuevaCategoriaPage() {
   const handleSave = () => {
     if (!catName) return;
     addCategory({ name: catName, description: catDesc, status: catStatus });
-    router.push('/admin/categorias');
+    router.push(ADMIN_ROUTES.categories);
   };
 
   return (
