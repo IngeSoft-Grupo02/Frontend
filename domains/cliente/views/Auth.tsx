@@ -15,10 +15,10 @@ type DocumentTypeValue = 'DNI' | 'PASSPORT' | 'FOREIGN_ID_CARD';
 const DOCUMENT_TYPE_OPTIONS: { value: DocumentTypeValue; label: string }[] = [
   { value: 'DNI', label: 'DNI' },
   { value: 'PASSPORT', label: 'Pasaporte' },
-  { value: 'FOREIGN_ID_CARD', label: 'Carné de extranjería' },
+  { value: 'FOREIGN_ID_CARD', label: 'CarnÃ© de extranjerÃ­a' },
 ];
 
-// Longitud máxima del número de documento según tipo (DNI=8, CE=9-15, Pasaporte=6-20)
+// Longitud mÃ¡xima del nÃºmero de documento segÃºn tipo (DNI=8, CE=9-15, Pasaporte=6-20)
 const DOCUMENT_NUMBER_MAX_LENGTH: Record<DocumentTypeValue, number> = {
   DNI: 8,
   FOREIGN_ID_CARD: 15,
@@ -26,7 +26,9 @@ const DOCUMENT_NUMBER_MAX_LENGTH: Record<DocumentTypeValue, number> = {
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const NAME_REGEX = /^[A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-\s]+$/;
+const NAME_MAX_LENGTH = 50;
+const NAME_REGEX = /^[A-Za-z\u00C1\u00C9\u00CD\u00D3\u00DA\u00D1\u00DC\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00FC\s]+$/u;
+const PERSON_NAME_ERROR = 'El nombre debe tener entre 2 y 50 caracteres y solo puede contener letras.';
 
 interface AuthProps {
   store: Store;
@@ -58,7 +60,44 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
   const [verificationCode, setVerificationCode] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+
+  const sanitizePersonName = (value: string) => {
+    return value
+      .replace(/[^A-Za-z\u00C1\u00C9\u00CD\u00D3\u00DA\u00D1\u00DC\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00FC\s]/gu, '')
+      .replace(/\s{2,}/g, ' ')
+      .slice(0, NAME_MAX_LENGTH);
+  };
+
+  const validatePersonNameField = (key: 'nombres' | 'apellidoPaterno' | 'apellidoMaterno') => {
+    const value = formData[key].trim();
+    const message = !value || value.length < 2 || value.length > NAME_MAX_LENGTH || !NAME_REGEX.test(value)
+      ? PERSON_NAME_ERROR
+      : '';
+    setErrors((prev) => ({ ...prev, [key]: message }));
+    return !message;
+  };
+
+  const updatePersonNameField = (key: 'nombres' | 'apellidoPaterno' | 'apellidoMaterno', value: string) => {
+    const cleanValue = sanitizePersonName(value);
+    setFormData((prev) => ({ ...prev, [key]: cleanValue }));
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: '' }));
+    }
+  };
+
+  const PasswordVisibilityButton = ({ visible, onClick }: { visible: boolean; onClick: () => void }) => (
+    <button
+      type="button"
+      aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      onClick={onClick}
+      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-opacity hover:opacity-80"
+      style={{ color: 'var(--text-on-primary)' }}
+    >
+      {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  );
   const passwordRequirements = {
     length: formData.password.length >= 8,
     uppercase: /[A-Z]/.test(formData.password),
@@ -73,16 +112,16 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     // Email validation
     const email = formData.email.trim();
     if (!email || !EMAIL_REGEX.test(email)) {
-      newErrors.email = 'Ingresa un correo electrónico válido';
+      newErrors.email = 'Ingresa un correo electrÃ³nico vÃ¡lido';
     }
 
     // Password validation
     if (!passwordRequirements.length) {
-      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+      newErrors.password = 'La contraseÃ±a debe tener al menos 8 caracteres';
     }
 
     if (type === 'reset-password' && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      newErrors.confirmPassword = 'Las contraseÃ±as no coinciden';
     }
 
     if (type === 'register') {
@@ -92,44 +131,40 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
         { key: 'apellidoPaterno', label: 'El apellido paterno' },
         { key: 'apellidoMaterno', label: 'El apellido materno' },
       ];
-      nameFields.forEach(({ key, label }) => {
+      nameFields.forEach(({ key }) => {
         const value = formData[key].trim();
-        if (!value) {
-          newErrors[key] = `${label} es obligatorio`;
-        } else if (value.length < 2 || value.length > 50) {
-          newErrors[key] = `${label} debe tener entre 2 y 50 caracteres`;
-        } else if (!NAME_REGEX.test(value)) {
-          newErrors[key] = `${label} solo puede contener letras, espacios, guiones y apóstrofes`;
+        if (!value || value.length < 2 || value.length > NAME_MAX_LENGTH || !NAME_REGEX.test(value)) {
+          newErrors[key] = PERSON_NAME_ERROR;
         }
       });
 
-      // Documento: solo dígitos, longitud según tipo
+      // Documento: solo dÃ­gitos, longitud segÃºn tipo
       const docNumber = formData.numeroDocumento.trim();
       if (!docNumber) {
-        newErrors.numeroDocumento = 'El número de documento es obligatorio';
+        newErrors.numeroDocumento = 'El nÃºmero de documento es obligatorio';
       } else if (!/^\d+$/.test(docNumber)) {
-        newErrors.numeroDocumento = 'El número de documento solo debe contener dígitos';
+        newErrors.numeroDocumento = 'El nÃºmero de documento solo debe contener dÃ­gitos';
       } else if (formData.documentType === 'DNI' && docNumber.length !== 8) {
-        newErrors.numeroDocumento = 'El DNI debe tener 8 dígitos';
+        newErrors.numeroDocumento = 'El DNI debe tener 8 dÃ­gitos';
       } else if (formData.documentType === 'FOREIGN_ID_CARD' && (docNumber.length < 9 || docNumber.length > 15)) {
-        newErrors.numeroDocumento = 'El carné de extranjería debe tener entre 9 y 15 dígitos';
+        newErrors.numeroDocumento = 'El carnÃ© de extranjerÃ­a debe tener entre 9 y 15 dÃ­gitos';
       } else if (formData.documentType === 'PASSPORT' && (docNumber.length < 6 || docNumber.length > 20)) {
-        newErrors.numeroDocumento = 'El pasaporte debe tener entre 6 y 20 dígitos';
+        newErrors.numeroDocumento = 'El pasaporte debe tener entre 6 y 20 dÃ­gitos';
       }
 
-      // Teléfono: exactamente 9 dígitos
+      // TelÃ©fono: exactamente 9 dÃ­gitos
       const phone = formData.telefono.trim();
       if (!/^\d{9}$/.test(phone)) {
-        newErrors.telefono = 'El celular debe tener 9 dígitos';
+        newErrors.telefono = 'El celular debe tener 9 dÃ­gitos';
       }
 
-      // Fecha de nacimiento: formato válido y no futura
+      // Fecha de nacimiento: formato vÃ¡lido y no futura
       if (!formData.fechaNacimiento) {
         newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
       } else {
         const birthDate = new Date(formData.fechaNacimiento);
         if (Number.isNaN(birthDate.getTime())) {
-          newErrors.fechaNacimiento = 'La fecha de nacimiento no es válida';
+          newErrors.fechaNacimiento = 'La fecha de nacimiento no es vÃ¡lida';
         } else if (birthDate.getTime() > Date.now()) {
           newErrors.fechaNacimiento = 'La fecha de nacimiento no puede ser una fecha futura';
         }
@@ -176,9 +211,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     switch (type) {
       case 'login': return 'Bienvenido de nuevo';
       case 'register': return 'Registro de Cliente';
-      case 'forgot-password': return 'Recuperar contraseña';
-      case 'verification': return 'Verificación de cuenta';
-      case 'reset-password': return 'Nueva contraseña';
+      case 'forgot-password': return 'Recuperar contraseÃ±a';
+      case 'verification': return 'VerificaciÃ³n de cuenta';
+      case 'reset-password': return 'Nueva contraseÃ±a';
       default: return '';
     }
   };
@@ -186,9 +221,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
   const getAuthSubtitle = () => {
     switch (type) {
       case 'register': return `Completa tus datos para crear una cuenta en ${store.name}`;
-      case 'forgot-password': return 'Ingresa tu correo para recibir un código de verificación';
-      case 'verification': return 'Hemos enviado un código a tu correo electrónico';
-      case 'reset-password': return 'Crea una contraseña segura para tu cuenta';
+      case 'forgot-password': return 'Ingresa tu correo para recibir un cÃ³digo de verificaciÃ³n';
+      case 'verification': return 'Hemos enviado un cÃ³digo a tu correo electrÃ³nico';
+      case 'reset-password': return 'Crea una contraseÃ±a segura para tu cuenta';
       default: return null;
     }
   };
@@ -197,19 +232,19 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     <div className="mt-2 space-y-1.5 pl-1">
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.length ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.length ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Mínimo 8 caracteres
+        MÃ­nimo 8 caracteres
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.uppercase ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.uppercase ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 mayúscula
+        Al menos 1 mayÃºscula
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.lowercase ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.lowercase ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 minúscula
+        Al menos 1 minÃºscula
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.number ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.number ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 número
+        Al menos 1 nÃºmero
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.special ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.special ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
@@ -221,16 +256,16 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
   return (
     <div className="flex min-h-screen">
       {/* Left Branding Side */}
-      <div 
+      <div
         className="hidden lg:flex w-1/2 p-24 flex-col justify-between relative overflow-hidden transition-colors duration-300"
-        style={{ 
+        style={{
           backgroundColor: 'var(--color-primary)',
           color: 'var(--color-text-on-primary)'
         }}
       >
         <div className="relative z-10">
-          <div 
-            className="flex items-center gap-2.5 mb-20 cursor-pointer" 
+          <div
+            className="flex items-center gap-2.5 mb-20 cursor-pointer"
             onClick={() => onNavigate(View.DIRECTORY)}
           >
             <div className="logo-accent w-6 h-6 grid grid-cols-2 gap-[2px]">
@@ -243,9 +278,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
           </div>
 
           <div className="max-w-md">
-             <div 
+             <div
                className="w-24 h-24 rounded-3xl flex items-center justify-center mb-10 font-black text-4xl shadow-2xl border"
-               style={{ 
+               style={{
                  backgroundColor: 'var(--color-secondary)',
                  color: 'var(--color-text-on-secondary)',
                  borderColor: 'rgba(255, 255, 255, 0.1)'
@@ -254,10 +289,10 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                {store.logo}
              </div>
              <h2 className="text-[42px] font-extrabold leading-tight mb-6">Accede a {store.name}</h2>
-             <p 
+             <p
                className="text-[18px] leading-relaxed mb-10 opacity-80"
              >
-               Esta es una cuenta exclusiva para esta tienda. Tus pedidos y cotizaciones aquí son independientes de otras marcas en Kingstore.
+               Esta es una cuenta exclusiva para esta tienda. Tus pedidos y cotizaciones aquÃ­ son independientes de otras marcas en Kingstore.
              </p>
              <div className="flex items-center gap-4 font-extrabold text-[14px]" style={{ color: 'var(--accent-on-primary)' }}>
                 <ShieldCheck size={20} />
@@ -271,17 +306,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
         </div>
 
         {/* Abstract background */}
-        <div 
+        <div
           className="absolute inset-0 opacity-20"
-          style={{ 
-            backgroundImage: `radial-gradient(circle at 100% 100%, ${store.color} 0%, transparent 50%)` 
+          style={{
+            backgroundImage: `radial-gradient(circle at 100% 100%, ${store.color} 0%, transparent 50%)`
           }}
         />
       </div>
 
       {/* Right Form Side */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10 transition-colors duration-300" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)' }}>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`w-full ${type === 'register' ? 'max-w-[700px]' : 'max-w-[480px]'} rounded-3xl border p-8 sm:p-12 shadow-xl overflow-y-auto max-h-[90vh] no-scrollbar`}
@@ -339,13 +374,13 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <CreditCard size={12} className="opacity-70" /> Número de Documento
+                    <CreditCard size={12} className="opacity-70" /> NÃºmero de Documento
                   </label>
                   <input
                     type="text"
                     inputMode="numeric"
                     maxLength={DOCUMENT_NUMBER_MAX_LENGTH[formData.documentType]}
-                    placeholder="Número de documento"
+                    placeholder="NÃºmero de documento"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.numeroDocumento ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.numeroDocumento}
                     onChange={(e) => {
@@ -370,7 +405,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                     placeholder="Tus nombres"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.nombres ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.nombres}
-                    onChange={(e) => setFormData({...formData, nombres: e.target.value})}
+                    maxLength={NAME_MAX_LENGTH}
+                    onChange={(e) => updatePersonNameField('nombres', e.target.value)}
+                    onBlur={() => validatePersonNameField('nombres')}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -389,7 +426,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                     placeholder="Primer apellido"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.apellidoPaterno ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.apellidoPaterno}
-                    onChange={(e) => setFormData({...formData, apellidoPaterno: e.target.value})}
+                    maxLength={NAME_MAX_LENGTH}
+                    onChange={(e) => updatePersonNameField('apellidoPaterno', e.target.value)}
+                    onBlur={() => validatePersonNameField('apellidoPaterno')}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -408,7 +447,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                     placeholder="Segundo apellido"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.apellidoMaterno ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.apellidoMaterno}
-                    onChange={(e) => setFormData({...formData, apellidoMaterno: e.target.value})}
+                    maxLength={NAME_MAX_LENGTH}
+                    onChange={(e) => updatePersonNameField('apellidoMaterno', e.target.value)}
+                    onBlur={() => validatePersonNameField('apellidoMaterno')}
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'var(--text-on-primary)'
@@ -420,7 +461,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Users size={12} className="opacity-70" /> Género
+                    <Users size={12} className="opacity-70" /> GÃ©nero
                   </label>
                   <select
                     className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent transition-all appearance-none"
@@ -441,8 +482,8 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
                     <Calendar size={12} className="opacity-70" /> Fecha de Nacimiento
                   </label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.fechaNacimiento ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.fechaNacimiento}
                     onChange={(e) => setFormData({...formData, fechaNacimiento: e.target.value})}
@@ -457,7 +498,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Phone size={12} className="opacity-70" /> Teléfono
+                    <Phone size={12} className="opacity-70" /> TelÃ©fono
                   </label>
                   <input
                     type="tel"
@@ -478,7 +519,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Mail size={12} className="opacity-70" /> Correo electrónico
+                    <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
                   </label>
                   <input
                     type="email"
@@ -497,20 +538,23 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> Contraseña
+                    <Lock size={12} className="opacity-70" /> ContraseÃ±a
                   </label>
-                  <input
-                    type="password"
-                    placeholder="********"
-                    className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.password ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--text-on-primary)'
-                    }}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="********"
+                      className={`w-full pl-5 pr-12 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.password ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--text-on-primary)'
+                      }}
+                      required
+                    />
+                    <PasswordVisibilityButton visible={showPassword} onClick={() => setShowPassword((visible) => !visible)} />
+                  </div>
                   {errors.password && <p className="text-[11px] font-bold ml-1 text-[var(--error-on-secondary)]">{errors.password}</p>}
                   <PasswordHint />
                 </div>
@@ -519,48 +563,54 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> Nueva Contraseña
+                    <Lock size={12} className="opacity-70" /> Nueva ContraseÃ±a
                   </label>
-                  <input 
-                    type="password" 
-                    placeholder="Al menos 8 caracteres"
-                    className={`w-full px-5 py-4 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.password ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--text-on-primary)'
-                    }}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Al menos 8 caracteres"
+                      className={`w-full pl-5 pr-12 py-4 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.password ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--text-on-primary)'
+                      }}
+                      required
+                    />
+                    <PasswordVisibilityButton visible={showPassword} onClick={() => setShowPassword((visible) => !visible)} />
+                  </div>
                   <PasswordHint />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> Confirmar Contraseña
+                    <Lock size={12} className="opacity-70" /> Confirmar ContraseÃ±a
                   </label>
-                  <input 
-                    type="password" 
-                    placeholder="Repite tu contraseña"
-                    className={`w-full px-5 py-4 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.confirmPassword ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--text-on-primary)'
-                    }}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Repite tu contraseÃ±a"
+                      className={`w-full pl-5 pr-12 py-4 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.confirmPassword ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--text-on-primary)'
+                      }}
+                      required
+                    />
+                    <PasswordVisibilityButton visible={showConfirmPassword} onClick={() => setShowConfirmPassword((visible) => !visible)} />
+                  </div>
                   {errors.confirmPassword && <p className="text-[11px] font-bold ml-1 text-[var(--error-on-secondary)]">{errors.confirmPassword}</p>}
                 </div>
               </div>
             ) : type === 'forgot-password' ? (
               <div className="space-y-2">
                 <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                  <Mail size={12} className="opacity-70" /> Correo electrónico
+                  <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
                 </label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   placeholder="tu@correo.com"
                   className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all"
                   style={{
@@ -595,7 +645,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                   ))}
                 </div>
                 <div className="text-center">
-                   <button 
+                   <button
                     type="button"
                     disabled={isResending}
                     onClick={() => {
@@ -605,7 +655,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                     className="text-[12px] font-bold hover:underline disabled:opacity-50 cursor-pointer"
                     style={{ color: 'var(--accent-on-secondary)' }}
                   >
-                    {isResending ? 'Reenviando...' : 'Reenviar código'}
+                    {isResending ? 'Reenviando...' : 'Reenviar cÃ³digo'}
                   </button>
                 </div>
               </div>
@@ -613,7 +663,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Mail size={12} className="opacity-70" /> Correo electrónico
+                    <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
                   </label>
                   <input
                     type="email"
@@ -632,7 +682,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>
-                      <Lock size={12} className="opacity-70" /> Contraseña
+                      <Lock size={12} className="opacity-70" /> ContraseÃ±a
                     </label>
                     <button
                       type="button"
@@ -645,14 +695,14 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                         window.location.assign(recoveryUrl);
                       }}
                     >
-                      ¿Olvidaste tu contraseña?
+                      Â¿Olvidaste tu contraseÃ±a?
                     </button>
                   </div>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="********"
-                      className="w-full px-5 py-4 pr-12 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all"
+                      className="w-full pl-5 pr-12 py-4 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       style={{
@@ -661,15 +711,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                       }}
                       required
                     />
-                    <button
-                      type="button"
-                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                      onClick={() => setShowPassword(value => !value)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors hover:opacity-80"
-                      style={{ color: 'var(--text-on-primary)' }}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    <PasswordVisibilityButton visible={showPassword} onClick={() => setShowPassword((visible) => !visible)} />
                   </div>
                 </div>
               </>
@@ -697,18 +739,18 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <span>
                 {(type === 'login' || type === 'register') && authLoading
                   ? 'Procesando...'
-                  : type === 'login' ? 'Iniciar sesión' :
+                  : type === 'login' ? 'Iniciar sesiÃ³n' :
                     type === 'register' ? 'Crear cuenta ahora' :
-                    type === 'forgot-password' ? 'Enviar código' :
-                    type === 'verification' ? 'Verificar código' : 'Restablecer contraseña'}
+                    type === 'forgot-password' ? 'Enviar cÃ³digo' :
+                    type === 'verification' ? 'Verificar cÃ³digo' : 'Restablecer contraseÃ±a'}
               </span>
               <ArrowRight size={18} />
             </Button>
 
-            <Button 
-              type="button" 
-              variant="outline" 
-              fullWidth 
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
               className="py-4.5 uppercase tracking-widest text-[13px] !bg-transparent border transition-all mt-3 flex items-center justify-center gap-2 font-black"
               style={{
                 borderColor: 'var(--text-on-secondary)',
@@ -723,13 +765,13 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
           <div className="mt-10 pt-8 border-t text-center" style={{ borderColor: 'var(--border-on-secondary)' }}>
             <p className="text-[13px] font-medium" style={{ color: 'var(--text-on-secondary)' }}>
-              {type === 'login' 
-                ? '¿Aún no tienes cuenta?' 
+              {type === 'login'
+                ? 'Â¿AÃºn no tienes cuenta?'
                 : type === 'forgot-password' || type === 'verification' || type === 'reset-password'
-                ? '¿Recordaste tu contraseña?'
-                : '¿Ya eres miembro?'}
+                ? 'Â¿Recordaste tu contraseÃ±a?'
+                : 'Â¿Ya eres miembro?'}
               {' '}
-              <button 
+              <button
                 onClick={() => {
                   if (type === 'login') onNavigate(View.AUTH_REGISTER);
                   else if (type === 'register') onNavigate(View.AUTH_LOGIN);
@@ -738,7 +780,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                 className="font-extrabold hover:underline cursor-pointer"
                 style={{ color: 'var(--accent-on-secondary)' }}
               >
-                {type === 'login' ? 'Regístrate aquí' : 'Ingresa aquí'}
+                {type === 'login' ? 'RegÃ­strate aquÃ­' : 'Ingresa aquÃ­'}
               </button>
             </p>
           </div>

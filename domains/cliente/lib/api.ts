@@ -4,10 +4,18 @@
  */
 
 import {
+  CartItem,
+  CartItemRequestDTO,
+  CartResponseDTO,
   CustomerUser,
+  CustomDesignRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
   PrimaryColor,
+  Product,
+  ProductPublicDTO,
+  QuotationResponseDTO,
+  Quote,
   RegisterCustomerDTO,
   SecondaryColor,
   Store,
@@ -92,7 +100,7 @@ function buildInitials(name: string): string {
   return initials || 'KS';
 }
 
-/** Adapta el DTO real de tienda pública al modelo Store usado por las vistas del prototipo. */
+/** Adapta el DTO real de tienda pÃºblica al modelo Store usado por las vistas del prototipo. */
 export function toStore(dto: StorePublicDTO): Store {
   const primaryColor = resolveColor(PrimaryColor as unknown as Record<string, string>, dto.primaryColor, PrimaryColor.ONYX_BLACK);
   const secondaryColor = resolveColor(SecondaryColor as unknown as Record<string, string>, dto.secondaryColor, SecondaryColor.SLATE);
@@ -142,5 +150,163 @@ export function fetchCustomerMe(slug: string, token: string): Promise<CustomerUs
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+}
+
+function authHeaders(token: string): HeadersInit {
+  return { Authorization: `Bearer ${token}` };
+}
+
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+/** Adapta el DTO publico de producto al modelo usado por las vistas del cliente. */
+export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
+  const variants = dto.variants || [];
+  const imageUrls = dto.imageUrls || [];
+  const colors = unique(variants.map((variant) => String(variant.color)));
+  const sizes = unique(variants.map((variant) => variant.size));
+
+  return {
+    id: String(dto.id),
+    name: dto.name,
+    price: dto.basePrice,
+    material: '',
+    description: dto.description || 'Producto disponible para cotizacion.',
+    image: imageUrls[0],
+    imageUrls,
+    category: sizes.length > 0 ? `${sizes.length} tallas disponibles` : 'Catalogo',
+    colors,
+    sizes,
+    variants,
+    discounts: dto.discounts || [],
+    storeId: storeSlug,
+    createdAt: Number(dto.id),
+    stock: variants.reduce((sum, variant) => sum + (variant.stock || 0), 0),
+  };
+}
+
+export function toCartItems(dto: CartResponseDTO): CartItem[] {
+  return (dto.items || []).map((item) => ({
+    id: String(item.id),
+    productId: String(item.productVariantId),
+    productName: item.productName,
+    quantity: item.quantity,
+    specs: [item.size, item.color].filter(Boolean).join(' / '),
+    hasDesign: Boolean(item.customDesign),
+    price: item.price,
+  }));
+}
+
+function toQuoteStatus(dto: QuotationResponseDTO): Quote['status'] {
+  const raw = String(dto.status || '').toUpperCase();
+  const label = String(dto.statusLabel || '').toLowerCase();
+  if (raw.includes('APPROV') || label.includes('aprob')) return 'Aprobadas';
+  if (raw.includes('REJECT') || raw.includes('DECLIN') || label.includes('rechaz')) return 'Rechazadas';
+  if (raw.includes('RESPOND') || raw.includes('PROPOS') || label.includes('propuesta')) return 'Propuesta enviada';
+  if (raw.includes('REVIEW') || label.includes('revisi')) return 'En revision' as Quote['status'];
+  return 'Pendientes';
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return 'Sin fecha';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('es-PE', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+export function toQuote(dto: QuotationResponseDTO): Quote {
+  const items = dto.items || [];
+  const firstItem = items[0];
+  return {
+    id: String(dto.id),
+    productName: firstItem?.productName || firstItem?.product || `Cotizacion ${dto.id}`,
+    quantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
+    date: formatDate(dto.requestedAt),
+    amount: dto.totalAmount,
+    status: toQuoteStatus(dto),
+    hasDesign: Boolean(dto.description || dto.observations),
+    rawStatus: dto.status,
+    subTotal: dto.subTotal,
+    discount: dto.discount,
+    description: dto.description,
+    observations: dto.observations,
+    items,
+  };
+}
+
+export function fetchPublicProducts(slug: string, search?: string): Promise<ProductPublicDTO[]> {
+  const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+  return request<ProductPublicDTO[]>(`/stores/public/${encodeURIComponent(slug)}/products${query}`);
+}
+
+export function fetchPublicProduct(slug: string, productId: string | number): Promise<ProductPublicDTO> {
+  return request<ProductPublicDTO>(`/stores/public/${encodeURIComponent(slug)}/products/${encodeURIComponent(String(productId))}`);
+}
+
+export function fetchCart(slug: string, token: string): Promise<CartResponseDTO> {
+  return request<CartResponseDTO>(`/stores/${encodeURIComponent(slug)}/cart`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function addCartItem(slug: string, token: string, dto: CartItemRequestDTO): Promise<CartResponseDTO> {
+  return request<CartResponseDTO>(`/stores/${encodeURIComponent(slug)}/cart/items`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function updateCartItem(slug: string, token: string, itemId: string | number, dto: CartItemRequestDTO): Promise<CartResponseDTO> {
+  return request<CartResponseDTO>(`/stores/${encodeURIComponent(slug)}/cart/items/${encodeURIComponent(String(itemId))}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function removeCartItem(slug: string, token: string, itemId: string | number): Promise<CartResponseDTO> {
+  return request<CartResponseDTO>(`/stores/${encodeURIComponent(slug)}/cart/items/${encodeURIComponent(String(itemId))}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
+export function addCartDesign(
+  slug: string,
+  token: string,
+  itemId: string | number,
+  dto: CustomDesignRequestDTO,
+): Promise<CartResponseDTO> {
+  return request<CartResponseDTO>(`/stores/${encodeURIComponent(slug)}/cart/items/${encodeURIComponent(String(itemId))}/design`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function createQuotation(slug: string, token: string): Promise<QuotationResponseDTO> {
+  return request<QuotationResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+}
+
+export function fetchQuotations(slug: string, token: string): Promise<QuotationResponseDTO[]> {
+  return request<QuotationResponseDTO[]>(`/stores/${encodeURIComponent(slug)}/quotations`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function fetchQuotation(slug: string, token: string, quoteId: string | number): Promise<QuotationResponseDTO> {
+  return request<QuotationResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations/${encodeURIComponent(String(quoteId))}`, {
+    headers: authHeaders(token),
   });
 }

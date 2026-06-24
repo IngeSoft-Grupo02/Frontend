@@ -21,10 +21,22 @@ import { TopBar } from './components/layout/TopBar';
 import { Button } from './components/ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from './context/AppContext';
-import { ApiError, fetchCustomerMe, loginCustomer, registerCustomer } from './lib/api';
+import {
+  addCartDesign,
+  addCartItem,
+  ApiError,
+  createQuotation,
+  fetchCart,
+  fetchCustomerMe,
+  loginCustomer,
+  registerCustomer,
+  removeCartItem,
+  toCartItems,
+  toQuote,
+} from './lib/api';
 import { mapCustomerToUser } from './lib/customer';
 
-// Vistas que requieren sesión de cliente iniciada (ya protegidas en renderCurrentView)
+// Vistas que requieren sesiÃ³n de cliente iniciada (ya protegidas en renderCurrentView)
 const PROTECTED_VIEWS = new Set<View>([
   View.REQUEST_QUOTE,
   View.MY_QUOTES,
@@ -40,6 +52,7 @@ export default function App() {
     setSelectedStore,
     currentUser,
     setCurrentUser,
+    customerToken,
     setCustomerToken,
     pendingView,
     setPendingView,
@@ -62,7 +75,7 @@ export default function App() {
     if (currentUser && currentUser.storeId !== store.id) {
       setCurrentUser(null);
     }
-    
+
     setSelectedStore(store);
     setCurrentView(View.STOREFRONT_PUBLIC);
   };
@@ -77,18 +90,90 @@ export default function App() {
     setCurrentView(View.ORDER_DETAIL);
   };
 
-  const addToCart = (item: any) => {
-    setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
-    setCurrentView(View.CART);
+  const loadCart = async (slug: string, token: string) => {
+    const cart = await fetchCart(slug, token);
+    setCartItems(toCartItems(cart));
+    return cart;
   };
 
-  const removeFromCart = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+  const addToCart = async (item: any) => {
+    if (!selectedStore?.slug || !customerToken || !selectedProduct?.variants) {
+      setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
+      setCurrentView(View.CART);
+      return;
+    }
+
+    try {
+      let latestCart = null;
+      const validRows = (item.rows || []).filter((row: any) => Number(row.quantity) > 0);
+      for (const row of validRows) {
+        const variant = selectedProduct.variants.find(
+          (entry) => entry.size === row.size && String(entry.color) === String(row.color),
+        );
+        if (!variant) {
+          throw new Error(`No existe una variante para talla ${row.size} y color ${row.color}.`);
+        }
+        latestCart = await addCartItem(selectedStore.slug, customerToken, {
+          productVariantId: variant.id,
+          quantity: Number(row.quantity),
+        });
+
+        const addedItem = latestCart.items.find((cartItem) => cartItem.productVariantId === variant.id);
+        if (addedItem && (item.specs || item.files?.length > 0)) {
+          const designDescription = [
+            item.specs,
+            item.files?.length ? `Archivos referenciales pendientes de S3: ${item.files.map((file: any) => file.name).join(', ')}` : '',
+          ].filter(Boolean).join('\n');
+          latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
+            description: designDescription,
+          });
+        }
+      }
+
+      if (latestCart) {
+        setCartItems(toCartItems(latestCart));
+      } else {
+        await loadCart(selectedStore.slug, customerToken);
+      }
+      setCurrentView(View.CART);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo agregar el producto al carrito.');
+    }
+  };
+
+  const removeFromCart = async (id: string) => {
+    if (!selectedStore?.slug || !customerToken) {
+      setCartItems(prev => prev.filter(item => item.id !== id));
+      return;
+    }
+
+    try {
+      const cart = await removeCartItem(selectedStore.slug, customerToken, id);
+      setCartItems(toCartItems(cart));
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto del carrito.');
+    }
+  };
+
+  const submitCartQuotation = async () => {
+    if (!selectedStore?.slug || !customerToken) {
+      navigate(View.AUTH_LOGIN);
+      return;
+    }
+
+    try {
+      const quotation = await createQuotation(selectedStore.slug, customerToken);
+      setSelectedQuote(toQuote(quotation));
+      await loadCart(selectedStore.slug, customerToken);
+      setCurrentView(View.QUOTE_DETAIL);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'No se pudo crear la cotizacion.');
+    }
   };
 
   const handleLogin = async (email: string, password: string) => {
     if (!selectedStore?.slug) {
-      setAuthError('Selecciona una tienda antes de iniciar sesión.');
+      setAuthError('Selecciona una tienda antes de iniciar sesiÃ³n.');
       setCurrentView(View.DIRECTORY);
       return;
     }
@@ -100,6 +185,7 @@ export default function App() {
       setCustomerToken(result.token);
       const profile = await fetchCustomerMe(selectedStore.slug, result.token);
       setCurrentUser(mapCustomerToUser(profile));
+      await loadCart(selectedStore.slug, result.token);
 
       const nextView = pendingView ?? View.CATALOG;
       setPendingView(null);
@@ -153,8 +239,8 @@ export default function App() {
       setCurrentView(View.PRODUCT_DETAIL);
   };
 
-  // Navegación con soporte de "pendingView": si la vista destino requiere sesión
-  // y no hay un cliente autenticado, redirige a login y recuerda a dónde volver.
+  // NavegaciÃ³n con soporte de "pendingView": si la vista destino requiere sesiÃ³n
+  // y no hay un cliente autenticado, redirige a login y recuerda a dÃ³nde volver.
   const navigate = (view: View) => {
     if (PROTECTED_VIEWS.has(view) && !currentUser) {
       if (!selectedStore) {
@@ -173,7 +259,7 @@ export default function App() {
     switch (currentView) {
       case View.DIRECTORY:
         return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-      
+
       case View.STOREFRONT_PUBLIC:
       case View.STOREFRONT_PRIVATE:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
@@ -198,7 +284,7 @@ export default function App() {
       case View.AUTH_VERIFICATION:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} />;
         return <Auth store={selectedStore} type="verification" onNavigate={navigate} onLogin={handleLogin} onRegister={handleRegister} authError={authError} authLoading={authLoading} />;
-      
+
       case View.AUTH_RESET_PASSWORD:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} />;
         return <Auth store={selectedStore} type="reset-password" onNavigate={navigate} onLogin={handleLogin} onRegister={handleRegister} authError={authError} authLoading={authLoading} />;
@@ -214,19 +300,19 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onNavigate={navigate} onLogout={handleLogout} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
         if (!currentUser) return <Auth store={selectedStore} type="login" onNavigate={navigate} onLogin={handleLogin} onRegister={handleRegister} authError={authError} authLoading={authLoading} />;
-        return <MyQuotes store={selectedStore} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
+        return <MyQuotes store={selectedStore} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
 
       case View.QUOTE_DETAIL:
-        if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
+        if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
         return <QuoteDetail store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.PAYMENT:
-        if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
+        if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
         return <Payment store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.MY_ORDERS:

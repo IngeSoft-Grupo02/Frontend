@@ -83,6 +83,37 @@ export interface Product {
   sizes: string[];
   storeId?: string;
   createdAt: number;
+  imageUrls?: string[];
+  variants?: ProductVariant[];
+  discounts?: DiscountPublic[];
+  stock?: number;
+}
+
+export interface ProductVariant {
+  id: number;
+  size: string;
+  color: string;
+  stock: number;
+}
+
+export interface DiscountPublic {
+  id: number;
+  name: string;
+  volumeType: string;
+  minQuantity: number;
+  maxQuantity: number;
+  discountPercentage: number;
+}
+
+// DTO real expuesto por GET /stores/public/{slug}/products
+export interface ProductPublicDTO {
+  id: number;
+  name: string;
+  description: string | null;
+  basePrice: number;
+  imageUrls: string[] | null;
+  variants: ProductVariant[] | null;
+  discounts: DiscountPublic[] | null;
 }
 
 export interface User {
@@ -143,8 +174,89 @@ export interface Quote {
   quantity: number;
   date: string;
   amount: number;
-  status: 'Pendientes' | 'En revisión' | 'Propuesta enviada' | 'Aprobadas' | 'Rechazadas';
+  status: 'Pendientes' | 'En revisiÃ³n' | 'En revision' | 'Propuesta enviada' | 'Aprobadas' | 'Rechazadas';
   hasDesign: boolean;
+  rawStatus?: string;
+  subTotal?: number;
+  discount?: number;
+  description?: string | null;
+  observations?: string | null;
+  items?: QuotationItemResponseDTO[];
+}
+
+export interface CartResponseDTO {
+  id: number;
+  items: CartItemResponseDTO[];
+  subTotal: number;
+  discount: number;
+  totalAmount: number;
+}
+
+export interface CartItemResponseDTO {
+  id: number;
+  productVariantId: number;
+  productName: string;
+  size: string;
+  color: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  discountApplied: number;
+  customDesign: CartCustomDesignResponseDTO | null;
+}
+
+export interface CartCustomDesignResponseDTO {
+  id: number;
+  imageUrl: string | null;
+  description: string | null;
+  observations: string | null;
+  sentAt: string | null;
+}
+
+export interface CartItemRequestDTO {
+  productVariantId?: number;
+  quantity: number;
+}
+
+export interface CustomDesignRequestDTO {
+  imageUrl?: string | null;
+  description?: string | null;
+}
+
+export interface QuotationResponseDTO {
+  id: number;
+  customer: string;
+  status: string;
+  statusLabel: string;
+  subTotal: number;
+  discount: number;
+  totalAmount: number;
+  requestedAt: string | null;
+  responseAt: string | null;
+  description: string | null;
+  observations: string | null;
+  storeId: number;
+  items: QuotationItemResponseDTO[];
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+}
+
+export interface QuotationItemResponseDTO {
+  productId: number;
+  productName: string;
+  productVariantId: number;
+  size: string;
+  color: string;
+  stockAvailable: number;
+  quantity: number;
+  unitPrice: number;
+  subTotal: number;
+  product?: string;
+  variant?: string;
+  price?: number;
 }
 
 export interface Order {
@@ -178,4 +290,3 @@ export enum TertiaryColor {
   CORAL_PUNCH = '#FF5A5F',
   EMERALD = '#10B981'
 }
-
