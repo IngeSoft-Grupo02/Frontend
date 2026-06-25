@@ -13,7 +13,7 @@ interface BadgeProps {
 export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
   const styles: Record<string, string> = {
     'Pendientes': 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm',
-    'En revisiÃ³n': 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm',
+    'En revisión': 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm',
     'En revision': 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm',
     'Propuesta enviada': 'bg-indigo-100 text-indigo-800 border border-indigo-300 shadow-sm',
     'Aprobadas': 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm',
@@ -25,10 +25,13 @@ export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
   };
 
   const currentStyle = styles[status] || 'bg-gray-100 text-gray-600';
+  const displayStatus: Record<string, string> = {
+    'En revision': 'En revisión',
+  };
 
   return (
     <span className={`px-[10px] py-[4px] rounded-[20px] text-[10px] font-extrabold uppercase tracking-wider ${currentStyle} ${className}`}>
-      {status}
+      {displayStatus[status] || status}
     </span>
   );
 };

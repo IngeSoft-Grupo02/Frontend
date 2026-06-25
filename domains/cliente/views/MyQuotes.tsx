@@ -55,7 +55,7 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
   const filteredQuotes = selectedStatus === 'Todas'
     ? quotes
     : quotes.filter((quote) => {
-        if (selectedStatus === 'Pendientes') return quote.status === 'Pendientes' || quote.status === 'En revision' || quote.status === 'En revisiÃ³n' || quote.status === 'Propuesta enviada';
+        if (selectedStatus === 'Pendientes') return quote.status === 'Pendientes' || quote.status === 'En revision' || quote.status === 'En revisión' || quote.status === 'Propuesta enviada';
         if (selectedStatus === 'Aprobadas') return quote.status === 'Aprobadas';
         if (selectedStatus === 'Rechazadas') return quote.status === 'Rechazadas';
         return true;
@@ -105,12 +105,12 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
             <table className="w-full border-collapse">
               <thead>
                 <tr className="text-left border-b text-[11px] font-extrabold uppercase tracking-widest" style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                  <th className="px-10 py-6" style={{ color: 'var(--text-on-secondary)' }}>Codigo</th>
-                  <th className="px-6 py-6" style={{ color: 'var(--text-on-secondary)' }}>Producto / Especificacion</th>
+                  <th className="px-10 py-6" style={{ color: 'var(--text-on-secondary)' }}>Código</th>
+                  <th className="px-6 py-6" style={{ color: 'var(--text-on-secondary)' }}>Producto / Especificación</th>
                   <th className="px-6 py-6" style={{ color: 'var(--text-on-secondary)' }}>Fecha</th>
                   <th className="px-6 py-6" style={{ color: 'var(--text-on-secondary)' }}>Monto</th>
                   <th className="px-6 py-6" style={{ color: 'var(--text-on-secondary)' }}>Estado</th>
-                  <th className="px-10 py-6 text-center" style={{ color: 'var(--text-on-secondary)' }}>Accion</th>
+                  <th className="px-10 py-6 text-center" style={{ color: 'var(--text-on-secondary)' }}>Acción</th>
                 </tr>
               </thead>
               <tbody className="text-[14px]">
@@ -144,9 +144,9 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
               <FileSearch size={32} />
             </div>
             <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>No hay cotizaciones para este filtro</h4>
-            <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>Cuando envies una cotizacion desde el carrito, aparecera aqui.</p>
+            <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>Cuando envíes una cotización desde el carrito, aparecerá aquí.</p>
             <Button variant="primary" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }} onClick={() => onNavigate(View.CATALOG)}>
-              Ver catalogo
+              Ver catálogo
             </Button>
           </div>
         )}

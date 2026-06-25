@@ -100,7 +100,7 @@ function buildInitials(name: string): string {
   return initials || 'KS';
 }
 
-/** Adapta el DTO real de tienda pÃºblica al modelo Store usado por las vistas del prototipo. */
+/** Adapta el DTO real de tienda pública al modelo Store usado por las vistas del prototipo. */
 export function toStore(dto: StorePublicDTO): Store {
   const primaryColor = resolveColor(PrimaryColor as unknown as Record<string, string>, dto.primaryColor, PrimaryColor.ONYX_BLACK);
   const secondaryColor = resolveColor(SecondaryColor as unknown as Record<string, string>, dto.secondaryColor, SecondaryColor.SLATE);
@@ -161,7 +161,7 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
-/** Adapta el DTO publico de producto al modelo usado por las vistas del cliente. */
+/** Adapta el DTO público de producto al modelo usado por las vistas del cliente. */
 export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
   const variants = dto.variants || [];
   const imageUrls = dto.imageUrls || [];
@@ -173,10 +173,10 @@ export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
     name: dto.name,
     price: dto.basePrice,
     material: '',
-    description: dto.description || 'Producto disponible para cotizacion.',
+    description: dto.description || 'Producto disponible para cotización.',
     image: imageUrls[0],
     imageUrls,
-    category: sizes.length > 0 ? `${sizes.length} tallas disponibles` : 'Catalogo',
+    category: sizes.length > 0 ? `${sizes.length} tallas disponibles` : 'Catálogo',
     colors,
     sizes,
     variants,
@@ -205,7 +205,7 @@ function toQuoteStatus(dto: QuotationResponseDTO): Quote['status'] {
   if (raw.includes('APPROV') || label.includes('aprob')) return 'Aprobadas';
   if (raw.includes('REJECT') || raw.includes('DECLIN') || label.includes('rechaz')) return 'Rechazadas';
   if (raw.includes('RESPOND') || raw.includes('PROPOS') || label.includes('propuesta')) return 'Propuesta enviada';
-  if (raw.includes('REVIEW') || label.includes('revisi')) return 'En revision' as Quote['status'];
+  if (raw.includes('REVIEW') || label.includes('revisi')) return 'En revisión' as Quote['status'];
   return 'Pendientes';
 }
 
@@ -226,7 +226,7 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
   const firstItem = items[0];
   return {
     id: String(dto.id),
-    productName: firstItem?.productName || firstItem?.product || `Cotizacion ${dto.id}`,
+    productName: firstItem?.productName || firstItem?.product || `Cotización ${dto.id}`,
     quantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
     date: formatDate(dto.requestedAt),
     amount: dto.totalAmount,

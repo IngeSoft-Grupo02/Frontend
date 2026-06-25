@@ -36,7 +36,7 @@ import {
 } from './lib/api';
 import { mapCustomerToUser } from './lib/customer';
 
-// Vistas que requieren sesiÃ³n de cliente iniciada (ya protegidas en renderCurrentView)
+// Vistas que requieren sesión de cliente iniciada (ya protegidas en renderCurrentView)
 const PROTECTED_VIEWS = new Set<View>([
   View.REQUEST_QUOTE,
   View.MY_QUOTES,
@@ -167,13 +167,13 @@ export default function App() {
       await loadCart(selectedStore.slug, customerToken);
       setCurrentView(View.QUOTE_DETAIL);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'No se pudo crear la cotizacion.');
+      alert(err instanceof ApiError ? err.message : 'No se pudo crear la cotización.');
     }
   };
 
   const handleLogin = async (email: string, password: string) => {
     if (!selectedStore?.slug) {
-      setAuthError('Selecciona una tienda antes de iniciar sesiÃ³n.');
+      setAuthError('Selecciona una tienda antes de iniciar sesión.');
       setCurrentView(View.DIRECTORY);
       return;
     }
@@ -239,8 +239,8 @@ export default function App() {
       setCurrentView(View.PRODUCT_DETAIL);
   };
 
-  // NavegaciÃ³n con soporte de "pendingView": si la vista destino requiere sesiÃ³n
-  // y no hay un cliente autenticado, redirige a login y recuerda a dÃ³nde volver.
+  // Navegación con soporte de "pendingView": si la vista destino requiere sesión
+  // y no hay un cliente autenticado, redirige a login y recuerda a dónde volver.
   const navigate = (view: View) => {
     if (PROTECTED_VIEWS.has(view) && !currentUser) {
       if (!selectedStore) {

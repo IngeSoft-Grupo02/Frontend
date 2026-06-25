@@ -32,7 +32,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
         <header className="flex items-center justify-between mb-10">
           <div>
             <h1 className="text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Detalle del Carrito</h1>
-            <p className="font-medium opacity-75" style={{ color: '#475569' }}>Revisa tus productos elegidos antes de enviar la cotizaciÃ³n final.</p>
+            <p className="font-medium opacity-75" style={{ color: '#475569' }}>Revisa tus productos elegidos antes de enviar la cotización final.</p>
           </div>
           <Button
             variant="ghost"
@@ -66,7 +66,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     <h3 className="text-[16px] font-extrabold mb-1" style={{ color: '#0F1011' }}>{item.productName}</h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-medium opacity-75">
                       <span>Cantidad: <strong style={{ color: '#0F1011' }}>{item.quantity}</strong></span>
-                      <span>DiseÃ±o: <strong style={{ color: 'var(--color-tertiary-text)' }}>{item.hasDesign ? 'Adjunto' : 'Pendiente'}</strong></span>
+                      <span>Diseño: <strong style={{ color: 'var(--color-tertiary-text)' }}>{item.hasDesign ? 'Adjunto' : 'Pendiente'}</strong></span>
                     </div>
                     {item.specs && (
                       <p className="text-[11px] mt-2 truncate max-w-[300px] italic opacity-60">"{item.specs}"</p>
@@ -117,7 +117,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                 {!user && (
                    <div className="p-4 rounded-xl mb-6 flex items-start gap-3 border text-[11px] font-medium" style={{ backgroundColor: '#FDFBF7', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#0F1011' }}>
                     <Info size={16} className="text-red-500 mt-0.5 shrink-0" />
-                    <p>Debes iniciar sesiÃ³n para procesar la cotizaciÃ³n.</p>
+                    <p>Debes iniciar sesión para procesar la cotización.</p>
                   </div>
                 )}
 
@@ -135,11 +135,11 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     }
                   }}
                 >
-                  Solicitar CotizaciÃ³n <ArrowRight size={18} />
+                  Solicitar Cotización <ArrowRight size={18} />
                 </Button>
 
                 <p className="text-[11px] text-center leading-relaxed opacity-60">
-                  Al enviar, un asesor de <strong>{store.name}</strong> revisarÃ¡ los documentos adjuntos y validarÃ¡ el stock disponible.
+                  Al enviar, un asesor de <strong>{store.name}</strong> revisará los documentos adjuntos y validará el stock disponible.
                 </p>
               </div>
             </aside>
@@ -149,9 +149,9 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
               <ShoppingCart size={40} />
             </div>
-            <h2 className="text-[22px] font-extrabold mb-2">Tu carrito estÃ¡ vacÃ­o</h2>
+            <h2 className="text-[22px] font-extrabold mb-2">Tu carrito está vacío</h2>
             <p className="max-w-sm mx-auto mb-10 font-medium opacity-65 text-[15px]">
-              AÃºn no has agregado productos para cotizar. Explora nuestro catÃ¡logo para empezar.
+              Aún no has agregado productos para cotizar. Explora nuestro catálogo para empezar.
             </p>
             <Button
               variant="primary"
@@ -159,7 +159,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
               style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
               onClick={() => onNavigate(View.CATALOG)}
             >
-              Ver CatÃ¡logo
+              Ver Catálogo
             </Button>
           </div>
         )}

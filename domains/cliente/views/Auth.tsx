@@ -15,10 +15,10 @@ type DocumentTypeValue = 'DNI' | 'PASSPORT' | 'FOREIGN_ID_CARD';
 const DOCUMENT_TYPE_OPTIONS: { value: DocumentTypeValue; label: string }[] = [
   { value: 'DNI', label: 'DNI' },
   { value: 'PASSPORT', label: 'Pasaporte' },
-  { value: 'FOREIGN_ID_CARD', label: 'CarnÃ© de extranjerÃ­a' },
+  { value: 'FOREIGN_ID_CARD', label: 'Carné de extranjería' },
 ];
 
-// Longitud mÃ¡xima del nÃºmero de documento segÃºn tipo (DNI=8, CE=9-15, Pasaporte=6-20)
+// Longitud máxima del número de documento según tipo (DNI=8, CE=9-15, Pasaporte=6-20)
 const DOCUMENT_NUMBER_MAX_LENGTH: Record<DocumentTypeValue, number> = {
   DNI: 8,
   FOREIGN_ID_CARD: 15,
@@ -112,16 +112,16 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     // Email validation
     const email = formData.email.trim();
     if (!email || !EMAIL_REGEX.test(email)) {
-      newErrors.email = 'Ingresa un correo electrÃ³nico vÃ¡lido';
+      newErrors.email = 'Ingresa un correo electrónico válido';
     }
 
     // Password validation
     if (!passwordRequirements.length) {
-      newErrors.password = 'La contraseÃ±a debe tener al menos 8 caracteres';
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     }
 
     if (type === 'reset-password' && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseÃ±as no coinciden';
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
     if (type === 'register') {
@@ -138,33 +138,33 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
         }
       });
 
-      // Documento: solo dÃ­gitos, longitud segÃºn tipo
+      // Documento: solo dígitos, longitud según tipo
       const docNumber = formData.numeroDocumento.trim();
       if (!docNumber) {
-        newErrors.numeroDocumento = 'El nÃºmero de documento es obligatorio';
+        newErrors.numeroDocumento = 'El número de documento es obligatorio';
       } else if (!/^\d+$/.test(docNumber)) {
-        newErrors.numeroDocumento = 'El nÃºmero de documento solo debe contener dÃ­gitos';
+        newErrors.numeroDocumento = 'El número de documento solo debe contener dígitos';
       } else if (formData.documentType === 'DNI' && docNumber.length !== 8) {
-        newErrors.numeroDocumento = 'El DNI debe tener 8 dÃ­gitos';
+        newErrors.numeroDocumento = 'El DNI debe tener 8 dígitos';
       } else if (formData.documentType === 'FOREIGN_ID_CARD' && (docNumber.length < 9 || docNumber.length > 15)) {
-        newErrors.numeroDocumento = 'El carnÃ© de extranjerÃ­a debe tener entre 9 y 15 dÃ­gitos';
+        newErrors.numeroDocumento = 'El carné de extranjería debe tener entre 9 y 15 dígitos';
       } else if (formData.documentType === 'PASSPORT' && (docNumber.length < 6 || docNumber.length > 20)) {
-        newErrors.numeroDocumento = 'El pasaporte debe tener entre 6 y 20 dÃ­gitos';
+        newErrors.numeroDocumento = 'El pasaporte debe tener entre 6 y 20 dígitos';
       }
 
-      // TelÃ©fono: exactamente 9 dÃ­gitos
+      // Teléfono: exactamente 9 dígitos
       const phone = formData.telefono.trim();
       if (!/^\d{9}$/.test(phone)) {
-        newErrors.telefono = 'El celular debe tener 9 dÃ­gitos';
+        newErrors.telefono = 'El celular debe tener 9 dígitos';
       }
 
-      // Fecha de nacimiento: formato vÃ¡lido y no futura
+      // Fecha de nacimiento: formato válido y no futura
       if (!formData.fechaNacimiento) {
         newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
       } else {
         const birthDate = new Date(formData.fechaNacimiento);
         if (Number.isNaN(birthDate.getTime())) {
-          newErrors.fechaNacimiento = 'La fecha de nacimiento no es vÃ¡lida';
+          newErrors.fechaNacimiento = 'La fecha de nacimiento no es válida';
         } else if (birthDate.getTime() > Date.now()) {
           newErrors.fechaNacimiento = 'La fecha de nacimiento no puede ser una fecha futura';
         }
@@ -211,9 +211,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     switch (type) {
       case 'login': return 'Bienvenido de nuevo';
       case 'register': return 'Registro de Cliente';
-      case 'forgot-password': return 'Recuperar contraseÃ±a';
-      case 'verification': return 'VerificaciÃ³n de cuenta';
-      case 'reset-password': return 'Nueva contraseÃ±a';
+      case 'forgot-password': return 'Recuperar contraseña';
+      case 'verification': return 'Verificación de cuenta';
+      case 'reset-password': return 'Nueva contraseña';
       default: return '';
     }
   };
@@ -221,9 +221,9 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
   const getAuthSubtitle = () => {
     switch (type) {
       case 'register': return `Completa tus datos para crear una cuenta en ${store.name}`;
-      case 'forgot-password': return 'Ingresa tu correo para recibir un cÃ³digo de verificaciÃ³n';
-      case 'verification': return 'Hemos enviado un cÃ³digo a tu correo electrÃ³nico';
-      case 'reset-password': return 'Crea una contraseÃ±a segura para tu cuenta';
+      case 'forgot-password': return 'Ingresa tu correo para recibir un código de verificación';
+      case 'verification': return 'Hemos enviado un código a tu correo electrónico';
+      case 'reset-password': return 'Crea una contraseña segura para tu cuenta';
       default: return null;
     }
   };
@@ -232,23 +232,23 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
     <div className="mt-2 space-y-1.5 pl-1">
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.length ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.length ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        MÃ­nimo 8 caracteres
+        Mínimo 8 caracteres
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.uppercase ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.uppercase ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 mayÃºscula
+        Al menos 1 mayúscula
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.lowercase ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.lowercase ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 minÃºscula
+        Al menos 1 minúscula
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.number ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.number ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 nÃºmero
+        Al menos 1 número
       </div>
       <div className="flex items-center gap-2 text-[11px] font-bold transition-colors" style={{ color: passwordRequirements.special ? 'var(--success-on-secondary)' : 'var(--muted-on-secondary)' }}>
         {passwordRequirements.special ? <CheckCircle2 size={12} aria-hidden="true" /> : <Circle size={12} aria-hidden="true" />}
-        Al menos 1 caracter especial
+        Al menos 1 carácter especial
       </div>
     </div>
   );
@@ -292,7 +292,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
              <p
                className="text-[18px] leading-relaxed mb-10 opacity-80"
              >
-               Esta es una cuenta exclusiva para esta tienda. Tus pedidos y cotizaciones aquÃ­ son independientes de otras marcas en Kingstore.
+               Esta es una cuenta exclusiva para esta tienda. Tus pedidos y cotizaciones aquí son independientes de otras marcas en Kingstore.
              </p>
              <div className="flex items-center gap-4 font-extrabold text-[14px]" style={{ color: 'var(--accent-on-primary)' }}>
                 <ShieldCheck size={20} />
@@ -374,13 +374,13 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <CreditCard size={12} className="opacity-70" /> NÃºmero de Documento
+                    <CreditCard size={12} className="opacity-70" /> Número de Documento
                   </label>
                   <input
                     type="text"
                     inputMode="numeric"
                     maxLength={DOCUMENT_NUMBER_MAX_LENGTH[formData.documentType]}
-                    placeholder="NÃºmero de documento"
+                    placeholder="Número de documento"
                     className={`w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.numeroDocumento ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                     value={formData.numeroDocumento}
                     onChange={(e) => {
@@ -461,7 +461,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Users size={12} className="opacity-70" /> GÃ©nero
+                    <Users size={12} className="opacity-70" /> Género
                   </label>
                   <select
                     className="w-full px-5 py-3.5 rounded-xl font-medium text-[14px] border border-transparent transition-all appearance-none"
@@ -498,7 +498,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Phone size={12} className="opacity-70" /> TelÃ©fono
+                    <Phone size={12} className="opacity-70" /> Teléfono
                   </label>
                   <input
                     type="tel"
@@ -519,7 +519,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
+                    <Mail size={12} className="opacity-70" /> Correo electrónico
                   </label>
                   <input
                     type="email"
@@ -538,7 +538,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
 
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> ContraseÃ±a
+                    <Lock size={12} className="opacity-70" /> Contraseña
                   </label>
                   <div className="relative">
                     <input
@@ -563,7 +563,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> Nueva ContraseÃ±a
+                    <Lock size={12} className="opacity-70" /> Nueva Contraseña
                   </label>
                   <div className="relative">
                     <input
@@ -584,12 +584,12 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                 </div>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Lock size={12} className="opacity-70" /> Confirmar ContraseÃ±a
+                    <Lock size={12} className="opacity-70" /> Confirmar Contraseña
                   </label>
                   <div className="relative">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Repite tu contraseÃ±a"
+                      placeholder="Repite tu contraseña"
                       className={`w-full pl-5 pr-12 py-4 rounded-xl font-medium text-[14px] border focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all ${errors.confirmPassword ? 'border-[var(--error-on-secondary)]' : 'border-transparent'}`}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
@@ -607,7 +607,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
             ) : type === 'forgot-password' ? (
               <div className="space-y-2">
                 <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                  <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
+                  <Mail size={12} className="opacity-70" /> Correo electrónico
                 </label>
                 <input
                   type="email"
@@ -655,7 +655,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                     className="text-[12px] font-bold hover:underline disabled:opacity-50 cursor-pointer"
                     style={{ color: 'var(--accent-on-secondary)' }}
                   >
-                    {isResending ? 'Reenviando...' : 'Reenviar cÃ³digo'}
+                    {isResending ? 'Reenviando...' : 'Reenviar código'}
                   </button>
                 </div>
               </div>
@@ -663,7 +663,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 pl-1" style={{ color: 'var(--text-on-secondary)' }}>
-                    <Mail size={12} className="opacity-70" /> Correo electrÃ³nico
+                    <Mail size={12} className="opacity-70" /> Correo electrónico
                   </label>
                   <input
                     type="email"
@@ -682,7 +682,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>
-                      <Lock size={12} className="opacity-70" /> ContraseÃ±a
+                      <Lock size={12} className="opacity-70" /> Contraseña
                     </label>
                     <button
                       type="button"
@@ -695,7 +695,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                         window.location.assign(recoveryUrl);
                       }}
                     >
-                      Â¿Olvidaste tu contraseÃ±a?
+                      ¿Olvidaste tu contraseña?
                     </button>
                   </div>
                   <div className="relative">
@@ -739,10 +739,10 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               <span>
                 {(type === 'login' || type === 'register') && authLoading
                   ? 'Procesando...'
-                  : type === 'login' ? 'Iniciar sesiÃ³n' :
+                  : type === 'login' ? 'Iniciar sesión' :
                     type === 'register' ? 'Crear cuenta ahora' :
-                    type === 'forgot-password' ? 'Enviar cÃ³digo' :
-                    type === 'verification' ? 'Verificar cÃ³digo' : 'Restablecer contraseÃ±a'}
+                    type === 'forgot-password' ? 'Enviar código' :
+                    type === 'verification' ? 'Verificar código' : 'Restablecer contraseña'}
               </span>
               <ArrowRight size={18} />
             </Button>
@@ -759,17 +759,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
               onClick={() => onNavigate(View.STOREFRONT_PUBLIC)}
             >
               <ArrowLeft size={14} style={{ color: 'var(--accent-on-secondary)' }} />
-              <span>Volver a la Tienda</span>
+              <span>Volver a la tienda</span>
             </Button>
           </form>
 
           <div className="mt-10 pt-8 border-t text-center" style={{ borderColor: 'var(--border-on-secondary)' }}>
             <p className="text-[13px] font-medium" style={{ color: 'var(--text-on-secondary)' }}>
               {type === 'login'
-                ? 'Â¿AÃºn no tienes cuenta?'
+                ? '¿Aún no tienes cuenta?'
                 : type === 'forgot-password' || type === 'verification' || type === 'reset-password'
-                ? 'Â¿Recordaste tu contraseÃ±a?'
-                : 'Â¿Ya eres miembro?'}
+                ? '¿Recordaste tu contraseña?'
+                : '¿Ya eres miembro?'}
               {' '}
               <button
                 onClick={() => {
@@ -780,7 +780,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                 className="font-extrabold hover:underline cursor-pointer"
                 style={{ color: 'var(--accent-on-secondary)' }}
               >
-                {type === 'login' ? 'RegÃ­strate aquÃ­' : 'Ingresa aquÃ­'}
+                {type === 'login' ? 'Regístrate aquí' : 'Ingresa aquí'}
               </button>
             </p>
           </div>

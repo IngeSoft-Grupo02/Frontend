@@ -118,7 +118,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
               <div className="grid grid-cols-2 gap-8 pt-4">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center"><Ruler size={20} style={{ color: 'var(--text-on-secondary)', opacity: 0.6 }} /></div>
-                  <div><div className="text-[12px] font-bold mb-1">Guia de tallas</div><p className="text-[11px] opacity-75">Segun variantes disponibles</p></div>
+                  <div><div className="text-[12px] font-bold mb-1">Guía de tallas</div><p className="text-[11px] opacity-75">Según variantes disponibles</p></div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center"><Shield size={20} style={{ color: 'var(--text-on-secondary)', opacity: 0.6 }} /></div>
@@ -138,7 +138,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                 }}
                 disabled={!product.variants?.some((variant) => variant.stock > 0)}
               >
-                Solicitar cotizacion
+                Solicitar cotización
               </Button>
               <Button variant="secondary" className="aspect-square p-0 flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.1)' }}>
                 <Sparkles size={20} />
@@ -148,7 +148,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
             <div className="mt-12 space-y-6 pt-12 border-t" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
               <div className="flex gap-4">
                 <RefreshCw size={20} className="shrink-0 opacity-45" />
-                <p className="text-[13px] font-medium" style={{ color: '#475569' }}>Produccion por demanda: el comerciante revisara stock y condiciones antes de aprobar la cotizacion.</p>
+                <p className="text-[13px] font-medium" style={{ color: '#475569' }}>Producción por demanda: el comerciante revisará stock y condiciones antes de aprobar la cotización.</p>
               </div>
             </div>
           </div>

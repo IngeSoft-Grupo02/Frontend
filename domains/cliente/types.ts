@@ -174,7 +174,7 @@ export interface Quote {
   quantity: number;
   date: string;
   amount: number;
-  status: 'Pendientes' | 'En revisiÃ³n' | 'En revision' | 'Propuesta enviada' | 'Aprobadas' | 'Rechazadas';
+  status: 'Pendientes' | 'En revisión' | 'En revision' | 'Propuesta enviada' | 'Aprobadas' | 'Rechazadas';
   hasDesign: boolean;
   rawStatus?: string;
   subTotal?: number;

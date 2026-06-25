@@ -220,7 +220,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                   <div className="space-y-4">
                     <div className="inline-flex items-center gap-3 bg-gray-50 border px-5 py-2 rounded-full mb-2" style={{ borderColor: 'rgba(0,0,0,0.08)', color: '#475569' }}>
                       <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-tertiary)' }} />
-                      <span className="text-[11px] font-black tracking-[0.25em] uppercase">Bienvenidos a la fabrica</span>
+                      <span className="text-[11px] font-black tracking-[0.25em] uppercase">Bienvenidos a la fábrica</span>
                     </div>
                     <h2 className="text-[84px] font-black leading-[0.8] tracking-tighter" style={{ color: '#0F1011' }}>{store.name}</h2>
                     <div className="flex items-center gap-4">
@@ -235,7 +235,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                       onClick={() => setShowFullCatalog(true)}
                     >
-                      Explorar Catalogo
+                      Explorar Catálogo
                       <div className="w-2 h-2 rounded-full transition-colors animate-bounce" style={{ backgroundColor: 'var(--text-on-tertiary)' }} />
                     </button>
                   </div>
@@ -246,7 +246,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 <div className="flex justify-between items-end mb-10">
                   <div>
                     <h4 className="text-[24px] font-black tracking-tight" style={{ color: '#0F1011' }}>Productos recientes</h4>
-                    <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Ultimas incorporaciones al catalogo</p>
+                    <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Últimas incorporaciones al catálogo</p>
                   </div>
                 </div>
 
@@ -277,7 +277,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                     ))}
                   </div>
                 ) : (
-                  <div className="py-16 text-center text-gray-500 font-bold">Esta tienda aun no tiene productos disponibles.</div>
+                  <div className="py-16 text-center text-gray-500 font-bold">Esta tienda aún no tiene productos disponibles.</div>
                 )}
 
                 <div className="mt-20 flex justify-center">
@@ -292,8 +292,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
             <motion.div key="catalog" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                 <div className="space-y-1">
-                  <h2 className="text-[28px] font-black tracking-tight" style={{ color: '#0F1011' }}>Catalogo de Productos</h2>
-                  <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Mostrando {storeProducts.length} articulos disponibles</p>
+                  <h2 className="text-[28px] font-black tracking-tight" style={{ color: '#0F1011' }}>Catálogo de productos</h2>
+                  <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Mostrando {storeProducts.length} artículos disponibles</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -326,8 +326,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                     <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--accent-on-light)' }}>Ordenar por</h3>
                     <div className="space-y-1">
                       {[
-                        { id: 'recent', label: 'Mas recientes' },
-                        { id: 'oldest', label: 'Mas antiguos' },
+                        { id: 'recent', label: 'Más recientes' },
+                        { id: 'oldest', label: 'Más antiguos' },
                         { id: 'price-asc', label: 'Precio: Menor a Mayor' },
                         { id: 'price-desc', label: 'Precio: Mayor a Menor' },
                       ].map((option) => (
@@ -384,7 +384,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                     <div className="rounded-[40px] p-20 text-center border border-dashed border-gray-200" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
                       <div className="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-6"><Search size={32} className="text-gray-400" /></div>
                       <h3 className="text-[20px] font-black mb-2">No se encontraron productos</h3>
-                      <p className="opacity-75 max-w-xs mx-auto text-gray-500">Prueba ajustando tus filtros o terminos de busqueda.</p>
+                      <p className="opacity-75 max-w-xs mx-auto text-gray-500">Prueba ajustando tus filtros o términos de búsqueda.</p>
                       <button onClick={clearFilters} className="mt-8 font-black text-[13px] underline decoration-2 underline-offset-4 cursor-pointer" style={{ color: 'var(--accent-on-light)' }}>Limpiar todos los filtros</button>
                     </div>
                   )}
