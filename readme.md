@@ -220,22 +220,22 @@ La nueva contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, mi
 
 ## Despliegue con Docker
 
-La imagen del frontend se construye en la máquina local del desarrollador y se sube a Docker Hub. El servidor EC2 solo descarga la imagen ya compilada — no instala Node.js ni compila nada, lo que evita problemas de espacio en disco.
+El frontend se despliega automáticamente en EC2 mediante GitHub Actions al hacer push a `main`. No se requiere Docker Hub ni intervención manual en el servidor.
 
 ```text
-Internet :80
-    |
-    v
-kingstore-frontend :3000
-    |-- /                  Cliente
-    |-- /admin             Administración
-    `-- /comerciante       Comerciante
-             |
-             v
-  kingstore-backend :8080
-             |
-             v
-       AWS RDS MySQL
+push a main
+     │
+GitHub Actions
+     ├── next build (con NEXT_PUBLIC_* bakeadas)
+     ├── docker build        → imagen local (sin registry)
+     ├── docker save | gzip | scp → frontend-image.tar.gz al EC2
+     └── ssh: docker load + compose up
+                    │
+              EC2:80 (Next.js)
+                    │
+              EC2:8080 (Spring Boot)
+                    │
+              AWS RDS MySQL
 ```
 
 ### Datos del servidor
@@ -249,179 +249,148 @@ kingstore-frontend :3000
 | Backend | `http://100.57.218.181:8080` |
 | Conexión SSH | `ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com` |
 
-### Imágenes en Docker Hub
-
-| Servicio | Imagen |
-|----------|--------|
-| Frontend | `bryanpisco/kingstore-frontend:latest` |
-| Backend | `bryanpisco/kingstore-backend:latest` |
-
 ### Requisitos
 
-- Docker Desktop en la máquina local para construir y publicar la imagen.
-- Docker Engine `24` y Docker Compose v2 en el servidor EC2.
+- Docker instalado en el servidor EC2.
+- Secrets y variables configurados en el repositorio de GitHub.
 
 ---
 
-### Primer despliegue en el servidor (solo una vez)
+### Configuración inicial (solo una vez)
 
-**1. Preparar el servidor:**
+#### Servidor
 
 ```bash
 ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
-
-sudo apt update
-sudo apt install -y docker.io docker-compose-v2
-sudo usermod -aG docker "$USER"
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu
 ```
 
-Cerrar la sesión SSH y volver a entrar para aplicar el grupo `docker`.
+Cerrar la sesión y volver a entrar para aplicar el grupo `docker`.
 
-**2. Crear el `docker-compose.yml`:**
+#### Secrets y variables en GitHub
 
-```bash
-cat > docker-compose.yml << 'EOF'
-services:
-  frontend:
-    image: bryanpisco/kingstore-frontend:latest
-    ports:
-      - "80:3000"
-    environment:
-      PORT: "3000"
-      HOSTNAME: "0.0.0.0"
-    restart: unless-stopped
-    depends_on:
-      - backend
+**GitHub → IngeSoft-Grupo02/Frontend → Settings → Environments → production**
 
-  backend:
-    image: bryanpisco/kingstore-backend:latest
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: "prod"
-      JASYPT_ENCRYPTOR_PASSWORD: "${JASYPT_ENCRYPTOR_PASSWORD}"
-      JWT_SECRET: "${JWT_SECRET}"
-      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
-    restart: unless-stopped
-EOF
-```
+**Secrets:**
 
-**3. Crear el `.env` con los secretos del backend:**
+| Secret | Descripción |
+|--------|-------------|
+| `EC2_HOST` | IP del servidor (`100.57.218.181`) |
+| `EC2_USER` | Usuario SSH (`ubuntu`) |
+| `EC2_SSH_KEY` | Contenido completo del archivo `kingstore_key.pem` |
+| `EC2_KNOWN_HOSTS` | Output de `ssh-keyscan 100.57.218.181` |
 
-```bash
-cat > .env << 'EOF'
-JASYPT_ENCRYPTOR_PASSWORD=kingstore-secret-key-2024
-JWT_SECRET=kingstore-secret-key-ingesoft-2026
-SPRING_DATASOURCE_PASSWORD=<password_rds>
-EOF
-```
+**Variables:**
 
-> Las variables `NEXT_PUBLIC_*` no van en el `.env` del servidor — quedan bakeadas dentro de la imagen durante el build local.
+| Variable | Valor |
+|----------|-------|
+| `NEXT_PUBLIC_API_URL` | `http://100.57.218.181:8080` |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://100.57.218.181:8080` |
+| `NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE` | `api` |
+| `NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE` | `auto` |
 
-**4. Levantar los servicios:**
-
-```bash
-docker compose pull
-docker compose up -d
-docker compose ps
-```
+> Las variables `NEXT_PUBLIC_*` quedan bakeadas dentro de la imagen durante el build en GitHub Actions. Si cambia la URL del backend, se debe volver a desplegar.
 
 ---
 
-### Publicar cambios del frontend
+### Publicar nueva versión
 
-Ejecutar desde la raíz del proyecto (`/Frontend`) en tu máquina local:
+Solo hace falta hacer merge a `main`. El workflow `.github/workflows/frontend-cd.yml` se activa automáticamente y:
 
-**1. Construir la imagen con las variables de producción:**
+1. Construye la imagen Next.js con las variables de producción
+2. La transfiere al EC2 vía SSH/SCP
+3. Levanta el contenedor con `docker-compose.production.yml`
+4. Verifica que `http://100.57.218.181/admin/login` responda con 200
 
-```bash
-docker build \
-  --build-arg NEXT_PUBLIC_API_URL=http://100.57.218.181:8080 \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=http://100.57.218.181:8080 \
-  --build-arg NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local \
-  --build-arg NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local \
-  -t bryanpisco/kingstore-frontend:latest .
-```
+Puedes seguir el progreso en la pestaña **Actions** del repositorio en GitHub.
 
-**2. Subir la imagen a Docker Hub:**
+Para desplegar desde una rama específica sin hacer merge a `main`:
 
-```bash
-docker push bryanpisco/kingstore-frontend:latest
-```
+**GitHub → Actions → Frontend CD → Run workflow → selecciona la rama → Run workflow**
 
-**3. Actualizar el servidor:**
+---
+
+### Ver logs del frontend en el servidor
 
 ```bash
 ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
+cd ~/kingstore/frontend
 
-docker compose pull frontend
-docker compose up -d frontend
-docker compose logs --tail=50 frontend
+# Últimas 50 líneas
+docker compose -f docker-compose.production.yml logs frontend --tail=50
+
+# En tiempo real (Ctrl+C para salir)
+docker compose -f docker-compose.production.yml logs frontend -f
 ```
 
 ---
 
-### Publicar cambios del backend
+### Detener el frontend
 
 ```bash
-# En el repo del backend: compilar y publicar
-cd ../Backend
-./mvnw clean package -DskipTests
-docker build -t bryanpisco/kingstore-backend:latest .
-docker push bryanpisco/kingstore-backend:latest
-
-# En el servidor: actualizar
 ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
-docker compose pull backend
-docker compose up -d backend
-docker compose logs --tail=50 backend
+cd ~/kingstore/frontend
+```
+
+**Detener el contenedor (se puede reiniciar):**
+```bash
+docker compose -f docker-compose.production.yml stop
+```
+
+**Detener y eliminar el contenedor:**
+```bash
+docker compose -f docker-compose.production.yml down
+```
+
+**Apagar y limpiar la imagen (el próximo CD la reconstruye):**
+```bash
+docker compose -f docker-compose.production.yml down --rmi all
+```
+
+> Los datos en RDS no se eliminan en ningún caso. Solo se detiene el contenedor.
+
+---
+
+### Apagar el servidor EC2 para ahorrar créditos
+
+Detener los contenedores Docker **no detiene el cobro de EC2** — la instancia sigue corriendo y consumiendo créditos. Para pausar completamente el servidor:
+
+**Desde la consola de AWS:**
+1. Ir a **EC2 → Instances**
+2. Seleccionar la instancia `100.57.218.181`
+3. **Instance State → Stop instance**
+
+> **Stop** conserva el disco EBS (mínimo costo). **Terminate** elimina la instancia y todos sus datos permanentemente.
+
+Al volver a iniciarla (**Start instance**), la IP elástica `100.57.218.181` se mantiene — no hay que reconfigurar nada.
+
+**Desde la CLI de AWS (opcional):**
+```bash
+# Obtener el instance ID primero
+aws ec2 describe-instances --filters "Name=ip-address,Values=100.57.218.181" \
+  --query "Reservations[0].Instances[0].InstanceId" --output text
+
+# Detener
+aws ec2 stop-instances --instance-ids <instance-id>
+
+# Iniciar
+aws ec2 start-instances --instance-ids <instance-id>
 ```
 
 ---
 
-### Ver logs
+### GitHub Actions — consumo de minutos
 
-```bash
-# Frontend en tiempo real
-docker compose logs -f frontend
+Los workflows **solo se ejecutan cuando se hace push a `main` o se disparan manualmente**. No corren de forma continua ni en segundo plano.
 
-# Backend en tiempo real
-docker compose logs -f backend
+| Plan de GitHub | Minutos gratuitos/mes |
+|---------------|----------------------|
+| Repositorio público | Ilimitados |
+| Free (privado) | 2 000 min |
+| Team (privado) | 3 000 min |
 
-# Últimas 50 líneas de todos los servicios
-docker compose logs --tail=50
-```
-
----
-
-### Detener los servicios
-
-**Detener solo el frontend (el backend sigue corriendo):**
-```bash
-docker compose stop frontend
-```
-
-**Detener solo el backend:**
-```bash
-docker compose stop backend
-```
-
-**Detener todos los servicios (los contenedores se conservan):**
-```bash
-docker compose stop
-```
-
-**Detener y eliminar los contenedores:**
-```bash
-docker compose down
-```
-
-**Detener, eliminar contenedores y limpiar imágenes (fuerza re-descarga en el próximo despliegue):**
-```bash
-docker compose down --rmi all
-```
-
-> Los datos en RDS no se eliminan en ningún caso. Solo se detienen los contenedores.
+Cada deploy del frontend tarda aproximadamente **8–12 minutos** (build de Next.js). Si el repositorio es público, no hay costo.
 
 ---
 
@@ -431,7 +400,7 @@ docker compose down --rmi all
 |------|--------|--------|
 | HTTP | `80` | `0.0.0.0/0` |
 | TCP | `8080` | `0.0.0.0/0` |
-| SSH | `22` | tu IP |
+| SSH | `22` | `0.0.0.0/0` (requerido para GitHub Actions) |
 
 ---
 
@@ -439,8 +408,8 @@ docker compose down --rmi all
 
 | Problema | Revisión |
 |----------|----------|
-| El frontend no abre | `docker compose ps` y `docker compose logs frontend` |
+| El frontend no abre | `docker compose -f docker-compose.production.yml ps` y `logs frontend` |
 | Admin o Comerciante no inician sesión | Verificar URL del backend, CORS y estado del backend |
-| Sigue mostrando versión vieja | Reconstruir y pushear la imagen, luego `docker compose pull frontend && docker compose up -d frontend` |
+| Sigue mostrando versión vieja | Volver a disparar el workflow en GitHub Actions |
 | El puerto 80 no responde | Security Group de EC2 y que el contenedor esté `Up` |
-| El backend no responde | `docker compose logs backend` y verificar variables de entorno en `.env` |
+| El backend no responde | Ver logs en `~/kingstore/backend/` y verificar secrets en GitHub |
