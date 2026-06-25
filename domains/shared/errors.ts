@@ -10,7 +10,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/internal server error/i, 'Ocurrió un error interno. Inténtalo nuevamente.'],
   [/cart is empty/i, 'El carrito está vacío.'],
   [/cart must have at least one item/i, 'El carrito debe tener al menos un producto para cotizar.'],
-  [/cart already has a (pending )?quotation/i, 'Ya existe una cotización enviada para este carrito.'],
+  [/cart already has a (pending )?quotation/i, 'Este carrito ya fue enviado como cotización. Se ha creado un carrito nuevo para tus próximas compras.'],
   [/not enough stock/i, 'La cantidad solicitada supera el stock disponible.'],
   [/product not found/i, 'Producto no encontrado.'],
   [/store not found/i, 'Tienda no encontrada.'],

@@ -20,9 +20,10 @@ interface CartProps {
   onLogout?: () => void;
   isSubmitting?: boolean;
   cartError?: string | null;
+  cartAlreadySubmitted?: boolean;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -45,6 +46,24 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             <ArrowLeft size={16} /> Seguir explorando
           </Button>
         </header>
+
+        {/* Banner de error — visible independientemente del estado del carrito */}
+        {cartError && (
+          <div className="mb-6 p-4 rounded-2xl flex items-start gap-3 border text-[13px] font-bold" style={{ backgroundColor: '#fef2f2', borderColor: 'rgba(239,68,68,0.3)', color: '#b91c1c' }}>
+            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p>{cartError}</p>
+              {cartAlreadySubmitted && (
+                <button
+                  onClick={() => onNavigate(View.MY_QUOTES)}
+                  className="mt-2 underline font-black text-[12px] cursor-pointer hover:opacity-75 transition-opacity"
+                >
+                  Ver mis cotizaciones →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {items.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -120,13 +139,6 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                    <div className="p-4 rounded-xl mb-6 flex items-start gap-3 border text-[11px] font-medium" style={{ backgroundColor: '#FDFBF7', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#0F1011' }}>
                     <Info size={16} className="text-red-500 mt-0.5 shrink-0" />
                     <p>Debes iniciar sesión para procesar la cotización.</p>
-                  </div>
-                )}
-
-                {cartError && (
-                  <div className="p-4 rounded-xl mb-4 flex items-start gap-3 border text-[11px] font-bold" style={{ backgroundColor: '#fef2f2', borderColor: 'rgba(239,68,68,0.3)', color: '#b91c1c' }}>
-                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                    <p>{cartError}</p>
                   </div>
                 )}
 

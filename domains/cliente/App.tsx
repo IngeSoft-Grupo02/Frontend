@@ -73,6 +73,7 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
+  const [cartAlreadySubmitted, setCartAlreadySubmitted] = useState(false);
 
   const handleSelectStore = (store: Store) => {
     // If the user is logged in to a different store, log them out
@@ -169,13 +170,24 @@ export default function App() {
 
     setIsSubmittingQuote(true);
     setCartError(null);
+    setCartAlreadySubmitted(false);
     try {
       const quotation = await createQuotation(selectedStore.slug, customerToken);
       setSelectedQuote(toQuote(quotation));
       await loadCart(selectedStore.slug, customerToken);
       setCurrentView(View.QUOTE_DETAIL);
     } catch (err) {
-      setCartError(messageFromError(err, 'No se pudo crear la cotización.'));
+      const msg = messageFromError(err, 'No se pudo crear la cotización.');
+      setCartError(msg);
+      // El Backend desactivó el carrito atrapado. Recargar para obtener el carrito vacío nuevo.
+      if (/ya fue enviado como cotizaci/i.test(msg)) {
+        setCartAlreadySubmitted(true);
+        try {
+          await loadCart(selectedStore.slug, customerToken);
+        } catch {
+          setCartItems([]);
+        }
+      }
     } finally {
       setIsSubmittingQuote(false);
     }
@@ -320,7 +332,7 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
