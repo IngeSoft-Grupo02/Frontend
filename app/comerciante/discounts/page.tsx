@@ -8,6 +8,7 @@ import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout'
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Discount, Product } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import {
     ArrowUpRight,
     Check,
@@ -163,7 +164,7 @@ export default function DiscountsPage() {
         });
       }
     } catch (error) {
-      setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el descuento' });
+      setFormErrors({ form: messageFromError(error, 'No se pudo guardar el descuento') });
       return;
     }
 
@@ -204,7 +205,7 @@ export default function DiscountsPage() {
     try {
       await updateDiscount(id, { status: currentStatus === 'Activa' ? 'Pausada' : 'Activa' });
     } catch (error) {
-      setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo cambiar el estado' });
+      setFormErrors({ form: messageFromError(error, 'No se pudo cambiar el estado') });
     }
   };
 
@@ -665,7 +666,7 @@ export default function DiscountsPage() {
                   onClick={() => {
                     if (confirm('¿Eliminar esta regla permanentemente?')) {
                       deleteDiscount(selectedDiscount.id).catch(error => {
-                        setFormErrors({ form: error instanceof Error ? error.message : 'No se pudo eliminar el descuento' });
+                        setFormErrors({ form: messageFromError(error, 'No se pudo eliminar el descuento') });
                       });
                       setShowDetailId(null);
                     }

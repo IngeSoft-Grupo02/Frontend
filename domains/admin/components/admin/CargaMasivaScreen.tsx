@@ -2,6 +2,7 @@
 
 import { useState, useRef, DragEvent, useEffect } from 'react';
 import { api } from '@/domains/admin/lib/api';
+import { messageFromError } from '@/domains/shared/errors';
 import { Button, Card } from '../UI';
 import {
   Download, CheckCircle2, AlertCircle, Loader2,
@@ -587,7 +588,7 @@ export function CargaMasivaScreen() {
       });
       setExecuted(true);
     } catch (err: any) {
-      setGlobalError(err.message ?? 'Error inesperado.');
+      setGlobalError(messageFromError(err, 'Error inesperado.'));
     } finally {
       setExecuting(false);
     }

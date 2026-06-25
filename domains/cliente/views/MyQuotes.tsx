@@ -7,10 +7,11 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { FileSearch, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, User, Quote, View } from '../types';
-import { ApiError, fetchQuotations, toQuote } from '../lib/api';
+import { fetchQuotations, toQuote } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { messageFromError } from '../../shared/errors';
 
 interface MyQuotesProps {
   store: Store;
@@ -41,7 +42,7 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof ApiError ? err.message : 'No se pudieron cargar tus cotizaciones.');
+        setError(messageFromError(err, 'No se pudieron cargar tus cotizaciones.'));
       })
       .finally(() => {
         if (active) setLoading(false);

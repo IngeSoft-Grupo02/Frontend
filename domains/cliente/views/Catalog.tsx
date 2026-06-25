@@ -16,8 +16,10 @@ import {
   ImageIcon,
 } from 'lucide-react';
 import { Store, User, Product, View } from '../types';
-import { ApiError, fetchPublicProducts, toProduct } from '../lib/api';
+import { fetchPublicProducts, toProduct } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
+import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
+import { messageFromError } from '../../shared/errors';
 
 interface CatalogProps {
   store: Store;
@@ -94,7 +96,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof ApiError ? err.message : 'No se pudieron cargar los productos. Intenta nuevamente.');
+        setError(messageFromError(err, 'No se pudieron cargar los productos. Intenta nuevamente.'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -225,7 +227,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                     <h2 className="text-[84px] font-black leading-[0.8] tracking-tighter" style={{ color: '#0F1011' }}>{store.name}</h2>
                     <div className="flex items-center gap-4">
                       <div className="h-px w-12" style={{ backgroundColor: 'var(--color-tertiary)' }} />
-                      <h3 className="text-[56px] font-black leading-[0.8] tracking-tighter" style={{ color: 'var(--accent-on-light)' }}>Industrial Partners</h3>
+                      <h3 className="text-[56px] font-black leading-[0.8] tracking-tighter" style={{ color: 'var(--accent-on-light)' }}>Socios industriales</h3>
                     </div>
                   </div>
 
@@ -358,8 +360,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       <div className="space-y-2">
                         {availableColors.map((color) => (
                           <button key={color} onClick={() => setSelectedColors((prev) => prev.includes(color) ? prev.filter((entry) => entry !== color) : [...prev, color])} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-all border cursor-pointer" style={selectedColors.includes(color) ? { backgroundColor: 'var(--color-tertiary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' } : { backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.08)', color: '#0F1011' }}>
-                            <div className="w-4 h-4 rounded-full border border-black/10" style={{ backgroundColor: color === 'BLANCO' ? '#FFFFFF' : color === 'NEGRO' ? '#000000' : color === 'ROJO' ? '#DC2626' : color === 'VERDE' ? '#16A34A' : color === 'AZUL' ? '#2563EB' : '#ccc' }} />
-                            {color.charAt(0) + color.slice(1).toLowerCase()}
+                            <div className="w-4 h-4 rounded-full border" style={getColorSwatchStyle(color)} />
+                            {getColorLabel(color)}
                           </button>
                         ))}
                       </div>

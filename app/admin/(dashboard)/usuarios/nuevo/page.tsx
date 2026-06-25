@@ -6,6 +6,7 @@ import { api, StoreResponse } from '@/domains/admin/lib/api';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Users, Store } from 'lucide-react';
 import { Button, Input, Select, Card, Badge } from '@/domains/admin/components/UI';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { messageFromError } from '@/domains/shared/errors';
 
 // ── Helpers de validación ─────────────────────────────────────────
 
@@ -39,7 +40,7 @@ function validarCampo(name: string, value: string, form: any): string {
 
     case 'email':
       if (!value.trim()) return 'Obligatorio.';
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Email inválido.';
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Correo electrónico inválido.';
 
     case 'password':
       if (!value) return 'Obligatorio.';
@@ -170,7 +171,7 @@ export default function NuevoUsuarioPage() {
         storeId:         form.role === 'CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
       router.push(ADMIN_ROUTES.users);
-    } catch (err: any) { setGlobalError(err.message); }
+    } catch (err: any) { setGlobalError(messageFromError(err)); }
     finally { setLoading(false); }
   };
 
@@ -329,7 +330,7 @@ export default function NuevoUsuarioPage() {
                 <CheckCircle2 size={20} className="text-brand-camel"/> Cuenta de Usuario
               </h3>
               <div className="space-y-6">
-                <Input label="Email *" name="email" placeholder="luciana@street.com"
+                <Input label="Correo electrónico *" name="email" placeholder="luciana@street.com"
                        value={form.email} onChange={handleChange} onBlur={handleBlur}
                        error={touched.email ? errors.email : ''}/>
                 <div>

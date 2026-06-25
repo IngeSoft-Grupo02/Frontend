@@ -7,6 +7,8 @@ import { motion } from 'motion/react';
 import { Button, Card, Input } from '@/domains/admin/components/UI';
 import { api, MerchantResponseDTO, StoreCategoryResponse } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { getColorLabel } from '@/domains/shared/colors';
+import { messageFromError } from '@/domains/shared/errors';
 
 type ColorOption = { id: string; name: string; code: string };
 
@@ -95,7 +97,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
         }
       })
       .catch(error => {
-        if (active) setCategoriesError(error instanceof Error ? error.message : 'No se pudieron cargar las categorías.');
+        if (active) setCategoriesError(messageFromError(error, 'No se pudieron cargar las categorías.'));
       })
       .finally(() => {
         if (active) setCategoriesLoading(false);
@@ -108,7 +110,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
     setShowMerchantModal(true);
     api.users.getMerchants()
       .then(setMerchants)
-      .catch(error => setSubmitError(error instanceof Error ? error.message : 'No se pudieron cargar los comerciantes.'))
+      .catch(error => setSubmitError(messageFromError(error, 'No se pudieron cargar los comerciantes.')))
       .finally(() => setLoadingMerchants(false));
   };
 
@@ -138,7 +140,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
     try {
       await onSubmit(form, selectedMerchant);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'No se pudo guardar la tienda.');
+      setSubmitError(messageFromError(error, 'No se pudo guardar la tienda.'));
     } finally {
       setSaving(false);
     }
@@ -244,7 +246,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
                             className={`w-full flex items-center justify-between p-3 rounded-[20px] border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel ${form[group.field] === color.id ? 'border-brand-black bg-white shadow-md' : 'border-neutral-100 hover:border-neutral-300'}`}>
                       <div className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-full shadow-inner border border-neutral-200" style={{ backgroundColor: color.code }} />
-                        <span className="text-[12px] font-extrabold text-neutral-900 tracking-wider uppercase">{color.name}</span>
+                        <span className="text-[12px] font-extrabold text-neutral-900 tracking-wider uppercase">{getColorLabel(color.id)}</span>
                       </div>
                       {form[group.field] === color.id && <Check size={16} className="text-brand-black" />}
                     </button>

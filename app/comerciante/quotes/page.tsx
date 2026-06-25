@@ -4,6 +4,7 @@ import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout'
 import { Badge, Button, Card } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Quote } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import {
     Check,
     Download,
@@ -128,7 +129,7 @@ export default function QuotesPage() {
         setActionError('');
         await updateQuote(selectedQuoteId, { status, observations });
       } catch (error) {
-        setActionError(error instanceof Error ? error.message : 'No se pudo actualizar la cotización');
+        setActionError(messageFromError(error, 'No se pudo actualizar la cotización'));
       }
     }
   };

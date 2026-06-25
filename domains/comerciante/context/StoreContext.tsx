@@ -2,6 +2,7 @@
 import { mockDiscounts, mockOrders, mockProducts, mockQuotes, mockStores } from '@/domains/comerciante/lib/mockData';
 import { merchantApi, merchantSession, isTokenExpired, MerchantUser, BulkUploadResult } from '@/domains/comerciante/lib/api';
 import { Discount, Order, Product, Quote, Store } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 interface StoreState {
@@ -117,7 +118,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setQuotes(nextQuotes);
       setDiscounts(nextDiscounts);
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'No se pudo cargar la información de la tienda');
+      setApiError(messageFromError(error, 'No se pudo cargar la información de la tienda'));
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +144,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       persistStore(selectedStore);
       await loadScopedData(selectedStore.id);
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'No se pudo iniciar la sesión del comerciante');
+      setApiError(messageFromError(error, 'No se pudo iniciar la sesión del comerciante'));
       merchantSession.clear();
       setToken(null);
       setUser(null);
@@ -216,7 +217,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       persistUser(result.user);
       await initializeSession();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo iniciar sesión';
+      const message = messageFromError(error, 'No se pudo iniciar sesión');
       setApiError(message);
       throw new Error(message);
     } finally {

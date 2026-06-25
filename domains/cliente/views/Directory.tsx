@@ -7,10 +7,11 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { MessageCircle, Mail, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, View } from '../types';
-import { fetchPublicStores, toStore, ApiError } from '../lib/api';
+import { fetchPublicStores, toStore } from '../lib/api';
 import { getReadableMutedTextColor, getReadableTextColor } from '../lib/themeContrast';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { messageFromError } from '../../shared/errors';
 
 interface DirectoryProps {
   onSelectStore: (store: Store) => void;
@@ -35,7 +36,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof ApiError ? err.message : 'No se pudieron cargar las tiendas. Intenta nuevamente.');
+        setError(messageFromError(err, 'No se pudieron cargar las tiendas. Intenta nuevamente.'));
       })
       .finally(() => {
         if (active) setLoading(false);

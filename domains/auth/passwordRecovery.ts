@@ -1,3 +1,5 @@
+import { translateErrorMessage } from '../shared/errors';
+
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL
   || process.env.NEXT_PUBLIC_API_BASE_URL
@@ -39,7 +41,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const message = body && typeof body === 'object' && 'message' in body
       ? String((body as { message: unknown }).message)
       : 'No se pudo completar la solicitud.';
-    throw new Error(message);
+    throw new Error(translateErrorMessage(message, 'No se pudo completar la solicitud.'));
   }
 
   return body as T;

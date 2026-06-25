@@ -10,6 +10,7 @@ import {
   resetPassword,
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
+import { messageFromError } from '@/domains/shared/errors';
 
 type RecoveryStep = 'request' | 'sent' | 'reset' | 'success' | 'invalid';
 
@@ -51,7 +52,7 @@ function RecoveryPageContent() {
       await requestPasswordReset(email);
       setStep('sent');
     } catch (requestError) {
-      setEmailError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
+      setEmailError(messageFromError(requestError, 'No se pudo enviar el correo.'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ function RecoveryPageContent() {
       await resetPassword(token, password);
       setStep('success');
     } catch (resetError) {
-      setPassError(resetError instanceof Error ? resetError.message : 'No se pudo cambiar la contraseña.');
+      setPassError(messageFromError(resetError, 'No se pudo cambiar la contraseña.'));
     } finally {
       setLoading(false);
     }
@@ -163,7 +164,7 @@ function RecoveryPageContent() {
           </div>
           <div className="flex flex-col gap-3">
             <Button size="lg" className="h-14 font-extrabold text-[15px] w-full" onClick={() => setStep('request')}>Solicitar nuevo enlace</Button>
-            <Button variant="ghost" size="lg" className="h-14 w-full" onClick={() => router.push('/comerciante/login')}>Volver al login</Button>
+            <Button variant="ghost" size="lg" className="h-14 w-full" onClick={() => router.push('/comerciante/login')}>Volver al inicio de sesión</Button>
           </div>
         </div>
       );

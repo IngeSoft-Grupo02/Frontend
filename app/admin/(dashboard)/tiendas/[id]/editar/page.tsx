@@ -13,6 +13,7 @@ import {
 import { Button } from '@/domains/admin/components/UI';
 import { api, MerchantResponseDTO, StoreResponse } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { messageFromError } from '@/domains/shared/errors';
 
 function supportedColor(value: string | null, options: { id: string }[], fallback: string) {
   return value && options.some(option => option.id === value) ? value : fallback;
@@ -50,7 +51,7 @@ export default function EditarTiendaPage() {
         if (active) setStore(data);
       })
       .catch(error => {
-        if (active) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar la tienda.');
+        if (active) setLoadError(messageFromError(error, 'No se pudo cargar la tienda.'));
       })
       .finally(() => {
         if (active) setLoading(false);

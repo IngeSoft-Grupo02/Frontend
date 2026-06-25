@@ -3,6 +3,8 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
+import { getColorLabel } from '@/domains/shared/colors';
+import { messageFromError } from '@/domains/shared/errors';
 import { AlertCircle, Check, ImageIcon, RotateCcw, Save, Upload, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -52,7 +54,7 @@ const colorHex = (value: string, options: ColorOption[]) =>
   options.find(option => option.value === value)?.hex || options[0].hex;
 
 const colorName = (value: string, options: ColorOption[]) =>
-  options.find(option => option.value === value)?.name || value;
+  getColorLabel(options.find(option => option.value === value)?.value || value);
 
 const getInitials = (name: string) => {
   if (!name.trim()) return 'S';
@@ -175,7 +177,7 @@ export default function SettingsPage() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      setErrors({ storeName: error instanceof Error ? error.message : 'No se pudo guardar la tienda' });
+      setErrors({ storeName: messageFromError(error, 'No se pudo guardar la tienda') });
     }
   };
 

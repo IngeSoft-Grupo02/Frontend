@@ -6,6 +6,7 @@ import { api, StoreResponse, UserResponseDTO } from '@/domains/admin/lib/api';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Users, Store } from 'lucide-react';
 import { Button, Input, Select, Card, Badge } from '@/domains/admin/components/UI';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { messageFromError } from '@/domains/shared/errors';
 
 const SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
 
@@ -31,7 +32,7 @@ function validarCampo(name: string, value: string, form: any): string {
       return '';
     case 'email':
       if (!value.trim()) return 'Obligatorio.';
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Email inválido.';
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Correo electrónico inválido.';
     case 'phone':
       if (!value) return '';
       if (!/^\d+$/.test(value)) return 'Solo números.';
@@ -101,7 +102,7 @@ export default function EditarUsuarioPage() {
         })
         .catch(e => {
           if (e.message?.includes('404') || e.message?.includes('not found')) setNotFound(true);
-          else setGlobalError(e.message);
+          else setGlobalError(messageFromError(e));
         })
         .finally(() => setLoadingData(false));
   }, [userId]);
@@ -162,7 +163,7 @@ export default function EditarUsuarioPage() {
         storeId:         form.role==='CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
       router.push(ADMIN_ROUTES.users);
-    } catch (err:any) { setGlobalError(err.message); } finally { setSaving(false); }
+    } catch (err:any) { setGlobalError(messageFromError(err)); } finally { setSaving(false); }
   };
 
   const maxBirthDate = (() => {
@@ -310,7 +311,7 @@ export default function EditarUsuarioPage() {
                 <CheckCircle2 size={20} className="text-brand-camel"/> Cuenta
               </h3>
               <div className="space-y-6">
-                <Input label="Email *" name="email" placeholder="usuario@ejemplo.com"
+                <Input label="Correo electrónico *" name="email" placeholder="usuario@ejemplo.com"
                        value={form.email} onChange={handleChange} onBlur={handleBlur}
                        error={touched.email?errors.email:''}/>
                 <div className="p-4 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">

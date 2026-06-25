@@ -13,6 +13,7 @@ import {
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { messageFromError } from '@/domains/shared/errors';
 
 function RecuperarContrasenaContent() {
   const router = useRouter();
@@ -54,7 +55,7 @@ function RecuperarContrasenaContent() {
       await requestPasswordReset(email);
       setStep(2);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
+      setError(messageFromError(requestError, 'No se pudo enviar el correo.'));
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ function RecuperarContrasenaContent() {
       await resetPassword(token, newPassword);
       setStep(4);
     } catch (resetError) {
-      setError(resetError instanceof Error ? resetError.message : 'No se pudo cambiar la contraseña.');
+      setError(messageFromError(resetError, 'No se pudo cambiar la contraseña.'));
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ function RecuperarContrasenaContent() {
               Flujo disponible también desde
             </p>
             <p className="text-[14px] text-white font-bold italic">
-              "¿Olvidaste tu contraseña?" en el login.
+              "¿Olvidaste tu contraseña?" en el inicio de sesión.
             </p>
           </div>
 
@@ -171,7 +172,7 @@ function RecuperarContrasenaContent() {
                   onClick={handleBackToLogin}
                   className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-6 hover:underline"
                 >
-                  <ArrowLeft size={16} /> Volver al login
+                  <ArrowLeft size={16} /> Volver al inicio de sesión
                 </button>
 
                 <h2 className="text-[42px] font-display font-extrabold leading-tight mb-2 tracking-tight">
@@ -262,7 +263,7 @@ function RecuperarContrasenaContent() {
                   className="w-full rounded-2xl h-14" 
                   onClick={handleBackToLogin}
                 >
-                  Volver al login
+                  Volver al inicio de sesión
                 </Button>
               </motion.div>
             )}

@@ -9,6 +9,7 @@ import { Ruler, Shield, Sparkles, RefreshCw, FileText, ImageIcon, PackageCheck }
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
 
 interface ProductDetailProps {
   store: Store;
@@ -93,8 +94,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                   <div className="flex flex-wrap gap-2">
                     {product.colors.length > 0 ? product.colors.map((color) => (
                       <div key={color} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                        <div className="w-3 h-3 rounded-full border border-black/10" style={{ backgroundColor: color === 'BLANCO' ? '#FFFFFF' : color === 'NEGRO' ? '#000000' : color === 'ROJO' ? '#EF4444' : color === 'AZUL' ? '#3B82F6' : color === 'VERDE' ? '#10B981' : '#CCCCCC' }} />
-                        <span className="text-[10px] font-black uppercase">{color}</span>
+                        <div className="w-3 h-3 rounded-full border" style={getColorSwatchStyle(color)} />
+                        <span className="text-[10px] font-black uppercase">{getColorLabel(color)}</span>
                       </div>
                     )) : <span className="text-[12px] font-bold opacity-60">Sin colores registrados</span>}
                   </div>

@@ -10,6 +10,7 @@ import {
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
 import { getStoredCustomerStore } from '@/domains/cliente/lib/session';
+import { messageFromError } from '@/domains/shared/errors';
 import { Button } from './ui/Button';
 
 type Step = 'request' | 'sent' | 'validating' | 'reset' | 'success' | 'invalid';
@@ -54,7 +55,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
       await requestPasswordReset(email, selectedStoreSlug);
       setStep('sent');
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
+      setError(messageFromError(requestError, 'No se pudo enviar el correo.'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +78,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
       await resetPassword(token, password);
       setStep('success');
     } catch (resetError) {
-      setError(resetError instanceof Error ? resetError.message : 'No se pudo cambiar la contraseña.');
+      setError(messageFromError(resetError, 'No se pudo cambiar la contraseña.'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
               {loading ? 'Enviando...' : 'Enviar enlace'}
             </Button>
             <Button type="button" variant="outline" fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>
-              Volver al login
+              Volver al inicio de sesión
             </Button>
           </form>
         )}
@@ -121,7 +122,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
             <CheckCircle2 className="mx-auto text-green-600" size={48} />
             <h1 className="text-3xl font-extrabold">Revisa tu correo</h1>
             <p className="text-sm text-text-secondary">Si la cuenta está activa, enviamos un enlace. Revisa también la carpeta de spam.</p>
-            <Button fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>Volver al login</Button>
+            <Button fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>Volver al inicio de sesión</Button>
           </div>
         )}
 

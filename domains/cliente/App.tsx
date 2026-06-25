@@ -35,6 +35,8 @@ import {
   toQuote,
 } from './lib/api';
 import { mapCustomerToUser } from './lib/customer';
+import { getColorLabel } from '../shared/colors';
+import { messageFromError } from '../shared/errors';
 
 // Vistas que requieren sesión de cliente iniciada (ya protegidas en renderCurrentView)
 const PROTECTED_VIEWS = new Set<View>([
@@ -111,7 +113,7 @@ export default function App() {
           (entry) => entry.size === row.size && String(entry.color) === String(row.color),
         );
         if (!variant) {
-          throw new Error(`No existe una variante para talla ${row.size} y color ${row.color}.`);
+          throw new Error(`No existe una variante para talla ${row.size} y color ${getColorLabel(row.color)}.`);
         }
         latestCart = await addCartItem(selectedStore.slug, customerToken, {
           productVariantId: variant.id,
@@ -137,7 +139,7 @@ export default function App() {
       }
       setCurrentView(View.CART);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo agregar el producto al carrito.');
+      alert(messageFromError(err, 'No se pudo agregar el producto al carrito.'));
     }
   };
 
@@ -151,7 +153,7 @@ export default function App() {
       const cart = await removeCartItem(selectedStore.slug, customerToken, id);
       setCartItems(toCartItems(cart));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto del carrito.');
+      alert(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
     }
   };
 
@@ -167,7 +169,7 @@ export default function App() {
       await loadCart(selectedStore.slug, customerToken);
       setCurrentView(View.QUOTE_DETAIL);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'No se pudo crear la cotización.');
+      alert(messageFromError(err, 'No se pudo crear la cotización.'));
     }
   };
 
@@ -185,18 +187,30 @@ export default function App() {
       setCustomerToken(result.token);
       const profile = await fetchCustomerMe(selectedStore.slug, result.token);
       setCurrentUser(mapCustomerToUser(profile));
-      await loadCart(selectedStore.slug, result.token);
+      let cartLoadError = false;
+      try {
+        await loadCart(selectedStore.slug, result.token);
+      } catch (cartError) {
+        cartLoadError = true;
+        setCartItems([]);
+        console.error('No se pudo cargar el carrito del cliente.', cartError);
+      }
 
       const nextView = pendingView ?? View.CATALOG;
       setPendingView(null);
       setCurrentView(nextView);
+      if (cartLoadError) {
+        window.setTimeout(() => {
+          alert('No se pudo cargar el carrito. Inténtalo nuevamente más tarde.');
+        }, 0);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         const isBadCredentials =
           err.status === 401 || err.message.toLowerCase() === 'invalid credentials';
-        setAuthError(isBadCredentials ? 'La contraseña ingresada es incorrecta.' : err.message);
+        setAuthError(isBadCredentials ? 'La contraseña ingresada es incorrecta.' : messageFromError(err));
       } else {
-        setAuthError('No se pudo iniciar sesión. Intenta nuevamente.');
+        setAuthError(messageFromError(err, 'No se pudo iniciar sesión. Intenta nuevamente.'));
       }
     } finally {
       setAuthLoading(false);
@@ -216,7 +230,7 @@ export default function App() {
       await registerCustomer(selectedStore.slug, dto);
       await handleLogin(dto.email, dto.password);
     } catch (err) {
-      setAuthError(err instanceof ApiError ? err.message : 'No se pudo completar el registro. Intenta nuevamente.');
+      setAuthError(messageFromError(err, 'No se pudo completar el registro. Intenta nuevamente.'));
       setAuthLoading(false);
     }
   };

@@ -2,6 +2,7 @@
 
 import { Button } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
+import { messageFromError } from '@/domains/shared/errors';
 import { AlertCircle, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
@@ -45,7 +46,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/comerciante/store-selection');
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'No se pudo iniciar sesión');
+      setLoginError(messageFromError(error, 'No se pudo iniciar sesión'));
     } finally {
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ import { ArrowLeft, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Store, User, Quote, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
+import { getColorLabel } from '../../shared/colors';
 
 interface QuoteDetailProps {
   store: Store;
@@ -77,7 +78,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                         <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-4" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                           <div>
                             <div className="font-black text-[13px]">{item.productName || item.product}</div>
-                            <div className="text-[11px] font-bold opacity-70">{item.size} / {item.color} · Stock al solicitar: {item.stockAvailable}</div>
+                            <div className="text-[11px] font-bold opacity-70">{item.size} / {getColorLabel(item.color)} · Stock al solicitar: {item.stockAvailable}</div>
                           </div>
                           <div className="text-right">
                             <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.unitPrice || item.price || 0).toFixed(2)}</div>

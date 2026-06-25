@@ -1,4 +1,5 @@
 // src/lib/api.ts — Cliente HTTP centralizado Kingstore Admin
+import { translateErrorMessage } from '@/domains/shared/errors';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -18,7 +19,7 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
-function handleUnauthorized() {
+function handleSesionNoAutorizada() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('adminUser');
@@ -69,27 +70,37 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
       if (v !== undefined && v !== null && v !== '') url.searchParams.append(k, String(v));
     });
   }
-  const response = await fetch(url.toString(), {
-    headers: { 'Content-Type': 'application/json', ...(auth ? getAuthHeader() : {}), ...headers },
-    ...rest,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      headers: { 'Content-Type': 'application/json', ...(auth ? getAuthHeader() : {}), ...headers },
+      ...rest,
+    });
+  } catch {
+    throw new ApiError('No se pudo conectar con el servidor.', 0, endpoint);
+  }
   if (!response.ok) {
     // Un 403 puede ser una regla de autorización o negocio. Solo cerramos la
     // sesión si falta el JWT o si el propio token ya está vencido.
-    if (auth && shouldClearSession(response.status)) handleUnauthorized();
-    throw new ApiError(await readErrorMessage(response, endpoint), response.status, endpoint);
+    if (auth && shouldClearSession(response.status)) handleSesionNoAutorizada();
+    throw new ApiError(translateErrorMessage(await readErrorMessage(response, endpoint)), response.status, endpoint);
   }
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 async function requestMultipart<T>(endpoint: string, body: FormData): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'POST', headers: { ...getAuthHeader() }, body,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST', headers: { ...getAuthHeader() }, body,
+    });
+  } catch {
+    throw new ApiError('No se pudo conectar con el servidor.', 0, endpoint);
+  }
   if (!response.ok) {
-    if (shouldClearSession(response.status)) handleUnauthorized();
-    throw new ApiError(await readErrorMessage(response, endpoint), response.status, endpoint);
+    if (shouldClearSession(response.status)) handleSesionNoAutorizada();
+    throw new ApiError(translateErrorMessage(await readErrorMessage(response, endpoint)), response.status, endpoint);
   }
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);

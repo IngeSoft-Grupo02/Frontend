@@ -9,6 +9,7 @@ import { Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus 
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { getColorLabel } from '../../shared/colors';
 
 interface RequestQuoteProps {
   store: Store;
@@ -210,7 +211,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                           className="w-full px-4 py-2.5 rounded-xl border font-black text-[14px] focus:outline-none transition-all appearance-none cursor-pointer"
                           style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.1)' }}
                         >
-                          {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                          {COLORS.map(c => <option key={c} value={c}>{getColorLabel(c)}</option>)}
                         </select>
                       </div>
                       <div className="w-32 space-y-2">

@@ -5,6 +5,7 @@ import { useApp } from '@/domains/admin/context/AppContext';
 import { api, UserResponseDTO } from '@/domains/admin/lib/api';
 import { User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button, Input } from '@/domains/admin/components/UI';
+import { messageFromError } from '@/domains/shared/errors';
 
 function validarPassword(pwd: string): string {
   if (!pwd) return '';
@@ -78,7 +79,7 @@ export default function PerfilPage() {
       setSuccess('Cambios guardados correctamente.');
       setNewPassword(''); setConfirmPassword('');
     } catch (err: any) {
-      setError(err.message ?? 'Error al guardar cambios.');
+      setError(messageFromError(err, 'Error al guardar cambios.'));
     } finally {
       setIsSaving(false);
     }

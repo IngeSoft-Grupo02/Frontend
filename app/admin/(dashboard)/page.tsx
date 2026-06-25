@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 function endpointToEvento(method: string, endpoint: string, statusCode: number): string {
   const e = endpoint.toLowerCase(); const ok = statusCode < 400;
-  if (e.includes('/auth/login'))     return ok ? 'Inicio de sesión'       : 'Login fallido';
+  if (e.includes('/auth/login'))     return ok ? 'Inicio de sesión'       : 'Inicio de sesión fallido';
   if (e.includes('/auth/logout'))    return 'Cierre de sesión';
   if (method==='POST' && e.includes('/admin/stores') && !e.includes('suspend') && !e.includes('deactivate') && !e.includes('reactivate'))
     return ok ? 'Tienda registrada'      : 'Error al registrar tienda';

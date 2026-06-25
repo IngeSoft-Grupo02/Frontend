@@ -5,6 +5,8 @@ import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui'
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
 import { Store as StoreType, StoreCategory } from '@/domains/comerciante/lib/types';
+import { getColorLabel } from '@/domains/shared/colors';
+import { messageFromError } from '@/domains/shared/errors';
 import { AlertCircle, ArrowLeft, Check, ImageIcon, Search, Tag, Trash2, Upload, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
@@ -66,7 +68,7 @@ const colorHex = (value: string, options: ColorOption[]) =>
   options.find(option => option.value === value)?.hex || options[0].hex;
 
 const colorName = (value: string, options: ColorOption[]) =>
-  options.find(option => option.value === value)?.name || value;
+  getColorLabel(options.find(option => option.value === value)?.value || value);
 
 const isAllowedLogo = (file: File) => {
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
@@ -116,7 +118,7 @@ function StoreFormPageContent() {
         if (isMounted) setCategories(loaded);
       } catch (error) {
         if (!isMounted) return;
-        const message = error instanceof Error ? error.message : 'No se pudieron cargar las categorías';
+        const message = messageFromError(error, 'No se pudieron cargar las categorías');
         if (merchantSession.getToken()) {
           setCategoryLoadError(message);
           setCategories([]);
@@ -262,7 +264,7 @@ function StoreFormPageContent() {
 
       router.push('/comerciante/store-selection');
     } catch (error) {
-      setErrors({ name: error instanceof Error ? error.message : 'No se pudo guardar la tienda' });
+      setErrors({ name: messageFromError(error, 'No se pudo guardar la tienda') });
     }
   };
 

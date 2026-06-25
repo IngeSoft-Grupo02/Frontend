@@ -22,6 +22,8 @@ import {
   StorePublicDTO,
   TertiaryColor,
 } from '../types';
+import { getColorLabel } from '../../shared/colors';
+import { translateErrorMessage } from '../../shared/errors';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
 
@@ -68,7 +70,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       if (typeof obj.message === 'string') message = obj.message;
       else if (typeof obj.error === 'string') message = obj.error;
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(translateErrorMessage(message), response.status);
   }
 
   return data as T;
@@ -193,7 +195,7 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     productId: String(item.productVariantId),
     productName: item.productName,
     quantity: item.quantity,
-    specs: [item.size, item.color].filter(Boolean).join(' / '),
+    specs: [item.size, item.color ? getColorLabel(item.color) : ''].filter(Boolean).join(' / '),
     hasDesign: Boolean(item.customDesign),
     price: item.price,
   }));

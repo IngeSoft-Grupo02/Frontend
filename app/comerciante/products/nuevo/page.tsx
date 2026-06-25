@@ -5,6 +5,7 @@ import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui'
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
 import { Product } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import {
   AlertCircle,
   ArrowLeft,
@@ -209,7 +210,7 @@ function ProductFormPageContent() {
       }
       router.push('/comerciante/products');
     } catch (error) {
-      setErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el producto' });
+      setErrors({ form: messageFromError(error, 'No se pudo guardar el producto') });
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);

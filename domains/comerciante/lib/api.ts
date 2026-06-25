@@ -1,4 +1,6 @@
 import { Discount, Order, Product, Quote, Store, StoreCategory } from './types';
+import { getColorLabel } from '@/domains/shared/colors';
+import { translateErrorMessage } from '@/domains/shared/errors';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
 const TOKEN_KEY = 'mc_token';
@@ -54,7 +56,7 @@ export function isTokenExpired(token: string | null | undefined): boolean {
 }
 
 /** Limpia la sesión del comerciante y avisa al contexto que la sesión expiró. */
-function handleUnauthorized() {
+function handleSesionNoAutorizada() {
   if (typeof window === 'undefined') return;
   merchantSession.clear();
   window.dispatchEvent(new Event('merchant:session-expired'));
@@ -102,7 +104,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     // Sesión inválida/expirada en una request autenticada: limpiar y notificar.
     if (token && (response.status === 401 || response.status === 403)) {
-      handleUnauthorized();
+      handleSesionNoAutorizada();
     }
     const raw = await response.text();
     let message = raw || `Error HTTP ${response.status}`;
@@ -110,9 +112,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const parsed = JSON.parse(raw);
       message = parsed.message || parsed.error || raw;
     } catch {
-      // Keep plain-text backend errors as-is.
+      // El helper final traduce errores backend conocidos y oculta mensajes técnicos.
     }
-    throw new Error(normalizeMerchantErrorMessage(message, response.status));
+    throw new Error(normalizeMerchantErrorMessage(translateErrorMessage(message), response.status));
   }
 
   if (response.status === 204) return undefined as T;
@@ -134,7 +136,7 @@ const colorFromBackend = (color?: string) => {
     case 'RED': return 'Rojo';
     case 'BLUE': return 'Azul';
     case 'GREEN': return 'Verde';
-    default: return color || 'Negro';
+    default: return getColorLabel(color || 'Negro');
   }
 };
 
@@ -145,6 +147,17 @@ const colorToBackend = (color?: string) => {
     case 'rojo': return 'RED';
     case 'azul': return 'BLUE';
     case 'verde': return 'GREEN';
+    case 'amarillo': return 'YELLOW';
+    case 'naranja': return 'ORANGE';
+    case 'morado': return 'PURPLE';
+    case 'rosado': return 'PINK';
+    case 'gris': return 'GRAY';
+    case 'marrón':
+    case 'marron': return 'BROWN';
+    case 'beige': return 'BEIGE';
+    case 'azul marino': return 'NAVY';
+    case 'dorado': return 'GOLD';
+    case 'plateado': return 'SILVER';
     default: return 'BLACK';
   }
 };
@@ -406,7 +419,7 @@ const mapOrderItemDetail = (item: JsonValue) => ({
   productName: item.productName || undefined,
   productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
   size: item.size || undefined,
-  color: item.color || undefined,
+  color: item.color ? getColorLabel(item.color) : undefined,
   // ?? para no romper stock 0 (0 es válido); solo null/undefined cae a null.
   stock: (item.stockAvailable ?? item.stock ?? null) as number | null,
   quantity: Number(item.quantity || 0),
@@ -485,7 +498,7 @@ const mapQuoteItemStock = (item: JsonValue): number | null => {
 
 const buildVariantLabel = (item: JsonValue): string => {
   if (item.variant) return String(item.variant);
-  const parts = [item.size, item.color].filter(Boolean);
+  const parts = [item.size, item.color ? getColorLabel(item.color) : undefined].filter(Boolean);
   return parts.join(' · ');
 };
 
@@ -508,7 +521,7 @@ export const mapQuote = (raw: JsonValue): Quote => ({
     productId: item.productId != null ? String(item.productId) : undefined,
     productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
     size: item.size || undefined,
-    color: item.color || undefined,
+    color: item.color ? getColorLabel(item.color) : undefined,
     unitPrice: item.unitPrice != null ? Number(item.unitPrice) : undefined,
     subTotal: item.subTotal != null ? Number(item.subTotal) : undefined
   })),

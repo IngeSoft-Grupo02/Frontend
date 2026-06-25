@@ -4,6 +4,7 @@ import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout'
 import { Badge, Button, Card } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Product } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import {
   AlertTriangle,
   ChevronDown,
@@ -80,7 +81,7 @@ export default function ProductsPage() {
       await deleteProduct(deleteId);
       setDeleteId(null);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'No se pudo eliminar el producto');
+      setActionError(messageFromError(error, 'No se pudo eliminar el producto'));
     } finally {
       isDeletingRef.current = false;
       setIsDeleting(false);
@@ -93,7 +94,7 @@ export default function ProductsPage() {
       setActionError('');
       await updateProduct(product.id, { status: newStatus });
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el producto');
+      setActionError(messageFromError(error, 'No se pudo actualizar el producto'));
     }
   };
 

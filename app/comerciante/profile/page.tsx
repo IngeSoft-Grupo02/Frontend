@@ -3,6 +3,7 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
+import { messageFromError } from '@/domains/shared/errors';
 import {
   AlertCircle,
   ArrowLeft,
@@ -80,7 +81,7 @@ export default function ProfilePage() {
       setErrors({});
       showSavedMessage();
     } catch (error) {
-      setErrors({ email: error instanceof Error ? error.message : 'No se pudo actualizar el perfil' });
+      setErrors({ email: messageFromError(error, 'No se pudo actualizar el perfil') });
     }
   };
 
@@ -108,7 +109,7 @@ export default function ProfilePage() {
       setErrors({});
       showSavedMessage();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo actualizar la contraseña';
+      const message = messageFromError(error, 'No se pudo actualizar la contraseña');
       setErrors(getPasswordFieldError(message));
     }
   };
