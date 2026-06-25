@@ -259,12 +259,77 @@ export interface QuotationItemResponseDTO {
   price?: number;
 }
 
+export interface OrderItemResponseDTO {
+  productId: number | null;
+  productName: string | null;
+  productVariantId: number | null;
+  size: string | null;
+  color: string | null;
+  stockAvailable: number | null;
+  quantity: number;
+  unitPrice: number;
+  subTotal: number;
+}
+
+export interface OrderShippingResponseDTO {
+  address: string | null;
+  district: string | null;
+  reference: string | null;
+  estimatedDeliveryDate: string | null;
+  actualDeliveryDate: string | null;
+}
+
+export interface OrderResponseDTO {
+  id: number;
+  customer: string;
+  status: string;
+  statusLabel: string;
+  items: number;
+  total: number | null;
+  createdAt: string | null;
+  storeId: number;
+  itemsDetail: OrderItemResponseDTO[];
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+  shippingDetail: OrderShippingResponseDTO | null;
+  partialTotal: number | null;
+  totalDiscount: number | null;
+  finalTotal: number | null;
+  observations: string | null;
+}
+
+export interface PaymentPayload {
+  ruc?: string;
+  paymentMethod: 'VIRTUAL' | 'CASH_ON_DELIVERY';
+  cardNumber: string;
+  cardHolder: string;
+  expiryDate: string;
+  cvv: string;
+}
+
+export interface PaymentResponseDTO {
+  message: string;
+  receiptId: number;
+  orderId: number;
+  total: number;
+  paymentStatus: string;
+}
+
 export interface Order {
   id: string;
+  realId?: number;
   productName: string;
   date: string;
   amount: number;
-  status: 'Pagado' | 'En proceso' | 'En camino' | 'Entregado';
+  status: 'Pago pendiente' | 'Pagado' | 'En proceso' | 'En camino' | 'Entregado' | 'Cancelado';
+  rawStatus?: string;
+  itemsDetail?: OrderItemResponseDTO[];
+  finalTotal?: number;
+  partialTotal?: number;
+  totalDiscount?: number;
 }
 
 export enum PrimaryColor {

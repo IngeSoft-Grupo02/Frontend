@@ -11,6 +11,10 @@ import {
   CustomDesignRequestDTO,
   LoginRequestDTO,
   LoginResponseDTO,
+  Order,
+  OrderResponseDTO,
+  PaymentPayload,
+  PaymentResponseDTO,
   PrimaryColor,
   Product,
   ProductPublicDTO,
@@ -310,5 +314,53 @@ export function fetchQuotations(slug: string, token: string): Promise<QuotationR
 export function fetchQuotation(slug: string, token: string, quoteId: string | number): Promise<QuotationResponseDTO> {
   return request<QuotationResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations/${encodeURIComponent(String(quoteId))}`, {
     headers: authHeaders(token),
+  });
+}
+
+function orderStatusLabel(rawStatus: string): Order['status'] {
+  const map: Record<string, Order['status']> = {
+    PAYMENT_CONFIRMED: 'Pago pendiente',
+    IN_PREPARATION: 'En proceso',
+    IN_TRANSIT: 'En camino',
+    DELIVERED: 'Entregado',
+    CANCELLED: 'Cancelado',
+  };
+  return map[rawStatus] ?? 'Pago pendiente';
+}
+
+export function toOrder(dto: OrderResponseDTO): Order {
+  const firstItem = dto.itemsDetail?.[0];
+  return {
+    id: String(dto.id),
+    realId: dto.id,
+    productName: firstItem?.productName || `Pedido ${dto.id}`,
+    date: formatDate(dto.createdAt),
+    amount: dto.finalTotal ?? dto.total ?? 0,
+    status: orderStatusLabel(dto.status),
+    rawStatus: dto.status,
+    itemsDetail: dto.itemsDetail,
+    finalTotal: dto.finalTotal ?? undefined,
+    partialTotal: dto.partialTotal ?? undefined,
+    totalDiscount: dto.totalDiscount ?? undefined,
+  };
+}
+
+export function fetchOrders(slug: string, token: string): Promise<OrderResponseDTO[]> {
+  return request<OrderResponseDTO[]>(`/stores/${encodeURIComponent(slug)}/orders`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function fetchOrder(slug: string, token: string, orderId: number): Promise<OrderResponseDTO> {
+  return request<OrderResponseDTO>(`/stores/${encodeURIComponent(slug)}/orders/${orderId}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function payOrder(slug: string, token: string, orderId: number, payload: PaymentPayload): Promise<PaymentResponseDTO> {
+  return request<PaymentResponseDTO>(`/stores/${encodeURIComponent(slug)}/orders/${orderId}/payment`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
   });
 }

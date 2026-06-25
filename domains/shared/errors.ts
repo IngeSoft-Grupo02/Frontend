@@ -17,6 +17,18 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/email.*required/i, 'El correo electrónico es obligatorio.'],
   [/invalid.*email/i, 'El correo electrónico no es válido.'],
   [/validation/i, 'Revisa los datos ingresados.'],
+  // Errores de pago
+  [/order already has a payment receipt/i, 'Este pedido ya fue pagado anteriormente.'],
+  [/only confirmed orders can be paid/i, 'Este pedido no está disponible para pago.'],
+  [/payment declined.*card rejected/i, 'Pago declinado. Tu tarjeta fue rechazada por el banco emisor.'],
+  [/card number must have 16 digits/i, 'El número de tarjeta debe tener 16 dígitos.'],
+  [/card number must contain only digits/i, 'El número de tarjeta solo debe contener dígitos.'],
+  [/card holder name is required/i, 'El nombre del titular es obligatorio.'],
+  [/cvv must have 3 digits/i, 'El CVV debe tener 3 dígitos.'],
+  [/expiry date must be in mm\/yy format/i, 'La fecha de vencimiento debe tener formato MM/AA.'],
+  [/card has expired/i, 'La tarjeta está vencida.'],
+  [/payment method is required/i, 'El método de pago es obligatorio.'],
+  [/order cannot be (found|paid|processed)/i, 'No se pudo procesar el pago del pedido.'],
 ];
 
 export function translateErrorMessage(message: unknown, fallback = DEFAULT_ERROR_MESSAGE): string {

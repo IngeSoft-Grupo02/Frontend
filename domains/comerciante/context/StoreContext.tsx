@@ -381,10 +381,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [hasBackendSession, shouldSyncStoresWithBackend, shouldUseStoreApi]);
 
   const saveStore = useCallback(async (s: Store) => {
-    if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesión como comerciante para actualizar una tienda en la base de datos.');
-    }
-    if (!shouldSyncStoresWithBackend) {
+    if (!hasBackendSession) {
       setStores(prev => prev.map(item => item.id === s.id ? s : item));
       setStore(s);
       return s;
@@ -393,7 +390,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
     setStore(updated);
     return updated;
-  }, [hasBackendSession, shouldSyncStoresWithBackend, shouldUseStoreApi]);
+  }, [hasBackendSession]);
 
   const deleteStore = useCallback(async (id: string) => {
     if (shouldUseStoreApi && !hasBackendSession) {

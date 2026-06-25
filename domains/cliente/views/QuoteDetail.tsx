@@ -112,12 +112,30 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
 
             <div className="rounded-[24px] border p-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h4 className="text-[11px] font-black uppercase tracking-widest mb-8 block opacity-60">Siguiente paso</h4>
-              {quote.status === 'Aprobadas' || quote.status === 'Propuesta enviada' ? (
+              {quote.status === 'Aprobadas' ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--color-primary)', border: '1px solid rgba(0,0,0,0.05)' }}>
+                      <CheckCircle2 size={20} style={{ color: 'var(--color-tertiary)' }} />
+                    </div>
+                    <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>
+                      Tu cotización fue aprobada. Ve a <strong>Mis pedidos</strong> para realizar el pago.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onNavigate(View.MY_ORDERS)}
+                    className="w-full py-4 rounded-2xl font-black text-[14px] text-center transition-all hover:opacity-90 cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                  >
+                    Ir a Mis pedidos para pagar
+                  </button>
+                </div>
+              ) : quote.status === 'Propuesta enviada' ? (
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--color-primary)', border: '1px solid rgba(0,0,0,0.05)' }}>
                     <CheckCircle2 size={20} style={{ color: 'var(--color-tertiary)' }} />
                   </div>
-                  <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>La cotización fue aprobada. El pago no está conectado en esta iteración porque el flujo de Backend será ajustado.</p>
+                  <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>La tienda ha enviado una propuesta. Revisa los detalles y espera la aprobación final.</p>
                 </div>
               ) : quote.status === 'Rechazadas' ? (
                 <p className="text-[14px] font-bold opacity-75">Esta cotización fue rechazada por la tienda.</p>

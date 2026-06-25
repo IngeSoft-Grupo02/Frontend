@@ -92,6 +92,11 @@ export default function App() {
     setCurrentView(View.ORDER_DETAIL);
   };
 
+  const handlePayOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setCurrentView(View.PAYMENT);
+  };
+
   const loadCart = async (slug: string, token: string) => {
     const cart = await fetchCart(slug, token);
     setCartItems(toCartItems(cart));
@@ -326,16 +331,16 @@ export default function App() {
         return <QuoteDetail store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.PAYMENT:
-        if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
-        return <Payment store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
+        if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
+        return <Payment store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.MY_ORDERS:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
         if (!currentUser) return <Auth store={selectedStore} type="login" onNavigate={navigate} onLogin={handleLogin} onRegister={handleRegister} authError={authError} authLoading={authLoading} />;
-        return <MyOrders store={selectedStore} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} cartCount={cartItems.length} />;
+        return <MyOrders store={selectedStore} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
 
       case View.ORDER_DETAIL:
-        if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} cartCount={cartItems.length} />;
+        if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
         return <OrderDetail store={selectedStore} user={currentUser} order={selectedOrder} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.PROFILE:

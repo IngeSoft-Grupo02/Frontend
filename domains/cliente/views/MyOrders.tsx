@@ -5,223 +5,248 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag, Truck, PackageCheck, Clock, ArrowRight, Download, CheckCircle2, MessageCircle } from 'lucide-react';
+import { ShoppingBag, Truck, PackageCheck, Clock, ArrowRight, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CreditCard } from 'lucide-react';
 import { Store, User, View, Order } from '../types';
-import { ORDERS } from '../constants';
+import { fetchOrders, toOrder } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { messageFromError } from '../../shared/errors';
 
 interface MyOrdersProps {
   store: Store;
   user: User | null;
+  customerToken: string | null;
   onNavigate: (view: View) => void;
   onLogout: () => void;
   onSelectOrder: (order: Order) => void;
+  onPayOrder: (order: Order) => void;
   cartCount: number;
 }
 
-export const MyOrders: React.FC<MyOrdersProps> = ({ store, user, onNavigate, onLogout, onSelectOrder, cartCount }) => {
+export const MyOrders: React.FC<MyOrdersProps> = ({
+  store,
+  user,
+  customerToken,
+  onNavigate,
+  onLogout,
+  onSelectOrder,
+  onPayOrder,
+  cartCount,
+}) => {
+  const [orders, setOrders] = React.useState<Order[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!store.slug || !customerToken) return;
+    let active = true;
+    setLoading(true);
+    setError(null);
+
+    fetchOrders(store.slug, customerToken)
+      .then((data) => {
+        if (!active) return;
+        setOrders(data.map(toOrder));
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(messageFromError(err, 'No se pudieron cargar tus pedidos.'));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [store.slug, customerToken]);
+
+  const statusStep = (status: Order['status']): number => {
+    const steps: Order['status'][] = ['Pago pendiente', 'En proceso', 'En camino', 'Entregado'];
+    const idx = steps.indexOf(status);
+    return idx >= 0 ? idx : 0;
+  };
+
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_ORDERS} />
-      
+
       <div className="max-w-7xl mx-auto px-10 py-12">
         <header className="mb-12">
           <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis pedidos</h2>
-          <p className="text-[15px] font-medium opacity-75 animate-fade-in" style={{ color: '#475569' }}>Consulta el historial de tus compras y el progreso de tus órdenes activas.</p>
+          <p className="text-[15px] font-medium opacity-75" style={{ color: '#475569' }}>
+            Consulta el historial de tus compras y el progreso de tus órdenes activas.
+          </p>
         </header>
 
-        <div className="space-y-6">
-          {ORDERS.map((order, i) => (
-            <motion.div 
-               key={order.id}
-               initial={{ opacity: 0, scale: 0.98 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ delay: i * 0.1 }}
-               onClick={() => onSelectOrder(order)}
-               className="rounded-2xl border p-8 flex flex-wrap lg:flex-nowrap items-center gap-10 group hover:shadow-lg transition-all cursor-pointer"
-               style={{ 
-                 backgroundColor: 'var(--color-secondary)', 
-                 color: 'var(--text-on-secondary)',
-                 borderColor: 'rgba(0,0,0,0.05)'
-               }}
+        {loading && (
+          <div className="py-24 flex flex-col items-center gap-3 text-gray-500">
+            <Loader2 className="animate-spin" />
+            <p className="font-bold">Cargando pedidos...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="py-24 flex flex-col items-center gap-3 text-red-600">
+            <AlertTriangle />
+            <p className="font-bold">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && orders.length === 0 && (
+          <div className="py-32 text-center" style={{ color: 'var(--text-on-primary)' }}>
+            <div className="w-20 h-20 border rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
+              <ShoppingBag size={32} />
+            </div>
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>Aún no tienes pedidos</h4>
+            <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>
+              Cuando una cotización sea aprobada, tu pedido aparecerá aquí.
+            </p>
+            <Button
+              variant="primary"
+              style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+              onClick={() => onNavigate(View.MY_QUOTES)}
             >
-              {/* Order Basic Info */}
-              <div className="flex items-center gap-6 min-w-[280px]">
-                <div 
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center border transition-all"
+              Ver mis cotizaciones
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && orders.length > 0 && (
+          <div className="space-y-6">
+            {orders.map((order, i) => {
+              const step = statusStep(order.status);
+              const canPay = order.rawStatus === 'PAYMENT_CONFIRMED';
+
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="rounded-2xl border p-8 flex flex-wrap lg:flex-nowrap items-center gap-10 group hover:shadow-lg transition-all cursor-pointer"
                   style={{
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'var(--text-on-primary)',
-                    borderColor: 'rgba(0,0,0,0.05)'
+                    backgroundColor: 'var(--color-secondary)',
+                    color: 'var(--text-on-secondary)',
+                    borderColor: 'rgba(0,0,0,0.05)',
                   }}
+                  onClick={() => onSelectOrder(order)}
                 >
-                  <ShoppingBag size={24} />
-                </div>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-widest mb-1 opacity-60">{order.id}</div>
-                  <h4 className="text-[18px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{order.productName}</h4>
-                  <div className="text-[13px] font-medium opacity-60">{order.date}</div>
-                </div>
-              </div>
-
-              {/* Status Timeline Simulation */}
-              <div className="flex-1 flex items-center gap-2 px-6 border-x mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                 <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center shadow-md text-[var(--color-text-on-tertiary)]"
-                      style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                  {/* Info básica */}
+                  <div className="flex items-center gap-6 min-w-[280px]">
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center border transition-all"
+                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
                     >
-                      <PackageCheck size={16} />
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter" style={{ color: 'var(--color-tertiary)' }}>Pagado</span>
-                 </div>
-                 
-                 <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-                    <div className="h-full" style={{ backgroundColor: 'var(--color-tertiary)', width: order.status !== 'Pagado' ? '100%' : '0%' }} />
-                 </div>
-                 
-                 <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                      style={order.status !== 'Pagado' ? {
-                        backgroundColor: 'var(--color-tertiary)',
-                        color: 'var(--text-on-tertiary)',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                      } : {
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'var(--text-on-primary)',
-                        opacity: 0.3
-                      }}
-                    >
-                      <Clock size={16} />
-                    </div>
-                    <span 
-                      className="text-[9px] font-black uppercase tracking-tighter" 
-                      style={order.status !== 'Pagado' ? { color: 'var(--color-tertiary)' } : { color: 'var(--text-on-secondary)', opacity: 0.4 }}
-                    >
-                      En proceso
-                    </span>
-                 </div>
-                 
-                 <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-                    <div className="h-full" style={{ backgroundColor: 'var(--color-tertiary)', width: order.status === 'En camino' || order.status === 'Entregado' ? '100%' : '0%' }} />
-                 </div>
-                 
-                 <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                      style={(order.status === 'En camino' || order.status === 'Entregado') ? {
-                        backgroundColor: 'var(--color-tertiary)',
-                        color: 'var(--text-on-tertiary)',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                      } : {
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'var(--text-on-primary)',
-                        opacity: 0.3
-                      }}
-                    >
-                      <Truck size={16} />
-                    </div>
-                    <span 
-                      className="text-[9px] font-black uppercase tracking-tighter"
-                      style={(order.status === 'En camino' || order.status === 'Entregado') ? { color: 'var(--color-tertiary)' } : { color: 'var(--text-on-secondary)', opacity: 0.4 }}
-                    >
-                      En camino
-                    </span>
-                 </div>
-                 
-                 <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-                    <div className="h-full" style={{ backgroundColor: 'var(--color-tertiary)', width: order.status === 'Entregado' ? '100%' : '0%' }} />
-                 </div>
-                 
-                 <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                      style={order.status === 'Entregado' ? {
-                        backgroundColor: 'var(--color-tertiary)',
-                        color: 'var(--text-on-tertiary)',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                      } : {
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'var(--text-on-primary)',
-                        opacity: 0.3
-                      }}
-                    >
-                      <CheckCircle2 size={16} />
-                    </div>
-                    <span 
-                      className="text-[9px] font-black uppercase tracking-tighter"
-                      style={order.status === 'Entregado' ? { color: 'var(--color-tertiary)' } : { color: 'var(--text-on-secondary)', opacity: 0.4 }}
-                    >
-                      Entregado
-                    </span>
-                 </div>
-              </div>
-
-              {/* Amount & Status */}
-              <div className="flex flex-col items-end gap-2 pr-4 min-w-[150px]">
-                 <Badge status={order.status} />
-                 <div className="text-[22px] font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>S/ {order.amount.toFixed(2)}</div>
-              </div>
-
-              {/* CTA */}
-              <div className="flex flex-col gap-3">
-                 <Button 
-                    variant="primary" 
-                    className="!px-6 !py-2.5 !text-[11px] whitespace-nowrap flex items-center gap-2 cursor-pointer font-black"
-                    style={{
-                      backgroundColor: 'var(--color-tertiary)',
-                      color: 'var(--text-on-tertiary)'
-                    }}
-                    onClick={(e) => { e.stopPropagation(); onSelectOrder(order); }}
-                 >
-                    Detalle de pedido <ArrowRight size={14} />
-                 </Button>
-                 <button 
-                  style={{ color: 'var(--text-on-secondary)', opacity: 0.6 }}
-                  className="flex items-center gap-2 text-[11px] font-bold hover:opacity-100 transition-colors justify-center cursor-pointer"
-                 >
-                    <Download size={14} /> Descargar factura
-                 </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div 
-          className="mt-20 p-12 rounded-3xl flex items-center justify-between overflow-hidden relative border shadow-sm"
-          style={{ 
-            backgroundColor: 'var(--color-secondary)', 
-            color: 'var(--text-on-secondary)',
-            borderColor: 'rgba(0,0,0,0.05)'
-          }}
-        >
-           <div className="relative z-10 w-full md:w-auto">
-              <h3 className="text-[28px] font-black mb-2 tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>¿Necesitas ayuda con un pedido?</h3>
-              <p className="font-bold mb-8 max-w-md opacity-75" style={{ color: 'var(--text-on-secondary)' }}>Nuestro equipo está listo para asistirte con cualquier duda sobre tus órdenes.</p>
-              
-              <div className="flex flex-wrap gap-6 items-center">
-                 <div 
-                    className="rounded-2xl p-4 px-6 border flex items-center gap-4 shadow-sm"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--text-on-primary)',
-                      borderColor: 'rgba(0,0,0,0.05)'
-                    }}
-                 >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: 'var(--color-tertiary)' }}>
-                       <MessageCircle size={20} style={{ color: 'var(--text-on-tertiary)' }} />
+                      <ShoppingBag size={24} />
                     </div>
                     <div>
-                       <div className="text-[10px] font-black uppercase tracking-widest opacity-60">WhatsApp Tienda</div>
-                       <div className="text-[18px] font-black">{store.whatsapp ? `+51 ${store.whatsapp}` : '+51 987 654 321'}</div>
+                      <div className="text-[12px] font-bold uppercase tracking-widest mb-1 opacity-60">Pedido #{order.id}</div>
+                      <h4 className="text-[17px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{order.productName}</h4>
+                      <div className="text-[13px] font-medium opacity-60">{order.date}</div>
                     </div>
-                 </div>
+                  </div>
+
+                  {/* Timeline de estado */}
+                  <div className="flex-1 flex items-center gap-2 px-6 border-x mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                    {[
+                      { label: 'Pendiente', icon: CreditCard },
+                      { label: 'En proceso', icon: Clock },
+                      { label: 'En camino', icon: Truck },
+                      { label: 'Entregado', icon: CheckCircle2 },
+                    ].map((s, idx) => (
+                      <React.Fragment key={idx}>
+                        <div className="flex flex-col items-center gap-1 min-w-[56px]">
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
+                            style={
+                              step >= idx
+                                ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }
+                                : { backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', opacity: 0.3 }
+                            }
+                          >
+                            <s.icon size={15} />
+                          </div>
+                          <span
+                            className="text-[9px] font-black uppercase tracking-tighter"
+                            style={step >= idx ? { color: 'var(--color-tertiary)' } : { color: 'var(--text-on-secondary)', opacity: 0.35 }}
+                          >
+                            {s.label}
+                          </span>
+                        </div>
+                        {idx < 3 && (
+                          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+                            <div className="h-full" style={{ backgroundColor: 'var(--color-tertiary)', width: step > idx ? '100%' : '0%', transition: 'width 0.4s' }} />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {/* Monto y estado */}
+                  <div className="flex flex-col items-end gap-2 pr-4 min-w-[150px]">
+                    <Badge status={order.status} />
+                    <div className="text-[22px] font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>
+                      S/ {order.amount.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                    {canPay && (
+                      <Button
+                        variant="primary"
+                        className="!px-6 !py-2.5 !text-[11px] whitespace-nowrap flex items-center gap-2 cursor-pointer font-black"
+                        style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                        onClick={() => onPayOrder(order)}
+                      >
+                        <CreditCard size={14} /> Pagar ahora
+                      </Button>
+                    )}
+                    <Button
+                      variant="primary"
+                      className="!px-6 !py-2.5 !text-[11px] whitespace-nowrap flex items-center gap-2 cursor-pointer font-black"
+                      style={canPay
+                        ? { backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', border: '1px solid rgba(0,0,0,0.1)' }
+                        : { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }
+                      }
+                      onClick={() => onSelectOrder(order)}
+                    >
+                      Ver detalle <ArrowRight size={14} />
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        <div
+          className="mt-20 p-12 rounded-3xl flex items-center justify-between overflow-hidden relative border shadow-sm"
+          style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
+        >
+          <div className="relative z-10 w-full md:w-auto">
+            <h3 className="text-[28px] font-black mb-2 tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>¿Necesitas ayuda con un pedido?</h3>
+            <p className="font-bold mb-8 max-w-md opacity-75" style={{ color: 'var(--text-on-secondary)' }}>
+              Nuestro equipo está listo para asistirte con cualquier duda sobre tus órdenes.
+            </p>
+            <div className="flex flex-wrap gap-6 items-center">
+              <div
+                className="rounded-2xl p-4 px-6 border flex items-center gap-4 shadow-sm"
+                style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
+              >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+                  <MessageCircle size={20} style={{ color: 'var(--text-on-tertiary)' }} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">WhatsApp Tienda</div>
+                  <div className="text-[18px] font-black">{store.whatsapp ? `+51 ${store.whatsapp}` : '+51 987 654 321'}</div>
+                </div>
               </div>
-           </div>
-           <ShoppingBag size={200} className="absolute -right-10 -bottom-10 opacity-5 rotate-12" />
+            </div>
+          </div>
+          <ShoppingBag size={200} className="absolute -right-10 -bottom-10 opacity-5 rotate-12" />
         </div>
       </div>
     </div>
