@@ -107,6 +107,11 @@ export default function App() {
   };
 
   const addToCart = async (item: any): Promise<void> => {
+    // Al agregar un producto nuevo iniciamos un carrito limpio: descartamos
+    // cualquier estado de recuperación o error de una cotización anterior.
+    setCartError(null);
+    setCartAlreadySubmitted(false);
+
     if (!selectedStore?.slug || !customerToken || !selectedProduct?.variants) {
       setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
       setCurrentView(View.CART);
@@ -156,6 +161,9 @@ export default function App() {
     try {
       const cart = await removeCartItem(selectedStore.slug, customerToken, id);
       setCartItems(toCartItems(cart));
+      // El carrito cambió: descartamos el estado de recuperación previo.
+      setCartError(null);
+      setCartAlreadySubmitted(false);
     } catch (err) {
       setCartError(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
     }

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { Ruler, Shield, Sparkles, RefreshCw, FileText, ImageIcon, PackageCheck } from 'lucide-react';
+import { Ruler, Shield, RefreshCw, FileText, ImageIcon, PackageCheck } from 'lucide-react';
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -123,7 +123,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                 </div>
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center"><Shield size={20} style={{ color: 'var(--text-on-secondary)', opacity: 0.6 }} /></div>
-                  <div><div className="text-[12px] font-bold mb-1">Stock</div><p className="text-[11px] opacity-75">Validado al cotizar</p></div>
+                  <div><div className="text-[12px] font-bold mb-1">Stock</div><p className="text-[11px] opacity-75">Referencial; el comerciante confirma disponibilidad</p></div>
                 </div>
               </div>
             </div>
@@ -137,12 +137,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                   if (!user) onNavigate(View.AUTH_LOGIN);
                   else onNavigate(View.REQUEST_QUOTE);
                 }}
-                disabled={!product.variants?.some((variant) => variant.stock > 0)}
               >
                 Solicitar cotización
-              </Button>
-              <Button variant="secondary" className="aspect-square p-0 flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.1)' }}>
-                <Sparkles size={20} />
               </Button>
             </div>
 
