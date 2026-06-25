@@ -71,6 +71,8 @@ export default function App() {
 
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   const handleSelectStore = (store: Store) => {
     // If the user is logged in to a different store, log them out
@@ -103,49 +105,45 @@ export default function App() {
     return cart;
   };
 
-  const addToCart = async (item: any) => {
+  const addToCart = async (item: any): Promise<void> => {
     if (!selectedStore?.slug || !customerToken || !selectedProduct?.variants) {
       setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
       setCurrentView(View.CART);
       return;
     }
 
-    try {
-      let latestCart = null;
-      const validRows = (item.rows || []).filter((row: any) => Number(row.quantity) > 0);
-      for (const row of validRows) {
-        const variant = selectedProduct.variants.find(
-          (entry) => entry.size === row.size && String(entry.color) === String(row.color),
-        );
-        if (!variant) {
-          throw new Error(`No existe una variante para talla ${row.size} y color ${getColorLabel(row.color)}.`);
-        }
-        latestCart = await addCartItem(selectedStore.slug, customerToken, {
-          productVariantId: variant.id,
-          quantity: Number(row.quantity),
+    let latestCart = null;
+    const validRows = (item.rows || []).filter((row: any) => Number(row.quantity) > 0);
+    for (const row of validRows) {
+      const variant = selectedProduct.variants.find(
+        (entry) => entry.size === row.size && String(entry.color) === String(row.color),
+      );
+      if (!variant) {
+        throw new Error(`No existe una variante para talla ${row.size} y color ${getColorLabel(row.color)}.`);
+      }
+      latestCart = await addCartItem(selectedStore.slug, customerToken, {
+        productVariantId: variant.id,
+        quantity: Number(row.quantity),
+      });
+
+      const addedItem = latestCart.items.find((cartItem) => cartItem.productVariantId === variant.id);
+      if (addedItem && (item.specs || item.files?.length > 0)) {
+        const designDescription = [
+          item.specs,
+          item.files?.length ? `Archivos referenciales pendientes de S3: ${item.files.map((file: any) => file.name).join(', ')}` : '',
+        ].filter(Boolean).join('\n');
+        latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
+          description: designDescription,
         });
-
-        const addedItem = latestCart.items.find((cartItem) => cartItem.productVariantId === variant.id);
-        if (addedItem && (item.specs || item.files?.length > 0)) {
-          const designDescription = [
-            item.specs,
-            item.files?.length ? `Archivos referenciales pendientes de S3: ${item.files.map((file: any) => file.name).join(', ')}` : '',
-          ].filter(Boolean).join('\n');
-          latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
-            description: designDescription,
-          });
-        }
       }
-
-      if (latestCart) {
-        setCartItems(toCartItems(latestCart));
-      } else {
-        await loadCart(selectedStore.slug, customerToken);
-      }
-      setCurrentView(View.CART);
-    } catch (err) {
-      alert(messageFromError(err, 'No se pudo agregar el producto al carrito.'));
     }
+
+    if (latestCart) {
+      setCartItems(toCartItems(latestCart));
+    } else {
+      await loadCart(selectedStore.slug, customerToken);
+    }
+    setCurrentView(View.CART);
   };
 
   const removeFromCart = async (id: string) => {
@@ -158,7 +156,7 @@ export default function App() {
       const cart = await removeCartItem(selectedStore.slug, customerToken, id);
       setCartItems(toCartItems(cart));
     } catch (err) {
-      alert(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
+      setCartError(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
     }
   };
 
@@ -167,14 +165,19 @@ export default function App() {
       navigate(View.AUTH_LOGIN);
       return;
     }
+    if (isSubmittingQuote) return;
 
+    setIsSubmittingQuote(true);
+    setCartError(null);
     try {
       const quotation = await createQuotation(selectedStore.slug, customerToken);
       setSelectedQuote(toQuote(quotation));
       await loadCart(selectedStore.slug, customerToken);
       setCurrentView(View.QUOTE_DETAIL);
     } catch (err) {
-      alert(messageFromError(err, 'No se pudo crear la cotización.'));
+      setCartError(messageFromError(err, 'No se pudo crear la cotización.'));
+    } finally {
+      setIsSubmittingQuote(false);
     }
   };
 
@@ -205,9 +208,7 @@ export default function App() {
       setPendingView(null);
       setCurrentView(nextView);
       if (cartLoadError) {
-        window.setTimeout(() => {
-          alert('No se pudo cargar el carrito. Inténtalo nuevamente más tarde.');
-        }, 0);
+        console.error('No se pudo cargar el carrito tras el inicio de sesión.');
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -319,7 +320,7 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

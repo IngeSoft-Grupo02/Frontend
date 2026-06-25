@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, Info } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, Info, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, User, CartItem, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -18,9 +18,11 @@ interface CartProps {
   onCreateQuotation: () => void;
   onNavigate: (view: View) => void;
   onLogout?: () => void;
+  isSubmitting?: boolean;
+  cartError?: string | null;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -121,12 +123,19 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                   </div>
                 )}
 
+                {cartError && (
+                  <div className="p-4 rounded-xl mb-4 flex items-start gap-3 border text-[11px] font-bold" style={{ backgroundColor: '#fef2f2', borderColor: 'rgba(239,68,68,0.3)', color: '#b91c1c' }}>
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                    <p>{cartError}</p>
+                  </div>
+                )}
+
                 <Button
                   variant="primary"
                   fullWidth
                   className="flex items-center justify-center gap-2 mb-4 font-black text-[14px] py-4 cursor-pointer"
-                  disabled={items.length === 0}
-                  style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                  disabled={items.length === 0 || isSubmitting}
+                  style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', opacity: isSubmitting ? 0.7 : 1 }}
                   onClick={() => {
                     if (!user) {
                       onNavigate(View.AUTH_LOGIN);
@@ -135,7 +144,11 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     }
                   }}
                 >
-                  Solicitar Cotización <ArrowRight size={18} />
+                  {isSubmitting ? (
+                    <><Loader2 size={16} className="animate-spin" /> Enviando cotización...</>
+                  ) : (
+                    <>Solicitar Cotización <ArrowRight size={18} /></>
+                  )}
                 </Button>
 
                 <p className="text-[11px] text-center leading-relaxed opacity-60">

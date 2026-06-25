@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus } from 'lucide-react';
+import { Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -17,7 +17,7 @@ interface RequestQuoteProps {
   product: Product | null;
   onNavigate: (view: View) => void;
   onLogout?: () => void;
-  onAddToCart: (item: any) => void;
+  onAddToCart: (item: any) => Promise<void>;
   cartCount: number;
 }
 
@@ -28,6 +28,8 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     { id: '1', size: 'S', color: 'BLANCO', quantity: 0 }
   ]);
   const [uploadedFiles, setUploadedFiles] = useState<{name: string, size: string}[]>([]);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const availableVariants = product?.variants || [];
   const SIZES = Array.from(new Set(availableVariants.map((variant) => variant.size))).filter(Boolean);
@@ -57,7 +59,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const addMockFile = () => {
     if (uploadedFiles.length >= 5) {
-      alert('Máximo 5 archivos permitidos.');
+      setAddError('Máximo 5 archivos permitidos.');
       return;
     }
     const names = ['Logo_Final.ai', 'Mockup_Ref.jpg', 'Ficha_Tecnica.pdf', 'Paleta_Colores.png', 'Logo_Variante.svg'];
@@ -74,23 +76,32 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const quantity = rows.reduce((acc, row) => acc + (row.quantity || 0), 0);
 
-  const handleAddToCart = () => {
-    if (!product) return;
+  const handleAddToCart = async () => {
+    if (!product || isAddingToCart) return;
     const invalidRows = rows.filter((row) => row.quantity > 0 && !availableVariants.some((variant) => variant.size === row.size && String(variant.color) === row.color));
     if (invalidRows.length > 0) {
-      alert('Selecciona combinaciones de talla y color disponibles para este producto.');
+      setAddError('Selecciona combinaciones de talla y color disponibles para este producto.');
       return;
     }
-    onAddToCart({
-      productId: product.id,
-      productName: product.name,
-      quantity,
-      specs,
-      rows,
-      hasDesign: uploadedFiles.length > 0,
-      files: uploadedFiles,
-      price: product.price
-    });
+    setAddError(null);
+    setIsAddingToCart(true);
+    try {
+      await onAddToCart({
+        productId: product.id,
+        productName: product.name,
+        quantity,
+        specs,
+        rows,
+        hasDesign: uploadedFiles.length > 0,
+        files: uploadedFiles,
+        price: product.price
+      });
+    } catch (err: unknown) {
+      const { messageFromError } = await import('../../shared/errors');
+      setAddError(messageFromError(err, 'No se pudo agregar el producto al carrito.'));
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   const basePrice = product?.price || 28;
@@ -161,9 +172,9 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-bold">
                     {quantity <= 0 ? (
-                      <span className="flex items-center gap-1" style={{ color: 'var(--error-on-secondary)' }}><Info size={12} /> Mínimo de producción: 60 unidades</span>
+                      <span className="flex items-center gap-1" style={{ color: 'var(--error-on-secondary)' }}><Info size={12} /> Agrega al menos 1 unidad para continuar.</span>
                     ) : (
-                      <span className="flex items-center gap-1 font-bold" style={{ color: 'var(--success-on-secondary)' }}><CheckCircle2 size={12} /> Cantidad válida para producción</span>
+                      <span className="flex items-center gap-1 font-bold" style={{ color: 'var(--success-on-secondary)' }}><CheckCircle2 size={12} /> Cantidad válida</span>
                     )}
                   </div>
                 </div>
@@ -332,19 +343,27 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               </div>
             </motion.div>
 
+            {addError && (
+              <div className="flex items-start gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-[13px] font-bold">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <p>{addError}</p>
+              </div>
+            )}
+
             <div className="flex justify-end gap-6 pt-6">
                <Button variant="ghost" onClick={() => onNavigate(View.CATALOG)} style={{ color: '#475569' }}>Cancelar</Button>
                <Button
                 variant="primary"
-                className="px-16 cursor-pointer font-black"
+                className="px-16 cursor-pointer font-black flex items-center gap-2"
                 onClick={handleAddToCart}
-                disabled={quantity <= 0 || availableVariants.length === 0}
+                disabled={quantity <= 0 || availableVariants.length === 0 || isAddingToCart}
                 style={{
                   backgroundColor: 'var(--color-tertiary)',
-                  color: 'var(--text-on-tertiary)'
+                  color: 'var(--text-on-tertiary)',
+                  opacity: isAddingToCart ? 0.7 : 1,
                 }}
               >
-                Añadir al carrito
+                {isAddingToCart ? <><Loader2 size={16} className="animate-spin" /> Agregando...</> : 'Añadir al carrito'}
               </Button>
             </div>
           </div>
