@@ -242,12 +242,12 @@ kingstore-frontend :3000
 
 | Campo | Valor |
 |-------|-------|
-| IP EC2 | `52.205.138.95` |
-| Frontend | `http://52.205.138.95/` |
-| Admin | `http://52.205.138.95/admin` |
-| Comerciante | `http://52.205.138.95/comerciante/login` |
-| Backend | `http://52.205.138.95:8080` |
-| Conexión SSH | `ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com` |
+| IP EC2 | `100.57.218.181` |
+| Frontend | `http://100.57.218.181/` |
+| Admin | `http://100.57.218.181/admin` |
+| Comerciante | `http://100.57.218.181/comerciante/login` |
+| Backend | `http://100.57.218.181:8080` |
+| Conexión SSH | `ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com` |
 
 ### Imágenes en Docker Hub
 
@@ -268,7 +268,7 @@ kingstore-frontend :3000
 **1. Preparar el servidor:**
 
 ```bash
-ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
 
 sudo apt update
 sudo apt install -y docker.io docker-compose-v2
@@ -336,8 +336,8 @@ Ejecutar desde la raíz del proyecto (`/Frontend`) en tu máquina local:
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_API_URL=http://52.205.138.95:8080 \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=http://52.205.138.95:8080 \
+  --build-arg NEXT_PUBLIC_API_URL=http://100.57.218.181:8080 \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://100.57.218.181:8080 \
   --build-arg NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE=local \
   --build-arg NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE=local \
   -t bryanpisco/kingstore-frontend:latest .
@@ -352,7 +352,7 @@ docker push bryanpisco/kingstore-frontend:latest
 **3. Actualizar el servidor:**
 
 ```bash
-ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
 
 docker compose pull frontend
 docker compose up -d frontend
@@ -371,7 +371,7 @@ docker build -t bryanpisco/kingstore-backend:latest .
 docker push bryanpisco/kingstore-backend:latest
 
 # En el servidor: actualizar
-ssh -i "ingesoft_key.pem" ubuntu@ec2-52-205-138-95.compute-1.amazonaws.com
+ssh -i "kingstore_key.pem" ubuntu@ec2-100-57-218-181.compute-1.amazonaws.com
 docker compose pull backend
 docker compose up -d backend
 docker compose logs --tail=50 backend
