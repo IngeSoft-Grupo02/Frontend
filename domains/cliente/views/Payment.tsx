@@ -20,9 +20,10 @@ interface PaymentProps {
   onNavigate: (view: View) => void;
   onLogout?: () => void;
   cartCount: number;
+  onPaymentCompleted?: () => Promise<void> | void;
 }
 
-export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerToken, onNavigate, onLogout, cartCount }) => {
+export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerToken, onNavigate, onLogout, cartCount, onPaymentCompleted }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -101,6 +102,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
         cvv: cvc,
         ruc: voucherType === 'factura' ? ruc : undefined,
       });
+      await onPaymentCompleted?.();
       setIsSuccess(true);
     } catch (err) {
       setPaymentError(messageFromError(err, 'No se pudo registrar el pago. Inténtalo nuevamente.'));
@@ -112,7 +114,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
   if (isSuccess) {
     return (
       <div className="min-h-screen transition-colors duration-300 flex flex-col" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
-        <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} />
+        <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.PAYMENT} />
         <div className="flex-1 flex items-center justify-center p-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -166,7 +168,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
-      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} />
+      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.PAYMENT} />
 
       <div className="max-w-6xl mx-auto px-10 py-12">
         <button

@@ -328,7 +328,8 @@ export default function BulkUploadPage() {
       setIsFinished(true);
     } catch (error) {
       console.error("Error during execution: ", error);
-      alert("Ocurrió un error al procesar la carga masiva.");
+      setCsvErrors(['Ocurrió un error al procesar la carga masiva.']);
+      setCsvStatus('error');
     } finally {
       setIsExecuting(false);
     }

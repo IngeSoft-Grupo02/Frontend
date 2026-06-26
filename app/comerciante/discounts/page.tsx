@@ -27,7 +27,7 @@ import {
 import React, { useMemo, useState } from 'react';
 
 export default function DiscountsPage() {
-  const { discounts, products, addDiscount, updateDiscount, deleteDiscount } = useStore();
+  const { discounts, products, addDiscount, updateDiscount, deleteDiscount, refreshData } = useStore();
   const [filter, setFilter] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -164,6 +164,7 @@ export default function DiscountsPage() {
         });
       }
     } catch (error) {
+      await refreshData({ background: true });
       setFormErrors({ form: messageFromError(error, 'No se pudo guardar el descuento') });
       return;
     }
@@ -205,6 +206,7 @@ export default function DiscountsPage() {
     try {
       await updateDiscount(id, { status: currentStatus === 'Activa' ? 'Pausada' : 'Activa' });
     } catch (error) {
+      await refreshData({ background: true });
       setFormErrors({ form: messageFromError(error, 'No se pudo cambiar el estado') });
     }
   };

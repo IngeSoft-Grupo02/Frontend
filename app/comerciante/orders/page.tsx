@@ -5,6 +5,7 @@ import { Badge, Button, Card } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { generateDispatchGuide, generatePaymentReceipt } from '@/domains/comerciante/lib/orderDocuments';
 import { Order } from '@/domains/comerciante/lib/types';
+import { messageFromError } from '@/domains/shared/errors';
 import {
     ArrowRight,
     Box,
@@ -30,8 +31,25 @@ const formatOrderDate = (value?: string) => {
   return `${day}/${month}/${year}`;
 };
 
+const dateTimeOrNull = (value?: string) => {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const compareNullableDate = (first?: string, second?: string, direction: 'recientes' | 'antiguos' = 'recientes') => {
+  const firstTime = dateTimeOrNull(first);
+  const secondTime = dateTimeOrNull(second);
+  if (firstTime == null && secondTime == null) return 0;
+  if (firstTime == null) return 1;
+  if (secondTime == null) return -1;
+  return direction === 'recientes' ? secondTime - firstTime : firstTime - secondTime;
+};
+
+const getOrderSortDate = (order: Order) => order.createdAt || order.date;
+
 export default function OrdersPage() {
-  const { orders, updateOrder, store } = useStore();
+  const { orders, updateOrder, store, refreshData } = useStore();
   const storeOrders = useMemo(() =>
     orders.filter(o => o.storeId === store.id),
     [orders, store.id]
@@ -76,9 +94,7 @@ export default function OrdersPage() {
       const matchesTo = isInvalidRange || !dateTo || o.date <= dateTo;
       return matchesFilter && matchesSearch && matchesFrom && matchesTo;
     });
-    result.sort((a, b) =>
-      sortOrder === 'recientes' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
-    );
+    result.sort((a, b) => compareNullableDate(getOrderSortDate(a), getOrderSortDate(b), sortOrder));
     return result;
   }, [storeOrders, filter, searchTerm, sortOrder, dateFrom, dateTo, isInvalidRange]);
 
@@ -142,7 +158,8 @@ export default function OrdersPage() {
           setActionError('');
           await updateOrder(selectedOrder.id, { status: next });
         } catch (error) {
-          setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el pedido');
+          await refreshData({ background: true });
+          setActionError(messageFromError(error, 'El estado cambió. Actualizamos la información.'));
         }
       }
     }
@@ -161,7 +178,8 @@ export default function OrdersPage() {
         setActionError('');
         await updateOrder(selectedOrder.id, { status: newStatus });
       } catch (error) {
-        setActionError(error instanceof Error ? error.message : 'No se pudo actualizar el pedido');
+        await refreshData({ background: true });
+        setActionError(messageFromError(error, 'El estado cambió. Actualizamos la información.'));
       }
     }
   };
@@ -183,7 +201,8 @@ export default function OrdersPage() {
         setActionError('');
         await updateOrder(selectedOrder.id, { status: 'Cancelado' });
       } catch (error) {
-        setActionError(error instanceof Error ? error.message : 'No se pudo cancelar el pedido');
+        await refreshData({ background: true });
+        setActionError(messageFromError(error, 'Esta acción ya no está disponible para el estado actual.'));
       }
     }
   };

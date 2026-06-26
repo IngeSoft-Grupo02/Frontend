@@ -27,6 +27,23 @@ const formatRequestDate = (value?: string) => {
   return `${day}/${month}/${year}`;
 };
 
+const dateTimeOrNull = (value?: string) => {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const compareNullableDate = (first?: string, second?: string, direction: 'recientes' | 'antiguas' = 'recientes') => {
+  const firstTime = dateTimeOrNull(first);
+  const secondTime = dateTimeOrNull(second);
+  if (firstTime == null && secondTime == null) return 0;
+  if (firstTime == null) return 1;
+  if (secondTime == null) return -1;
+  return direction === 'recientes' ? secondTime - firstTime : firstTime - secondTime;
+};
+
+const getQuotationSortDate = (quote: Quote) => quote.requestedAt || quote.date;
+
 const StatCard = ({ title, value, icon: Icon, onClick }: any) => (
   <div
     onClick={onClick}
@@ -45,7 +62,7 @@ const StatCard = ({ title, value, icon: Icon, onClick }: any) => (
 );
 
 export default function QuotesPage() {
-  const { quotes, updateQuote, store } = useStore();
+  const { quotes, updateQuote, store, refreshData } = useStore();
   const storeQuotes = useMemo(() =>
     quotes.filter(q => q.storeId === store.id),
     [quotes, store.id]
@@ -88,9 +105,7 @@ export default function QuotesPage() {
       const matchesTo = isInvalidRange || !dateTo || q.date <= dateTo;
       return matchesFilter && matchesSearch && matchesFrom && matchesTo;
     });
-    result.sort((a, b) =>
-      sortOrder === 'recientes' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
-    );
+    result.sort((a, b) => compareNullableDate(getQuotationSortDate(a), getQuotationSortDate(b), sortOrder));
     return result;
   }, [storeQuotes, filter, searchTerm, sortOrder, dateFrom, dateTo, isInvalidRange]);
 
@@ -129,6 +144,7 @@ export default function QuotesPage() {
         setActionError('');
         await updateQuote(selectedQuoteId, { status, observations });
       } catch (error) {
+        await refreshData({ background: true });
         setActionError(messageFromError(error, 'No se pudo actualizar la cotización'));
       }
     }

@@ -22,7 +22,7 @@ import { useMemo, useRef, useState } from 'react';
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { products, deleteProduct, updateProduct, isLoading, apiError } = useStore();
+  const { products, deleteProduct, updateProduct, isLoading, apiError, refreshData } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [sortBy, setSortBy] = useState<'recent' | 'old' | 'more-stock' | 'less-stock'>('recent');
@@ -81,6 +81,7 @@ export default function ProductsPage() {
       await deleteProduct(deleteId);
       setDeleteId(null);
     } catch (error) {
+      await refreshData({ background: true });
       setActionError(messageFromError(error, 'No se pudo eliminar el producto'));
     } finally {
       isDeletingRef.current = false;
@@ -94,6 +95,7 @@ export default function ProductsPage() {
       setActionError('');
       await updateProduct(product.id, { status: newStatus });
     } catch (error) {
+      await refreshData({ background: true });
       setActionError(messageFromError(error, 'No se pudo actualizar el producto'));
     }
   };

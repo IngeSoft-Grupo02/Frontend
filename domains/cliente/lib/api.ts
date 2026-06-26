@@ -42,16 +42,25 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  } as Record<string, string>;
+  const authorizationHeader = headers.Authorization || headers.authorization;
+  const authPresent = Boolean(authorizationHeader);
+  const tokenLength = typeof authorizationHeader === 'string'
+    ? authorizationHeader.replace(/^Bearer\s+/i, '').length
+    : 0;
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
-    });
-  } catch {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch (networkError) {
+    console.warn(
+      `[API] ${method} ${path} -> sin respuesta (fetch falló):`,
+      networkError instanceof Error ? networkError.message : String(networkError),
+    );
     throw new ApiError('No se pudo conectar con el servidor. Intenta nuevamente.', 0);
   }
 
@@ -66,6 +75,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    // Diagnóstico no sensible (NO imprime el token, solo si se envió Authorization).
+    console.warn(
+      `[API] ${method} ${path} -> HTTP ${response.status} | Authorization: ${authPresent ? `sí (${tokenLength} chars)` : 'no'} | body: ${text ? text.slice(0, 200) : '(vacío)'}`,
+    );
+
+    // 401/403 en una request autenticada = token del cliente ausente/expirado/ inválido
+    // (el token de cliente caduca a 1h). No es un error genérico: la sesión expiró.
+    // Avisamos a la app para limpiar la sesión y volver a login, en vez de mostrar
+    // "Ocurrió un error" mientras el usuario sigue "logueado" con un token muerto.
+    if (authPresent && (response.status === 401 || response.status === 403)) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('kc:session-expired'));
+      }
+      throw new ApiError('Tu sesión expiró. Vuelve a iniciar sesión.', response.status);
+    }
+
     let message = `Error ${response.status}`;
     if (typeof data === 'string' && data.trim().length > 0) {
       message = data;
@@ -235,12 +260,12 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     productName: firstItem?.productName || firstItem?.product || `Cotización ${dto.id}`,
     quantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
     date: formatDate(dto.requestedAt),
-    amount: dto.totalAmount,
+    amount: dto.totalAmount ?? 0,
     status: toQuoteStatus(dto),
     hasDesign: Boolean(dto.description || dto.observations),
     rawStatus: dto.status,
-    subTotal: dto.subTotal,
-    discount: dto.discount,
+    subTotal: dto.subTotal ?? 0,
+    discount: dto.discount ?? 0,
     description: dto.description,
     observations: dto.observations,
     items,
@@ -319,7 +344,7 @@ export function fetchQuotation(slug: string, token: string, quoteId: string | nu
 
 function orderStatusLabel(rawStatus: string): Order['status'] {
   const map: Record<string, Order['status']> = {
-    PAYMENT_CONFIRMED: 'Pago pendiente',
+    PAYMENT_CONFIRMED: 'Pagado',
     IN_PREPARATION: 'En proceso',
     IN_TRANSIT: 'En camino',
     DELIVERED: 'Entregado',

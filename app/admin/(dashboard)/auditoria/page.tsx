@@ -3,6 +3,7 @@
 import { Badge, Card, Input, Select } from '@/domains/admin/components/UI';
 import { Button } from '@/domains/admin/components/UI';
 import { api, AuditLogResponse } from '@/domains/admin/lib/api';
+import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 import { Search, Loader2, AlertCircle, Download, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
@@ -58,14 +59,30 @@ export default function AuditoriaPage() {
   const [sortOrder,    setSortOrder]    = useState<'desc'|'asc'>('desc');
   const [dateFrom,     setDateFrom]     = useState('');
   const [dateTo,       setDateTo]       = useState('');
+  const hasLoadedLogsRef = useRef(false);
 
-  useEffect(() => {
-    setLoading(true); setError(null);
-    api.audit.getAll()
-        .then(setLogs)
-        .catch(e => setError(e.message))
-        .finally(() => setLoading(false));
+  const loadLogs = useCallback(async (background = false) => {
+    try {
+      if (!background) {
+        setLoading(true); setError(null);
+      }
+      const data = await api.audit.getAll();
+      setLogs(data);
+      hasLoadedLogsRef.current = true;
+    } catch (e: any) {
+      if (!background || !hasLoadedLogsRef.current) setError(e.message);
+    } finally {
+      if (!background) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  useAutoRefresh({
+    enabled: true,
+    intervalMs: 30000,
+    onRefresh: () => loadLogs(true),
+  });
 
   // Resetear página al cambiar filtros
   useEffect(() => { setPage(1); }, [filterLevel, searchUser, searchTenant, sortOrder, dateFrom, dateTo]);

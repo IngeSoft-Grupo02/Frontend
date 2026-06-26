@@ -10,6 +10,7 @@ import { Store, User } from '../types';
 export const CUSTOMER_TOKEN_KEY = 'kc_customer_token';
 export const CUSTOMER_USER_KEY = 'kc_customer_user';
 export const CUSTOMER_STORE_KEY = 'kc_customer_store';
+const CUSTOMER_SESSION_EXPIRED_KEY = 'kc_customer_session_expired';
 
 function readJSON<T>(key: string): T | null {
   if (typeof window === 'undefined') return null;
@@ -33,6 +34,38 @@ function writeJSON<T>(key: string, value: T | null): void {
 export function getStoredCustomerToken(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(CUSTOMER_TOKEN_KEY);
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return JSON.parse(window.atob(padded)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export function isCustomerTokenUsable(token: string | null): token is string {
+  if (!token) return false;
+  if (typeof window === 'undefined') return false;
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== 'number') return false;
+  return payload.exp * 1000 > Date.now();
+}
+
+export function markCustomerSessionExpired(): void {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(CUSTOMER_SESSION_EXPIRED_KEY, '1');
+}
+
+export function consumeCustomerSessionExpired(): boolean {
+  if (typeof window === 'undefined') return false;
+  const expired = window.sessionStorage.getItem(CUSTOMER_SESSION_EXPIRED_KEY) === '1';
+  window.sessionStorage.removeItem(CUSTOMER_SESSION_EXPIRED_KEY);
+  return expired;
 }
 
 export function setStoredCustomerToken(token: string | null): void {

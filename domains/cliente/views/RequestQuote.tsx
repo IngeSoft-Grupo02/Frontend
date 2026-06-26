@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -112,16 +112,30 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const amountBeforeDiscount = subtotal + designFeeAmount;
 
-  const discountRate = quantity >= 300 ? 0.08 : quantity >= 100 ? 0.05 : 0;
+  const applicableDiscount = (product?.discounts || [])
+    .filter((discount) => quantity >= discount.minQuantity && quantity <= discount.maxQuantity)
+    .reduce((best, discount) => Math.max(best, discount.discountPercentage || 0), 0);
+  const discountRate = applicableDiscount / 100;
   const discountAmount = amountBeforeDiscount * discountRate;
 
   const total = amountBeforeDiscount - discountAmount;
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
-      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} showSearch={false} cartCount={cartCount} />
+      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} showSearch={false} cartCount={cartCount} currentView={View.REQUEST_QUOTE} />
 
-      <div className="max-w-7xl mx-auto px-10 py-12 flex gap-12">
+      <div className="max-w-7xl mx-auto px-10 pt-12">
+        <button
+          type="button"
+          onClick={() => onNavigate(product ? View.PRODUCT_DETAIL : View.CATALOG)}
+          className="mb-10 flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer"
+          style={{ color: '#475569' }}
+        >
+          <ArrowLeft size={16} /> {product ? 'Volver al producto' : 'Volver al catálogo'}
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-10 pb-12 flex gap-12">
         <main className="flex-1">
           <header className="mb-12">
             <div className="flex items-center gap-3 text-[12px] font-bold uppercase tracking-widest mb-6 opacity-60">

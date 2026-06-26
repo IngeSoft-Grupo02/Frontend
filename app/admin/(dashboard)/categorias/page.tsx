@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/domains/admin/lib/api';
 import { Badge, Button, Card, Input } from '@/domains/admin/components/UI';
 import { AnimatePresence, motion } from 'motion/react';
 import { Plus, Search, Edit2, X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 
 interface Category { id: number; storeCategoryName: string; active: boolean; }
 
@@ -91,16 +92,30 @@ export default function CategoriasPage() {
   const [editTarget,    setEditTarget]    = useState<Category|null>(null);
   const [actionLoading, setActionLoading] = useState<number|null>(null);
   const [successMsg,    setSuccessMsg]    = useState<string|null>(null);
+  const hasLoadedCategoriesRef = useRef(false);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (background = false) => {
     try {
-      setLoading(true); setError(null);
+      if (!background) {
+        setLoading(true); setError(null);
+      }
       const data = await api.categories.getAll({ search: searchTerm || undefined });
       setCategories(data);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+      hasLoadedCategoriesRef.current = true;
+    } catch (e: any) {
+      if (!background || !hasLoadedCategoriesRef.current) setError(e.message);
+    } finally {
+      if (!background) setLoading(false);
+    }
   }, [searchTerm]);
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
+
+  useAutoRefresh({
+    enabled: true,
+    intervalMs: 30000,
+    onRefresh: () => loadCategories(true),
+  });
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -114,7 +129,7 @@ export default function CategoriasPage() {
       else            await api.categories.reactivate(cat.id);
       showSuccess(`"${cat.storeCategoryName}" ${cat.active ? 'desactivada' : 'reactivada'}.`);
       await loadCategories();
-    } catch (e: any) { alert(e.message); } finally { setActionLoading(null); }
+    } catch (e: any) { setError(e.message); } finally { setActionLoading(null); }
   };
 
   const handleDelete = async (cat: Category) => {
@@ -124,7 +139,7 @@ export default function CategoriasPage() {
       await api.categories.delete(cat.id);
       showSuccess(`"${cat.storeCategoryName}" eliminada.`);
       await loadCategories();
-    } catch (e: any) { alert(e.message); } finally { setActionLoading(null); }
+    } catch (e: any) { setError(e.message); } finally { setActionLoading(null); }
   };
 
   const filtered = categories.filter(c => {

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { View, Store, User, Product, Quote, Order, RegisterCustomerDTO } from './types';
 import { Directory } from './views/Directory';
 import { Catalog } from './views/Catalog';
@@ -28,24 +29,23 @@ import {
   createQuotation,
   fetchCart,
   fetchCustomerMe,
+  fetchOrder,
+  fetchQuotation,
   loginCustomer,
   registerCustomer,
   removeCartItem,
   toCartItems,
+  toOrder,
   toQuote,
 } from './lib/api';
 import { mapCustomerToUser } from './lib/customer';
+import { consumeCustomerSessionExpired } from './lib/session';
 import { getColorLabel } from '../shared/colors';
 import { messageFromError } from '../shared/errors';
+import { useAutoRefresh } from '../shared/hooks/useAutoRefresh';
+import { PROTECTED_CLIENT_VIEWS, viewToClientePath, ClienteRouteParams } from './lib/navigation';
 
 // Vistas que requieren sesión de cliente iniciada (ya protegidas en renderCurrentView)
-const PROTECTED_VIEWS = new Set<View>([
-  View.REQUEST_QUOTE,
-  View.MY_QUOTES,
-  View.MY_ORDERS,
-  View.PROFILE,
-]);
-
 export default function App() {
   const {
     currentView,
@@ -67,13 +67,80 @@ export default function App() {
     setSelectedOrder,
     cartItems,
     setCartItems,
+    isHydrated,
   } = useApp();
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [cartAlreadySubmitted, setCartAlreadySubmitted] = useState(false);
+
+  const getRouteParams = React.useCallback((overrides: ClienteRouteParams = {}): ClienteRouteParams => ({
+    productId: overrides.productId ?? selectedProduct?.id,
+    quotationId: overrides.quotationId ?? selectedQuote?.id,
+    orderId: overrides.orderId ?? selectedOrder?.realId ?? selectedOrder?.id,
+  }), [selectedOrder?.id, selectedOrder?.realId, selectedProduct?.id, selectedQuote?.id]);
+
+  const pathForView = React.useCallback((view: View, params: ClienteRouteParams = {}) => (
+    viewToClientePath(view, selectedStore?.slug, getRouteParams(params))
+  ), [getRouteParams, selectedStore?.slug]);
+
+  const moveToView = React.useCallback((view: View, params: ClienteRouteParams = {}, options: { replace?: boolean } = {}) => {
+    const nextPath = pathForView(view, params);
+    if (nextPath && pathname !== nextPath) {
+      if (options.replace) router.replace(nextPath);
+      else router.push(nextPath);
+    }
+    setCurrentView(view);
+  }, [pathForView, pathname, router, setCurrentView]);
+
+  useEffect(() => {
+    if (!consumeCustomerSessionExpired()) return;
+    setCartItems([]);
+    setCartError(null);
+    setCartAlreadySubmitted(false);
+    setAuthError('Tu sesión expiró. Vuelve a iniciar sesión.');
+    moveToView(View.AUTH_LOGIN, {}, { replace: true });
+  });
+
+  // Sesión de cliente expirada/ inválida (token vencido): api.ts emite este evento
+  // al recibir 401/403 en una request autenticada. Limpiamos la sesión y enviamos a
+  // login con un mensaje claro, en vez de dejar al usuario "logueado" con un token muerto.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      logout();
+      setCartItems([]);
+      setCartError(null);
+      setCartAlreadySubmitted(false);
+      setAuthError('Tu sesión expiró. Vuelve a iniciar sesión.');
+      moveToView(View.AUTH_LOGIN, {}, { replace: true });
+    };
+    window.addEventListener('kc:session-expired', onSessionExpired);
+    return () => window.removeEventListener('kc:session-expired', onSessionExpired);
+  }, [logout, moveToView, setCartItems]);
+
+  // Aislamiento por tienda: al cambiar de tienda activa (slug), limpiar el carrito en
+  // memoria para no arrastrar el conteo/contenido de la tienda anterior. Cada tienda
+  // recarga su propio carrito (en login y en el auto-refresh de la vista de carrito).
+  useEffect(() => {
+    setCartItems([]);
+  }, [selectedStore?.slug, setCartItems]);
+
+  useEffect(() => {
+    if (!isHydrated || currentUser || !selectedStore?.slug) return;
+    if (!PROTECTED_CLIENT_VIEWS.has(currentView)) return;
+
+    const returnTo = pathForView(currentView);
+    setPendingView(currentView);
+    setAuthError(null);
+    const loginPath = `${viewToClientePath(View.AUTH_LOGIN, selectedStore.slug)}?returnTo=${encodeURIComponent(returnTo)}`;
+    if (pathname !== loginPath) router.replace(loginPath);
+    setCurrentView(View.AUTH_LOGIN);
+  }, [currentUser, currentView, isHydrated, pathForView, pathname, router, selectedStore?.slug, setCurrentView, setPendingView]);
 
   const handleSelectStore = (store: Store) => {
     // If the user is logged in to a different store, log them out
@@ -82,22 +149,23 @@ export default function App() {
     }
 
     setSelectedStore(store);
+    router.push(viewToClientePath(View.STOREFRONT_PUBLIC, store.slug));
     setCurrentView(View.STOREFRONT_PUBLIC);
   };
 
   const handleSelectQuote = (quote: Quote) => {
     setSelectedQuote(quote);
-    setCurrentView(View.QUOTE_DETAIL);
+    moveToView(View.QUOTE_DETAIL, { quotationId: quote.id });
   };
 
   const handleSelectOrder = (order: Order) => {
     setSelectedOrder(order);
-    setCurrentView(View.ORDER_DETAIL);
+    moveToView(View.ORDER_DETAIL, { orderId: order.realId ?? order.id });
   };
 
   const handlePayOrder = (order: Order) => {
     setSelectedOrder(order);
-    setCurrentView(View.PAYMENT);
+    moveToView(View.PAYMENT, { orderId: order.realId ?? order.id });
   };
 
   const loadCart = async (slug: string, token: string) => {
@@ -105,6 +173,38 @@ export default function App() {
     setCartItems(toCartItems(cart));
     return cart;
   };
+
+  const refreshSelectedQuote = React.useCallback(async () => {
+    if (!selectedStore?.slug || !customerToken || !selectedQuote?.id) return;
+    const quotation = await fetchQuotation(selectedStore.slug, customerToken, selectedQuote.id);
+    setSelectedQuote(toQuote(quotation));
+  }, [selectedStore?.slug, customerToken, selectedQuote?.id, setSelectedQuote]);
+
+  const refreshSelectedOrder = React.useCallback(async () => {
+    if (!selectedStore?.slug || !customerToken || !selectedOrder?.realId) return;
+    const order = await fetchOrder(selectedStore.slug, customerToken, selectedOrder.realId);
+    setSelectedOrder(toOrder(order));
+  }, [selectedStore?.slug, customerToken, selectedOrder?.realId, setSelectedOrder]);
+
+  useAutoRefresh({
+    enabled: currentView === View.CART && Boolean(selectedStore?.slug && customerToken) && !isSubmittingQuote,
+    intervalMs: 10000,
+    onRefresh: async () => {
+      await loadCart(selectedStore!.slug!, customerToken!);
+    },
+  });
+
+  useAutoRefresh({
+    enabled: currentView === View.QUOTE_DETAIL && Boolean(selectedStore?.slug && customerToken && selectedQuote?.id),
+    intervalMs: 6000,
+    onRefresh: refreshSelectedQuote,
+  });
+
+  useAutoRefresh({
+    enabled: (currentView === View.ORDER_DETAIL || currentView === View.PAYMENT) && Boolean(selectedStore?.slug && customerToken && selectedOrder?.realId),
+    intervalMs: 7000,
+    onRefresh: refreshSelectedOrder,
+  });
 
   const addToCart = async (item: any): Promise<void> => {
     // Al agregar un producto nuevo iniciamos un carrito limpio: descartamos
@@ -114,7 +214,7 @@ export default function App() {
 
     if (!selectedStore?.slug || !customerToken || !selectedProduct?.variants) {
       setCartItems(prev => [...prev, { ...item, id: `cart_${Date.now()}` }]);
-      setCurrentView(View.CART);
+      moveToView(View.CART);
       return;
     }
 
@@ -149,7 +249,7 @@ export default function App() {
     } else {
       await loadCart(selectedStore.slug, customerToken);
     }
-    setCurrentView(View.CART);
+    moveToView(View.CART);
   };
 
   const removeFromCart = async (id: string) => {
@@ -181,9 +281,10 @@ export default function App() {
     setCartAlreadySubmitted(false);
     try {
       const quotation = await createQuotation(selectedStore.slug, customerToken);
-      setSelectedQuote(toQuote(quotation));
+      const mappedQuote = toQuote(quotation);
+      setSelectedQuote(mappedQuote);
       await loadCart(selectedStore.slug, customerToken);
-      setCurrentView(View.QUOTE_DETAIL);
+      moveToView(View.QUOTE_DETAIL, { quotationId: mappedQuote.id });
     } catch (err) {
       const msg = messageFromError(err, 'No se pudo crear la cotización.');
       setCartError(msg);
@@ -204,7 +305,7 @@ export default function App() {
   const handleLogin = async (email: string, password: string) => {
     if (!selectedStore?.slug) {
       setAuthError('Selecciona una tienda antes de iniciar sesión.');
-      setCurrentView(View.DIRECTORY);
+      moveToView(View.DIRECTORY);
       return;
     }
 
@@ -221,14 +322,21 @@ export default function App() {
       } catch (cartError) {
         cartLoadError = true;
         setCartItems([]);
-        console.error('No se pudo cargar el carrito del cliente.', cartError);
+        // Solo el mensaje (string), no el objeto Error, para no disparar el overlay de Next.js.
+        console.warn('No se pudo cargar el carrito del cliente:', cartError instanceof Error ? cartError.message : String(cartError));
       }
 
       const nextView = pendingView ?? View.CATALOG;
       setPendingView(null);
-      setCurrentView(nextView);
+      const returnTo = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('returnTo') : null;
+      if (returnTo && selectedStore.slug && returnTo.startsWith(`/${selectedStore.slug}/`)) {
+        router.push(returnTo);
+        setCurrentView(nextView);
+        return;
+      }
+      moveToView(nextView);
       if (cartLoadError) {
-        console.error('No se pudo cargar el carrito tras el inicio de sesión.');
+        console.warn('No se pudo cargar el carrito tras el inicio de sesión.');
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -246,7 +354,7 @@ export default function App() {
   const handleRegister = async (dto: RegisterCustomerDTO) => {
     if (!selectedStore?.slug) {
       setAuthError('Selecciona una tienda antes de registrarte.');
-      setCurrentView(View.DIRECTORY);
+      moveToView(View.DIRECTORY);
       return;
     }
 
@@ -264,9 +372,9 @@ export default function App() {
   const handleLogout = () => {
     logout();
     if (!selectedStore) {
-      setCurrentView(View.DIRECTORY);
+      moveToView(View.DIRECTORY);
     } else {
-      setCurrentView(View.STOREFRONT_PUBLIC);
+      moveToView(View.STOREFRONT_PUBLIC);
     }
   };
 
@@ -276,23 +384,25 @@ export default function App() {
 
   const navigateToProduct = (product: Product) => {
       setSelectedProduct(product);
-      setCurrentView(View.PRODUCT_DETAIL);
+      moveToView(View.PRODUCT_DETAIL, { productId: product.id });
   };
 
   // Navegación con soporte de "pendingView": si la vista destino requiere sesión
   // y no hay un cliente autenticado, redirige a login y recuerda a dónde volver.
   const navigate = (view: View) => {
-    if (PROTECTED_VIEWS.has(view) && !currentUser) {
+    if (PROTECTED_CLIENT_VIEWS.has(view) && !currentUser) {
       if (!selectedStore) {
-        setCurrentView(View.DIRECTORY);
+        moveToView(View.DIRECTORY);
         return;
       }
       setAuthError(null);
       setPendingView(view);
+      const returnTo = pathForView(view);
+      router.push(`${viewToClientePath(View.AUTH_LOGIN, selectedStore.slug)}?returnTo=${encodeURIComponent(returnTo)}`);
       setCurrentView(View.AUTH_LOGIN);
       return;
     }
-    setCurrentView(view);
+    moveToView(view);
   };
 
   const renderCurrentView = () => {
@@ -331,7 +441,7 @@ export default function App() {
 
       case View.PRODUCT_DETAIL:
         if (!selectedStore || !selectedProduct) return <Catalog store={selectedStore!} user={currentUser} onNavigate={navigate} onLogout={handleLogout} onSelectProduct={navigateToProduct} cartCount={cartItems.length} />;
-        return <ProductDetail store={selectedStore} user={currentUser} product={selectedProduct} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
+        return <ProductDetail store={selectedStore} user={currentUser} product={selectedProduct} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onProductUpdated={setSelectedProduct} />;
 
       case View.REQUEST_QUOTE:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
@@ -353,7 +463,7 @@ export default function App() {
 
       case View.PAYMENT:
         if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
-        return <Payment store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
+        return <Payment store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onPaymentCompleted={refreshSelectedOrder} />;
 
       case View.MY_ORDERS:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

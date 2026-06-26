@@ -44,7 +44,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
 
   return (
     <div className="min-h-screen pb-20 transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
-      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} />
+      <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.ORDER_DETAIL} />
       
       <div className="max-w-7xl mx-auto px-10 py-12">
         <button 

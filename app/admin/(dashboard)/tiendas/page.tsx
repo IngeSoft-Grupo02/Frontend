@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -23,6 +23,7 @@ import {
 } from '@/domains/admin/components/admin/StoreForm';
 import { api, StoreCategoryResponse, StoreResponse } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 
 const STATUS_MAP: Record<string, string> = {
   ACTIVE: 'Activa',
@@ -70,22 +71,34 @@ export default function TiendasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const hasLoadedStoresRef = useRef(false);
   const [sortOrder, setSortOrder] = useState('Más reciente');
 
-  const loadStores = useCallback(async () => {
+  const loadStores = useCallback(async (background = false) => {
     try {
-      setLoading(true);
-      setError(null);
+      if (!background) {
+        setLoading(true);
+        setError(null);
+      }
       const data = await api.stores.getAll({ search: searchTerm || undefined, status: filterStatus || undefined });
       setStores(data);
+      hasLoadedStoresRef.current = true;
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'No se pudieron cargar las tiendas.');
+      if (!background || !hasLoadedStoresRef.current) {
+        setError(loadError instanceof Error ? loadError.message : 'No se pudieron cargar las tiendas.');
+      }
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [searchTerm, filterStatus]);
 
   useEffect(() => { loadStores(); }, [loadStores]);
+
+  useAutoRefresh({
+    enabled: true,
+    intervalMs: 30000,
+    onRefresh: () => loadStores(true),
+  });
 
   useEffect(() => {
     api.categories.getAll().then(setCategories).catch(() => setCategories([]));
@@ -190,7 +203,7 @@ export default function TiendasPage() {
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4 text-red-600 px-6 text-center">
             <div className="flex items-center gap-3"><AlertCircle size={20} /> {error}</div>
-            <Button type="button" variant="secondary" onClick={loadStores}>Reintentar</Button>
+            <Button type="button" variant="secondary" onClick={() => loadStores()}>Reintentar</Button>
           </div>
         ) : (
           <div className="overflow-x-auto">

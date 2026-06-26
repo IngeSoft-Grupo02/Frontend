@@ -3,6 +3,7 @@
 import { Badge, Button, Card, Input, Select } from '@/domains/admin/components/UI';
 import { api, UserResponseDTO } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 import { Plus, UploadCloud, X, Loader2, AlertCircle, Search, RefreshCw } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
@@ -33,8 +34,9 @@ export default function UsuariosPage() {
   const [searchTerm,    setSearchTerm]    = useState('');
   const [filterRole,    setFilterRole]    = useState('');
   const [filterStore,   setFilterStore]   = useState('');
+  const hasLoadedUsersRef = useRef(Boolean(_cachedUsers));
 
-  const loadData = useCallback(async (force = false) => {
+  const loadData = useCallback(async (force = false, background = false) => {
     const now = Date.now();
     // Usar caché si está vigente y no es forzado
     if (!force && _cachedUsers && (now - _cacheTime) < CACHE_TTL) {
@@ -43,16 +45,29 @@ export default function UsuariosPage() {
       return;
     }
     try {
-      setLoading(true); setError(null);
+      if (!background) {
+        setLoading(true); setError(null);
+      }
       const u = await api.users.getAll();
       _cachedUsers = u;
       _cacheTime = Date.now();
       setUsers(u);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
+      hasLoadedUsersRef.current = true;
+    } catch (e: any) {
+      if (!background || !hasLoadedUsersRef.current) setError(e.message);
+    }
+    finally {
+      if (!background) setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useAutoRefresh({
+    enabled: true,
+    intervalMs: 30000,
+    onRefresh: () => loadData(true, true),
+  });
 
   const filtered = users.filter(u => {
     const name = `${u.firstName ?? ''} ${u.paternalSurname ?? ''} ${u.email}`.toLowerCase();
@@ -70,7 +85,7 @@ export default function UsuariosPage() {
       _cachedUsers = null; // Invalidar caché
       setShowDetail(null);
       await loadData(true);
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { setError(e.message); }
     finally { setActionLoading(false); }
   };
 

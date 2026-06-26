@@ -12,6 +12,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { messageFromError } from '../../shared/errors';
+import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
 
 interface MyQuotesProps {
   store: Store;
@@ -28,30 +29,44 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
   const [quotes, setQuotes] = React.useState<Quote[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const hasQuotesRef = React.useRef(false);
+
+  const loadQuotes = React.useCallback(async (background = false) => {
+    if (!store.slug || !customerToken) return;
+
+    if (!background) {
+      setLoading(true);
+      setError(null);
+    }
+
+    try {
+      const data = await fetchQuotations(store.slug, customerToken);
+      setQuotes(data.map(toQuote));
+      hasQuotesRef.current = true;
+      setError(null);
+    } catch (err) {
+      if (!background || !hasQuotesRef.current) {
+        if (!background) {
+          // Registramos solo el mensaje (string), no el objeto Error: pasar un Error
+          // a console.error dispara el overlay de error de Next.js/Turbopack en desarrollo.
+          console.warn('No se pudieron cargar las cotizaciones del cliente:', err instanceof Error ? err.message : String(err));
+        }
+        setError(messageFromError(err, 'No se pudieron cargar tus cotizaciones. Inténtalo nuevamente.'));
+      }
+    } finally {
+      if (!background) setLoading(false);
+    }
+  }, [store.slug, customerToken]);
 
   React.useEffect(() => {
-    if (!store.slug || !customerToken) return;
-    let active = true;
-    setLoading(true);
-    setError(null);
+    void loadQuotes(false);
+  }, [loadQuotes]);
 
-    fetchQuotations(store.slug, customerToken)
-      .then((data) => {
-        if (!active) return;
-        setQuotes(data.map(toQuote));
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(messageFromError(err, 'No se pudieron cargar tus cotizaciones.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [store.slug, customerToken]);
+  useAutoRefresh({
+    enabled: Boolean(store.slug && customerToken),
+    intervalMs: 9000,
+    onRefresh: () => loadQuotes(true),
+  });
 
   const filteredQuotes = selectedStatus === 'Todas'
     ? quotes
@@ -144,7 +159,9 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
             <div className="w-20 h-20 border rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
               <FileSearch size={32} />
             </div>
-            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>No hay cotizaciones para este filtro</h4>
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
+              {quotes.length === 0 ? 'Aún no tienes cotizaciones registradas.' : 'No hay cotizaciones para este filtro'}
+            </h4>
             <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>Cuando envíes una cotización desde el carrito, aparecerá aquí.</p>
             <Button variant="primary" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }} onClick={() => onNavigate(View.CATALOG)}>
               Ver catálogo

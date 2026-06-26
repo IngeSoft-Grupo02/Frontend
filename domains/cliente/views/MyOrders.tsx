@@ -12,6 +12,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { messageFromError } from '../../shared/errors';
+import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
 
 interface MyOrdersProps {
   store: Store;
@@ -37,33 +38,47 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const hasOrdersRef = React.useRef(false);
 
-  React.useEffect(() => {
+  const loadOrders = React.useCallback(async (background = false) => {
     if (!store.slug || !customerToken) return;
-    let active = true;
-    setLoading(true);
-    setError(null);
 
-    fetchOrders(store.slug, customerToken)
-      .then((data) => {
-        if (!active) return;
-        setOrders(data.map(toOrder));
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(messageFromError(err, 'No se pudieron cargar tus pedidos.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    if (!background) {
+      setLoading(true);
+      setError(null);
+    }
 
-    return () => {
-      active = false;
-    };
+    try {
+      const data = await fetchOrders(store.slug, customerToken);
+      setOrders(data.map(toOrder));
+      hasOrdersRef.current = true;
+      setError(null);
+    } catch (err) {
+      if (!background || !hasOrdersRef.current) {
+        if (!background) {
+          // Registramos solo el mensaje (string), no el objeto Error: pasar un Error
+          // a console.error dispara el overlay de error de Next.js/Turbopack en desarrollo.
+          console.warn('No se pudieron cargar los pedidos del cliente:', err instanceof Error ? err.message : String(err));
+        }
+        setError(messageFromError(err, 'No se pudieron cargar tus pedidos. Inténtalo nuevamente.'));
+      }
+    } finally {
+      if (!background) setLoading(false);
+    }
   }, [store.slug, customerToken]);
 
+  React.useEffect(() => {
+    void loadOrders(false);
+  }, [loadOrders]);
+
+  useAutoRefresh({
+    enabled: Boolean(store.slug && customerToken),
+    intervalMs: 9000,
+    onRefresh: () => loadOrders(true),
+  });
+
   const statusStep = (status: Order['status']): number => {
-    const steps: Order['status'][] = ['Pago pendiente', 'En proceso', 'En camino', 'Entregado'];
+    const steps: Order['status'][] = ['Pagado', 'En proceso', 'En camino', 'Entregado'];
     const idx = steps.indexOf(status);
     return idx >= 0 ? idx : 0;
   };
@@ -99,7 +114,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
             <div className="w-20 h-20 border rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
               <ShoppingBag size={32} />
             </div>
-            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>Aún no tienes pedidos</h4>
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>Aún no tienes pedidos registrados.</h4>
             <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>
               Cuando una cotización sea aprobada, tu pedido aparecerá aquí.
             </p>
@@ -151,7 +166,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   {/* Timeline de estado */}
                   <div className="flex-1 flex items-center gap-2 px-6 border-x mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
                     {[
-                      { label: 'Pendiente', icon: CreditCard },
+                      { label: 'Pagado', icon: CreditCard },
                       { label: 'En proceso', icon: Clock },
                       { label: 'En camino', icon: Truck },
                       { label: 'Entregado', icon: CheckCircle2 },

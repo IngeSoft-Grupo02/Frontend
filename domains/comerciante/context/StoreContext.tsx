@@ -3,7 +3,13 @@ import { mockDiscounts, mockOrders, mockProducts, mockQuotes, mockStores } from 
 import { merchantApi, merchantSession, isTokenExpired, MerchantUser, BulkUploadResult } from '@/domains/comerciante/lib/api';
 import { Discount, Order, Product, Quote, Store } from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
+import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
+import { usePathname } from 'next/navigation';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+
+interface RefreshDataOptions {
+  background?: boolean;
+}
 
 interface StoreState {
   products: Product[];
@@ -26,7 +32,7 @@ interface StoreState {
   setUser: React.Dispatch<React.SetStateAction<MerchantUser | null>>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  refreshData: () => Promise<void>;
+  refreshData: (options?: RefreshDataOptions) => Promise<void>;
   updateProfile: (updates: Partial<MerchantUser>) => Promise<MerchantUser>;
   updatePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
   addProduct: (product: Product | Omit<Product, 'id'>) => Promise<Product | void>;
@@ -68,6 +74,7 @@ const preserveLocalPreviewLogo = (source: Store, saved: Store) => {
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [quotes, setQuotes] = useState<Quote[]>(mockQuotes);
@@ -102,10 +109,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     id: `ST-${Math.floor(Math.random() * 1000000)}`
   });
 
-  const loadScopedData = useCallback(async (storeId: string) => {
+  const loadScopedData = useCallback(async (storeId: string, options: RefreshDataOptions = {}) => {
     if (!merchantSession.getToken()) return;
-    setIsLoading(true);
-    setApiError(null);
+    const background = Boolean(options.background);
+    if (!background) {
+      setIsLoading(true);
+      setApiError(null);
+    }
     try {
       const [nextProducts, nextOrders, nextQuotes, nextDiscounts] = await Promise.all([
         merchantApi.products(storeId),
@@ -118,9 +128,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setQuotes(nextQuotes);
       setDiscounts(nextDiscounts);
     } catch (error) {
+      if (background) return;
       setApiError(messageFromError(error, 'No se pudo cargar la información de la tienda'));
     } finally {
-      setIsLoading(false);
+      if (!background) setIsLoading(false);
     }
   }, []);
 
@@ -207,6 +218,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [store.id, hasBackendSession, loadScopedData]);
 
+  const refreshIntervalMs = React.useMemo(() => {
+    if (!pathname) return null;
+    if (pathname.startsWith('/comerciante/quotes') || pathname.startsWith('/comerciante/orders')) return 6000;
+    if (pathname === '/comerciante' || pathname.startsWith('/comerciante/dashboard')) return 8000;
+    if (
+      pathname.startsWith('/comerciante/products') ||
+      pathname.startsWith('/comerciante/discounts') ||
+      pathname.startsWith('/comerciante/carga-masiva')
+    ) {
+      return 15000;
+    }
+    return null;
+  }, [pathname]);
+
+  useAutoRefresh({
+    enabled: Boolean(hasBackendSession && store.id && refreshIntervalMs),
+    intervalMs: refreshIntervalMs,
+    onRefresh: () => loadScopedData(store.id, { background: true }),
+  });
+
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     setApiError(null);
@@ -238,10 +269,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStore(fallbackStore);
   }, []);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (options: RefreshDataOptions = {}) => {
     if (!hasBackendSession) return;
-    await initializeSession();
-  }, [hasBackendSession, initializeSession]);
+    await loadScopedData(store.id, options);
+  }, [hasBackendSession, loadScopedData, store.id]);
 
   const updateProfile = useCallback(async (updates: Partial<MerchantUser>) => {
     if (!hasBackendSession) {
@@ -269,8 +300,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     const created = await merchantApi.createProduct(p, store.id);
     setProducts(prev => [created, ...prev]);
+    await loadScopedData(store.id, { background: true });
     return created;
-  }, [hasBackendSession, store.id]);
+  }, [hasBackendSession, loadScopedData, store.id]);
 
   const updateProduct = useCallback(async (id: string, updates: Partial<Product>) => {
     const current = products.find(item => item.id === id);
@@ -289,22 +321,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ? await merchantApi.updateProductActive(id, activeFromProductStatus(updates.status), store.id)
       : await merchantApi.updateProduct(merged, store.id);
     setProducts(prev => prev.map(item => item.id === id ? updated : item));
+    await loadScopedData(store.id, { background: true });
     return updated;
-  }, [hasBackendSession, products, store.id]);
+  }, [hasBackendSession, loadScopedData, products, store.id]);
 
   const deleteProduct = useCallback(async (id: string) => {
     if (hasBackendSession) {
       await merchantApi.deleteProduct(id, store.id);
+      await loadScopedData(store.id, { background: true });
     }
     setProducts(prev => prev.filter(item => item.id !== id));
-  }, [hasBackendSession, store.id]);
+  }, [hasBackendSession, loadScopedData, store.id]);
 
   const bulkUploadProducts = useCallback(async (productsCsv: File, imagesZip?: File) => {
     if (!hasBackendSession) {
       return { productsCreated: 0, variantsProcessed: 0, imagesUploaded: 0, errors: [] };
     }
     const result = await merchantApi.bulkProducts(productsCsv, imagesZip, store.id);
-    await loadScopedData(store.id);
+    await loadScopedData(store.id, { background: true });
     return result;
   }, [hasBackendSession, loadScopedData, store.id]);
 
@@ -318,8 +352,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     const updated = await merchantApi.updateOrderStatus(id, updates.status, store.id);
     setOrders(prev => prev.map(order => order.id === id ? updated : order));
+    await loadScopedData(store.id, { background: true });
     return updated;
-  }, [hasBackendSession, orders, store.id]);
+  }, [hasBackendSession, loadScopedData, orders, store.id]);
 
   const updateQuote = useCallback(async (id: string, updates: Partial<Quote>) => {
     const current = quotes.find(quote => quote.id === id);
@@ -331,8 +366,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     const updated = await merchantApi.updateQuoteStatus(id, updates.status, updates.observations, store.id);
     setQuotes(prev => prev.map(quote => quote.id === id ? updated : quote));
+    await loadScopedData(store.id, { background: true });
     return updated;
-  }, [hasBackendSession, quotes, store.id]);
+  }, [hasBackendSession, loadScopedData, quotes, store.id]);
 
   const addDiscount = useCallback(async (d: Discount) => {
     if (discounts.length >= MAX_DISCOUNTS_PER_STORE) {
@@ -344,8 +380,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     const created = await merchantApi.createDiscount(d, store.id);
     setDiscounts(prev => [...prev, created]);
+    await loadScopedData(store.id, { background: true });
     return created;
-  }, [discounts.length, hasBackendSession, store.id]);
+  }, [discounts.length, hasBackendSession, loadScopedData, store.id]);
 
   const updateDiscount = useCallback(async (id: string, updates: Partial<Discount>) => {
     const current = discounts.find(item => item.id === id);
@@ -356,15 +393,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     const updated = await merchantApi.updateDiscount(id, merged, store.id);
     setDiscounts(prev => prev.map(disc => disc.id === id ? updated : disc));
+    await loadScopedData(store.id, { background: true });
     return updated;
-  }, [discounts, hasBackendSession, store.id]);
+  }, [discounts, hasBackendSession, loadScopedData, store.id]);
 
   const deleteDiscount = useCallback(async (id: string) => {
     if (hasBackendSession) {
       await merchantApi.deleteDiscount(id, store.id);
+      await loadScopedData(store.id, { background: true });
     }
     setDiscounts(prev => prev.filter(disc => disc.id !== id));
-  }, [hasBackendSession, store.id]);
+  }, [hasBackendSession, loadScopedData, store.id]);
 
   const addStore = useCallback(async (s: Omit<Store, 'id'>) => {
     if (shouldUseStoreApi && !hasBackendSession) {

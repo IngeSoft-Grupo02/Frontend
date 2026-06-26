@@ -6,6 +6,9 @@ import {
   getStoredCustomerStore,
   getStoredCustomerToken,
   getStoredCustomerUser,
+  isCustomerTokenUsable,
+  clearCustomerSession,
+  markCustomerSessionExpired,
   setStoredCustomerStore,
   setStoredCustomerToken,
   setStoredCustomerUser,
@@ -34,6 +37,7 @@ interface AppContextType {
   setCartItems: React.Dispatch<React.SetStateAction<any[]>>;
   addToCart: (item: any) => void;
   removeFromCart: (id: string) => void;
+  isHydrated: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,8 +59,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const storedUser = getStoredCustomerUser();
     const storedToken = getStoredCustomerToken();
     if (storedStore) setSelectedStore(storedStore);
-    if (storedUser) setCurrentUser(storedUser);
-    if (storedToken) setCustomerToken(storedToken);
+    if (storedUser && isCustomerTokenUsable(storedToken)) {
+      setCurrentUser(storedUser);
+      setCustomerToken(storedToken);
+    } else if (storedUser || storedToken) {
+      clearCustomerSession();
+      markCustomerSessionExpired();
+    }
     setHydrated(true);
   }, []);
 
@@ -121,6 +130,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCartItems,
         addToCart,
         removeFromCart,
+        isHydrated: hydrated,
       }}
     >
       {children}

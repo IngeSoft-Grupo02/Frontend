@@ -25,6 +25,10 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
   const headerBg = isDirectory ? '#0F1011' : '#FFFFFF';
   const headerText = isDirectory ? '#FFFFFF' : '#0F1011';
   const headerBorder = isDirectory ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const isInicioActive = currentView === View.STOREFRONT_PUBLIC;
+  const isCatalogActive = currentView === View.CATALOG || currentView === View.PRODUCT_DETAIL || currentView === View.REQUEST_QUOTE;
+  const isQuotesActive = currentView === View.MY_QUOTES || currentView === View.QUOTE_DETAIL;
+  const isOrdersActive = currentView === View.MY_ORDERS || currentView === View.ORDER_DETAIL || currentView === View.PAYMENT;
 
   return (
     <header className="h-[80px] border-b flex items-center px-10 sticky top-0 z-[100] justify-between transition-colors duration-300" style={{ backgroundColor: headerBg, color: headerText, borderColor: headerBorder }}>
@@ -66,8 +70,8 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
                   }
                   onNavigate(View.STOREFRONT_PUBLIC);
                 }} 
-                className={`text-[13px] transition-colors py-1 cursor-pointer ${currentView === View.STOREFRONT_PUBLIC ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
-                style={currentView === View.STOREFRONT_PUBLIC ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
+                className={`text-[13px] transition-colors py-1 cursor-pointer ${isInicioActive ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
+                style={isInicioActive ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
               >
                 Inicio
               </button>
@@ -78,22 +82,22 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
                   }
                   onNavigate(View.CATALOG);
                 }} 
-                className={`text-[13px] transition-colors py-1 cursor-pointer ${currentView === View.CATALOG ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
-                style={currentView === View.CATALOG ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
+                className={`text-[13px] transition-colors py-1 cursor-pointer ${isCatalogActive ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
+                style={isCatalogActive ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
               >
                 Catálogo
               </button>
               <button 
                 onClick={() => onNavigate(View.MY_QUOTES)} 
-                className={`text-[13px] transition-colors py-1 cursor-pointer ${currentView === View.MY_QUOTES ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
-                style={currentView === View.MY_QUOTES ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
+                className={`text-[13px] transition-colors py-1 cursor-pointer ${isQuotesActive ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
+                style={isQuotesActive ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
               >
                 Cotizaciones
               </button>
               <button 
                 onClick={() => onNavigate(View.MY_ORDERS)} 
-                className={`text-[13px] transition-colors py-1 cursor-pointer ${currentView === View.MY_ORDERS ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
-                style={currentView === View.MY_ORDERS ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
+                className={`text-[13px] transition-colors py-1 cursor-pointer ${isOrdersActive ? 'font-black border-b-2' : 'font-bold opacity-70 hover:opacity-100'}`}
+                style={isOrdersActive ? { color: isDirectory ? '#FFFFFF' : 'var(--color-tertiary-text)', borderColor: isDirectory ? '#FFFFFF' : 'var(--color-tertiary)' } : { color: headerText }}
               >
                 Pedidos
               </button>

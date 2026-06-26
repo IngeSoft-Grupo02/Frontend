@@ -60,6 +60,7 @@ export interface Order {
   items: number;
   total: number;
   date: string;
+  createdAt?: string;
   isUrgent?: boolean;
   hasCustomization?: boolean;
   // Datos reales expuestos por el backend (contrato Comerciante).
@@ -85,7 +86,9 @@ export interface Quote {
   total: number;
   subtotal: number;
   date: string;
+  requestedAt?: string;
   responseDate?: string;
+  responseAt?: string;
   items: {
     product: string;
     variant: string;

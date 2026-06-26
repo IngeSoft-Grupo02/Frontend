@@ -449,6 +449,7 @@ export const mapOrder = (raw: JsonValue): Order => {
     items: Number(raw.items ?? (itemsDetail ? itemsDetail.length : 0)),
     total: Number(raw.finalTotal ?? raw.total ?? 0),
     date: raw.createdAt ? String(raw.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
     itemsDetail,
     customerEmail: raw.customerEmail || undefined,
     customerPhone: raw.customerPhone || undefined,
@@ -510,8 +511,10 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   total: Number(raw.totalAmount || 0),
   subtotal: Number(raw.subTotal || 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
+  requestedAt: raw.requestedAt ? String(raw.requestedAt) : undefined,
   // responseAt es null mientras está pendiente; queda undefined para mostrar "Pendiente".
   responseDate: raw.responseAt ? String(raw.responseAt).slice(0, 10) : undefined,
+  responseAt: raw.responseAt ? String(raw.responseAt) : undefined,
   items: (raw.items || []).map((item: JsonValue) => ({
     product: item.productName || item.name || item.product || 'Producto sin nombre registrado',
     variant: buildVariantLabel(item),

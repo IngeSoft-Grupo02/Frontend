@@ -20,6 +20,7 @@ import { fetchPublicProducts, toProduct } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
 import { messageFromError } from '../../shared/errors';
+import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
 
 interface CatalogProps {
   store: Store;
@@ -73,6 +74,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasProductsRef = React.useRef(false);
 
   useEffect(() => {
     setShowFullCatalog(initialShowFullCatalog);
@@ -83,29 +85,37 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
     return () => { delete (window as any).setShowFullCatalog; };
   }, [setShowFullCatalog]);
 
-  useEffect(() => {
+  const loadProducts = React.useCallback(async (background = false) => {
     if (!store.slug) return;
-    let active = true;
-    setLoading(true);
-    setError(null);
 
-    fetchPublicProducts(store.slug, searchQuery)
-      .then((data) => {
-        if (!active) return;
-        setProducts(data.map((product) => toProduct(product, store.slug || store.id)));
-      })
-      .catch((err) => {
-        if (!active) return;
+    if (!background) {
+      setLoading(true);
+      setError(null);
+    }
+
+    try {
+      const data = await fetchPublicProducts(store.slug, searchQuery);
+      setProducts(data.map((product) => toProduct(product, store.slug || store.id)));
+      hasProductsRef.current = true;
+      setError(null);
+    } catch (err) {
+      if (!background || !hasProductsRef.current) {
         setError(messageFromError(err, 'No se pudieron cargar los productos. Intenta nuevamente.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      }
+    } finally {
+      if (!background) setLoading(false);
+    }
   }, [store.id, store.slug, searchQuery]);
+
+  useEffect(() => {
+    void loadProducts(false);
+  }, [loadProducts]);
+
+  useAutoRefresh({
+    enabled: Boolean(store.slug),
+    intervalMs: 20000,
+    onRefresh: () => loadProducts(true),
+  });
 
   const availableSizes = useMemo(() => Array.from(new Set(products.flatMap((product) => product.sizes))).sort(), [products]);
   const availableColors = useMemo(() => Array.from(new Set(products.flatMap((product) => product.colors))).sort(), [products]);

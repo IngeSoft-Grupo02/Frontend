@@ -539,11 +539,12 @@ export function CargaMasivaScreen() {
       images:    ['zip'],
     };
     if (!allowedExts[key].includes(ext)) {
-      alert(`Archivo inválido. Solo se permiten: ${allowedExts[key].join(', ').toUpperCase()}.\nRecibido: .${ext}`);
+      setGlobalError(`Archivo inválido. Solo se permiten: ${allowedExts[key].join(', ').toUpperCase()}. Recibido: .${ext}`);
       return;
     }
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      alert(`El archivo supera el límite de ${MAX_FILE_MB} MB.`); return;
+      setGlobalError(`El archivo supera el límite de ${MAX_FILE_MB} MB.`);
+      return;
     }
     // Guardar file en estado y lanzar validación
     setBlocks(prev => {
