@@ -38,6 +38,7 @@ export interface CartItem {
   specs: string;
   hasDesign: boolean;
   price: number;
+  quoteDescription?: string | null;
 }
 
 export interface Store {
@@ -304,10 +305,15 @@ export interface OrderResponseDTO {
 export interface PaymentPayload {
   ruc?: string;
   paymentMethod: 'VIRTUAL' | 'CASH_ON_DELIVERY';
+  receiptType: 'BOLETA' | 'FACTURA';
   cardNumber: string;
   cardHolder: string;
   expiryDate: string;
   cvv: string;
+}
+
+export interface QuotationCreatePayload {
+  description?: string | null;
 }
 
 export interface PaymentResponseDTO {

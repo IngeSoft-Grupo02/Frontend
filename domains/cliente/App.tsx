@@ -78,6 +78,7 @@ export default function App() {
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [cartAlreadySubmitted, setCartAlreadySubmitted] = useState(false);
+  const [quotationDescription, setQuotationDescription] = useState('');
 
   const getRouteParams = React.useCallback((overrides: ClienteRouteParams = {}): ClienteRouteParams => ({
     productId: overrides.productId ?? selectedProduct?.id,
@@ -194,6 +195,16 @@ export default function App() {
     },
   });
 
+  useEffect(() => {
+    if (quotationDescription.trim() || cartItems.length === 0) return;
+    const descriptions = cartItems
+      .map((item) => String(item.quoteDescription || '').split('\nArchivos referenciales pendientes de S3:')[0].trim())
+      .filter(Boolean);
+    if (descriptions.length > 0) {
+      setQuotationDescription(Array.from(new Set(descriptions)).join('\n'));
+    }
+  }, [cartItems, quotationDescription]);
+
   useAutoRefresh({
     enabled: currentView === View.QUOTE_DETAIL && Boolean(selectedStore?.slug && customerToken && selectedQuote?.id),
     intervalMs: 6000,
@@ -234,10 +245,18 @@ export default function App() {
 
       const addedItem = latestCart.items.find((cartItem) => cartItem.productVariantId === variant.id);
       if (addedItem && (item.specs || item.files?.length > 0)) {
+        const customerDescription = String(item.specs || '').trim();
         const designDescription = [
           item.specs,
           item.files?.length ? `Archivos referenciales pendientes de S3: ${item.files.map((file: any) => file.name).join(', ')}` : '',
         ].filter(Boolean).join('\n');
+        if (customerDescription) {
+          setQuotationDescription((current) => {
+            const trimmed = current.trim();
+            if (!trimmed) return customerDescription;
+            return trimmed.includes(customerDescription) ? trimmed : `${trimmed}\n${customerDescription}`;
+          });
+        }
         latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
           description: designDescription,
         });
@@ -269,7 +288,7 @@ export default function App() {
     }
   };
 
-  const submitCartQuotation = async () => {
+  const submitCartQuotation = async (description?: string) => {
     if (!selectedStore?.slug || !customerToken) {
       navigate(View.AUTH_LOGIN);
       return;
@@ -280,9 +299,10 @@ export default function App() {
     setCartError(null);
     setCartAlreadySubmitted(false);
     try {
-      const quotation = await createQuotation(selectedStore.slug, customerToken);
+      const quotation = await createQuotation(selectedStore.slug, customerToken, { description });
       const mappedQuote = toQuote(quotation);
       setSelectedQuote(mappedQuote);
+      setQuotationDescription('');
       await loadCart(selectedStore.slug, customerToken);
       moveToView(View.QUOTE_DETAIL, { quotationId: mappedQuote.id });
     } catch (err) {
@@ -450,7 +470,7 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} quotationDescription={quotationDescription} onQuotationDescriptionChange={setQuotationDescription} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

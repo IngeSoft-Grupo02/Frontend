@@ -15,15 +15,17 @@ interface CartProps {
   user: User | null;
   items: CartItem[];
   onRemoveItem: (id: string) => void;
-  onCreateQuotation: () => void;
+  onCreateQuotation: (description?: string) => void;
   onNavigate: (view: View) => void;
   onLogout?: () => void;
   isSubmitting?: boolean;
   cartError?: string | null;
   cartAlreadySubmitted?: boolean;
+  quotationDescription?: string;
+  onQuotationDescriptionChange?: (description: string) => void;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -135,6 +137,22 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                   </div>
                 </div>
 
+                <div className="mb-8 space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider opacity-70">
+                    Descripción para la tienda
+                  </label>
+                  <textarea
+                    value={quotationDescription}
+                    onChange={(event) => onQuotationDescriptionChange?.(event.target.value)}
+                    placeholder="Indica detalles, fechas, acabados o comentarios para esta cotización."
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-4 py-3 rounded-xl border text-[13px] font-medium resize-none focus:outline-none"
+                    style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                  />
+                  <p className="text-[10px] text-right opacity-50 font-bold">{quotationDescription.length}/500</p>
+                </div>
+
                 {!user && (
                    <div className="p-4 rounded-xl mb-6 flex items-start gap-3 border text-[11px] font-medium" style={{ backgroundColor: '#FDFBF7', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#0F1011' }}>
                     <Info size={16} className="text-red-500 mt-0.5 shrink-0" />
@@ -152,7 +170,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     if (!user) {
                       onNavigate(View.AUTH_LOGIN);
                     } else {
-                      onCreateQuotation();
+                      onCreateQuotation(quotationDescription);
                     }
                   }}
                 >

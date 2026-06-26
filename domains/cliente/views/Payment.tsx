@@ -12,6 +12,8 @@ import { messageFromError } from '../../shared/errors';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 
+type ReceiptType = 'BOLETA' | 'FACTURA';
+
 interface PaymentProps {
   store: Store;
   user: User | null;
@@ -27,7 +29,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [voucherType, setVoucherType] = useState<'boleta' | 'factura'>('boleta');
+  const [receiptType, setReceiptType] = useState<ReceiptType>('BOLETA');
   const [ruc, setRuc] = useState('');
   const [rucError, setRucError] = useState<string | null>(null);
 
@@ -38,7 +40,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
 
   const cleanCard = cardNumber.replace(/\s/g, '');
 
-  const rucValid = voucherType === 'boleta' || ruc.length === 11;
+  const rucValid = receiptType === 'BOLETA' || ruc.length === 11;
 
   const isFormValid = () => {
     const isVisa = cleanCard.startsWith('4');
@@ -56,7 +58,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
   };
 
   const handleRucBlur = () => {
-    if (voucherType === 'factura' && ruc.length > 0 && ruc.length < 11) {
+    if (receiptType === 'FACTURA' && ruc.length > 0 && ruc.length < 11) {
       setRucError('El RUC debe tener exactamente 11 dígitos.');
     }
   };
@@ -83,7 +85,11 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
       setPaymentError('No se pudo iniciar el pago. Inténtalo nuevamente.');
       return;
     }
-    if (voucherType === 'factura' && ruc.length !== 11) {
+    if (!receiptType) {
+      setPaymentError('El tipo de comprobante es obligatorio.');
+      return;
+    }
+    if (receiptType === 'FACTURA' && ruc.length !== 11) {
       setRucError('El RUC debe tener exactamente 11 dígitos.');
       return;
     }
@@ -96,11 +102,12 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
     try {
       await payOrder(store.slug, customerToken, order.realId, {
         paymentMethod: 'VIRTUAL',
+        receiptType,
         cardNumber: cleanCard,
         cardHolder: cardName.trim(),
         expiryDate: expiryForBackend,
         cvv: cvc,
-        ruc: voucherType === 'factura' ? ruc : undefined,
+        ruc: receiptType === 'FACTURA' ? ruc : undefined,
       });
       await onPaymentCompleted?.();
       setIsSuccess(true);
@@ -210,29 +217,29 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   Tipo de Comprobante
                 </label>
                 <div className="grid grid-cols-2 gap-4">
-                  {(['boleta', 'factura'] as const).map((type) => (
+                  {(['BOLETA', 'FACTURA'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
-                      onClick={() => { setVoucherType(type); setRucError(null); }}
+                      onClick={() => { setReceiptType(type); setRucError(null); setPaymentError(null); }}
                       className="py-4 px-6 rounded-2xl border-2 transition-all font-black text-[14px] flex items-center justify-center gap-3 cursor-pointer"
                       style={{
-                        borderColor: voucherType === type ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.1)',
-                        backgroundColor: voucherType === type ? 'var(--color-primary)' : 'var(--color-secondary)',
+                        borderColor: receiptType === type ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.1)',
+                        backgroundColor: receiptType === type ? 'var(--color-primary)' : 'var(--color-secondary)',
                         color: 'var(--text-on-secondary)',
                       }}
                     >
-                      <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: voucherType === type ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.2)' }}>
-                        {voucherType === type && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-tertiary)' }} />}
+                      <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: receiptType === type ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.2)' }}>
+                        {receiptType === type && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-tertiary)' }} />}
                       </div>
-                      {type === 'boleta' ? 'Boleta de Venta' : 'Factura'}
+                      {type === 'BOLETA' ? 'Boleta de Venta' : 'Factura'}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Campo RUC solo para factura */}
-              {voucherType === 'factura' && (
+              {receiptType === 'FACTURA' && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest px-1 opacity-80" style={{ color: 'var(--text-on-secondary)' }}>
                     Número de RUC

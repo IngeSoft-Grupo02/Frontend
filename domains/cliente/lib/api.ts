@@ -18,6 +18,7 @@ import {
   PrimaryColor,
   Product,
   ProductPublicDTO,
+  QuotationCreatePayload,
   QuotationResponseDTO,
   Quote,
   RegisterCustomerDTO,
@@ -227,6 +228,7 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     specs: [item.size, item.color ? getColorLabel(item.color) : ''].filter(Boolean).join(' / '),
     hasDesign: Boolean(item.customDesign),
     price: item.price,
+    quoteDescription: item.customDesign?.description ?? null,
   }));
 }
 
@@ -323,10 +325,14 @@ export function addCartDesign(
   });
 }
 
-export function createQuotation(slug: string, token: string): Promise<QuotationResponseDTO> {
+export function createQuotation(slug: string, token: string, payload: QuotationCreatePayload = {}): Promise<QuotationResponseDTO> {
+  const body = {
+    description: payload.description?.trim() ? payload.description.trim() : null,
+  };
   return request<QuotationResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations`, {
     method: 'POST',
     headers: authHeaders(token),
+    body: JSON.stringify(body),
   });
 }
 

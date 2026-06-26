@@ -33,6 +33,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/expiry date must be in mm\/yy format/i, 'La fecha de vencimiento debe tener formato MM/AA.'],
   [/card has expired/i, 'La tarjeta está vencida.'],
   [/payment method is required/i, 'El método de pago es obligatorio.'],
+  [/receipt type is required/i, 'El tipo de comprobante es obligatorio.'],
   [/order cannot be (found|paid|processed)/i, 'No se pudo procesar el pago del pedido.'],
 ];
 

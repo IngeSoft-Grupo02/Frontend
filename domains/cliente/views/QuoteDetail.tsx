@@ -90,10 +90,17 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   </div>
                 )}
 
-                {(quote.description || quote.observations) && (
+                {quote.description && (
                   <div className="py-8 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-3">Detalle adicional</span>
-                    <p className="text-[13px] font-bold whitespace-pre-line opacity-80">{quote.description || quote.observations}</p>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-3">Descripción de la solicitud</span>
+                    <p className="text-[13px] font-bold whitespace-pre-line opacity-80">{quote.description}</p>
+                  </div>
+                )}
+
+                {quote.observations && (
+                  <div className="py-8 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-3">Observación de la tienda</span>
+                    <p className="text-[13px] font-bold whitespace-pre-line opacity-80">{quote.observations}</p>
                   </div>
                 )}
               </div>
