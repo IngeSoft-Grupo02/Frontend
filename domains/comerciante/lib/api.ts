@@ -60,6 +60,24 @@ function handleUnauthorized() {
   window.dispatchEvent(new Event('merchant:session-expired'));
 }
 
+function normalizeMerchantErrorMessage(message: string, status: number): string {
+  const normalized = message
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (
+    status === 401 ||
+    normalized.includes('invalid credentials') ||
+    normalized.includes('bad_credentials') ||
+    normalized.includes('contras')
+  ) {
+    return 'La contraseña ingresada es incorrecta.';
+  }
+
+  return message;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = merchantSession.getToken();
   const headers = new Headers(options.headers);
@@ -94,7 +112,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } catch {
       // Keep plain-text backend errors as-is.
     }
-    throw new Error(message);
+    throw new Error(normalizeMerchantErrorMessage(message, response.status));
   }
 
   if (response.status === 204) return undefined as T;

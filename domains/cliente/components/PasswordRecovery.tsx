@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, KeyRound, Loader2, Mail, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Mail, ShieldAlert } from 'lucide-react';
 import {
   isStrongPassword,
   PASSWORD_REQUIREMENTS_MESSAGE,
@@ -9,17 +9,30 @@ import {
   resetPassword,
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
+import { getStoredCustomerStore } from '@/domains/cliente/lib/session';
 import { Button } from './ui/Button';
 
 type Step = 'request' | 'sent' | 'validating' | 'reset' | 'success' | 'invalid';
 
-export function PasswordRecovery({ token }: { token: string | null }) {
+export function PasswordRecovery({ token, storeSlug }: { token: string | null; storeSlug?: string | null }) {
   const [step, setStep] = useState<Step>(token ? 'validating' : 'request');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const passwordHasMinLength = password.length >= 8;
+  const passwordHasRequiredCharacters =
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+  const passwordsMatch =
+    password.length > 0 &&
+    confirmPassword.length > 0 &&
+    password === confirmPassword;
 
   useEffect(() => {
     if (!token) return;
@@ -37,7 +50,8 @@ export function PasswordRecovery({ token }: { token: string | null }) {
     setLoading(true);
     setError('');
     try {
-      await requestPasswordReset(email);
+      const selectedStoreSlug = storeSlug?.trim() || getStoredCustomerStore()?.slug;
+      await requestPasswordReset(email, selectedStoreSlug);
       setStep('sent');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.');
@@ -118,8 +132,58 @@ export function PasswordRecovery({ token }: { token: string | null }) {
               <h1 className="text-3xl font-extrabold">Nueva contraseña</h1>
               <p className="mt-2 text-sm text-text-secondary">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
             </header>
-            <input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Nueva contraseña" className="w-full rounded-xl border border-border-subtle px-4 py-3" />
-            <input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} placeholder="Confirmar contraseña" className="w-full rounded-xl border border-border-subtle px-4 py-3" />
+            <div className="relative">
+              <input
+                type={showPassword && password ? 'text' : 'password'}
+                value={password}
+                onChange={event => setPassword(event.target.value)}
+                placeholder="Nueva contraseña"
+                className="w-full rounded-xl border border-border-subtle px-4 py-3 pr-12"
+              />
+              {password && (
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}
+                  onClick={() => setShowPassword(value => !value)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary transition-colors hover:text-text-primary"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type={showConfirmPassword && confirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={event => setConfirmPassword(event.target.value)}
+                placeholder="Confirmar contraseña"
+                className="w-full rounded-xl border border-border-subtle px-4 py-3 pr-12"
+              />
+              {confirmPassword && (
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
+                  onClick={() => setShowConfirmPassword(value => !value)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary transition-colors hover:text-text-primary"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              )}
+            </div>
+            <div className="rounded-xl border border-border-subtle bg-warm-bg p-4">
+              <h2 className="text-xs font-extrabold uppercase text-text-primary">Requisitos de contraseña</h2>
+              <ul className="mt-3 space-y-2 text-sm text-text-secondary">
+                <li className={passwordHasMinLength ? 'font-bold text-green-600' : ''}>
+                  {passwordHasMinLength ? '✓' : '○'} Mínimo 8 caracteres
+                </li>
+                <li className={passwordsMatch ? 'font-bold text-green-600' : ''}>
+                  {passwordsMatch ? '✓' : '○'} Las contraseñas deben coincidir
+                </li>
+                <li className={passwordHasRequiredCharacters ? 'font-bold text-green-600' : ''}>
+                  {passwordHasRequiredCharacters ? '✓' : '○'} Debe incluir mayúscula, minúscula, número y símbolo
+                </li>
+              </ul>
+            </div>
             {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
             <Button type="submit" fullWidth disabled={loading}>{loading ? 'Guardando...' : 'Guardar contraseña'}</Button>
           </form>

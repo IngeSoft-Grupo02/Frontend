@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input } from '@/domains/admin/components/UI';
 import { motion } from 'motion/react';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import {
   isStrongPassword,
   PASSWORD_REQUIREMENTS_MESSAGE,
@@ -22,6 +22,8 @@ function RecuperarContrasenaContent() {
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -87,6 +89,17 @@ function RecuperarContrasenaContent() {
   const handleBackToLogin = () => {
     router.push(ADMIN_ROUTES.login);
   };
+
+  const newPasswordHasMinLength = newPassword.length >= 8;
+  const newPasswordHasRequiredCharacters =
+    /[A-Z]/.test(newPassword) &&
+    /[a-z]/.test(newPassword) &&
+    /\d/.test(newPassword) &&
+    /[^A-Za-z0-9]/.test(newPassword);
+  const passwordsMatch =
+    newPassword.length > 0 &&
+    confirmPassword.length > 0 &&
+    newPassword === confirmPassword;
 
   return (
     <div className="min-h-screen bg-brand-bg flex items-center justify-center p-6 lg:p-10 overflow-hidden">
@@ -269,29 +282,55 @@ function RecuperarContrasenaContent() {
                 </p>
 
                 <div className="space-y-6">
-                  <Input 
-                    label="Nueva contraseña" 
-                    type="password"
-                    placeholder="••••••••••••"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value);
-                      setError('');
-                    }}
-                    error={error && newPassword.length > 0 && newPassword.length < 8 ? 'Mínimo 8 caracteres' : ''}
-                  />
+                  <div className="relative">
+                    <Input 
+                      label="Nueva contraseña" 
+                      type={showNewPassword && newPassword ? 'text' : 'password'}
+                      placeholder="••••••••••••"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setError('');
+                      }}
+                      className="pr-12"
+                      error={error && newPassword.length > 0 && newPassword.length < 8 ? 'Mínimo 8 caracteres' : ''}
+                    />
+                    {newPassword && (
+                      <button
+                        type="button"
+                        aria-label={showNewPassword ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}
+                        onClick={() => setShowNewPassword(value => !value)}
+                        className="absolute right-4 top-10 text-neutral-400 transition-colors hover:text-brand-black"
+                      >
+                        {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    )}
+                  </div>
 
-                  <Input 
-                    label="Confirmar contraseña" 
-                    type="password"
-                    placeholder="••••••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setError('');
-                    }}
-                    error={error && confirmPassword.length > 0 && newPassword !== confirmPassword ? 'Las contraseñas no coinciden' : ''}
-                  />
+                  <div className="relative">
+                    <Input 
+                      label="Confirmar contraseña" 
+                      type={showConfirmPassword && confirmPassword ? 'text' : 'password'}
+                      placeholder="••••••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setError('');
+                      }}
+                      className="pr-12"
+                      error={error && confirmPassword.length > 0 && newPassword !== confirmPassword ? 'Las contraseñas no coinciden' : ''}
+                    />
+                    {confirmPassword && (
+                      <button
+                        type="button"
+                        aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
+                        onClick={() => setShowConfirmPassword(value => !value)}
+                        className="absolute right-4 top-10 text-neutral-400 transition-colors hover:text-brand-black"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    )}
+                  </div>
 
                   {error && (
                     <div className="bg-red-50 text-red-700 p-4 rounded-xl text-[14px] font-bold">
@@ -304,13 +343,15 @@ function RecuperarContrasenaContent() {
                       Requisitos de contraseña
                     </h4>
                     <ul className="space-y-2 text-[13px] text-neutral-600">
-                      <li className={newPassword.length >= 8 ? 'text-brand-green font-bold' : ''}>
-                        {newPassword.length >= 8 ? '✓' : '○'} Mínimo 8 caracteres
+                      <li className={newPasswordHasMinLength ? 'text-brand-green font-bold' : ''}>
+                        {newPasswordHasMinLength ? '✓' : '○'} Mínimo 8 caracteres
                       </li>
-                      <li className={newPassword !== confirmPassword || newPassword === '' ? 'text-neutral-600' : 'text-brand-green font-bold'}>
-                        {newPassword !== confirmPassword && confirmPassword !== '' ? '✗' : '○'} Las contraseñas deben coincidir
+                      <li className={passwordsMatch ? 'text-brand-green font-bold' : 'text-neutral-600'}>
+                        {passwordsMatch ? '✓' : '○'} Las contraseñas deben coincidir
                       </li>
-                      <li>○ Debe incluir mayúscula, minúscula, número y símbolo</li>
+                      <li className={newPasswordHasRequiredCharacters ? 'text-brand-green font-bold' : 'text-neutral-600'}>
+                        {newPasswordHasRequiredCharacters ? '✓' : '○'} Debe incluir mayúscula, minúscula, número y símbolo
+                      </li>
                     </ul>
                   </div>
 

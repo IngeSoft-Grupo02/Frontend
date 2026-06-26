@@ -21,10 +21,12 @@ function RecoveryPageContent() {
   const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passError, setPassError] = useState('');
   const [loading, setLoading] = useState(false);
   const token = searchParams.get('token');
+  const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
 
   useEffect(() => {
     if (token) {
@@ -102,15 +104,37 @@ function RecoveryPageContent() {
           <form onSubmit={handleReset} className="space-y-6">
             <div className="space-y-4">
               <div className="relative">
-                <Input type={showPass ? 'text' : 'password'} label="Nueva contraseña" placeholder="Min. 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-10 text-brand-text-muted hover:text-brand-black transition-colors">{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                <Input type={showPassword && password ? 'text' : 'password'} label="Nueva contraseña" placeholder="Min. 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-12" />
+                {password && (
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}
+                    onClick={() => setShowPassword(value => !value)}
+                    className="absolute right-4 top-10 text-brand-text-muted transition-colors hover:text-brand-black"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
               </div>
-              <Input type={showPass ? 'text' : 'password'} label="Confirmar contraseña" placeholder="Repite la contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={passError} />
+              <div className="relative">
+                <Input type={showConfirmPassword && confirmPassword ? 'text' : 'password'} label="Confirmar contraseña" placeholder="Repite la contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={passError} className="pr-12" />
+                {confirmPassword && (
+                  <button
+                    type="button"
+                    aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
+                    onClick={() => setShowConfirmPassword(value => !value)}
+                    className="absolute right-4 top-10 text-brand-text-muted transition-colors hover:text-brand-black"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="bg-brand-neutral-light border border-brand-neutral-border rounded-xl p-5 space-y-3">
               <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest leading-none">Tu contraseña debe cumplir</p>
               <div className="space-y-2">
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${password.length >= 8 ? 'text-green-600' : 'text-brand-text-muted'}`}>{password.length >= 8 ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Mínimo 8 caracteres</div>
+                <div className={`flex items-center gap-2 text-[12px] font-bold ${passwordsMatch ? 'text-green-600' : 'text-brand-text-muted'}`}>{passwordsMatch ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Las contraseñas deben coincidir</div>
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[A-Z]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Al menos una mayúscula</div>
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[0-9]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[0-9]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Al menos un número</div>
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Minúscula y símbolo</div>

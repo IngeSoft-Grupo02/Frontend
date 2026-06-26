@@ -69,10 +69,17 @@ export default function LoginPage() {
 
     } catch (err: any) {
       const msg = err.message || '';
-      if (msg.includes('403') || msg.toLowerCase().includes('forbidden')) {
+      const status = typeof err.status === 'number' ? err.status : 0;
+      const normalizedMsg = msg.toLowerCase();
+      if (status === 403 || normalizedMsg.includes('403') || normalizedMsg.includes('forbidden')) {
         setLoginError('Acceso denegado. Tu cuenta no tiene rol de administrador.');
-      } else if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
-        setLoginError('Credenciales incorrectas. Verifica tu correo y contraseña.');
+      } else if (
+        status === 401 ||
+        normalizedMsg.includes('401') ||
+        normalizedMsg.includes('unauthorized') ||
+        normalizedMsg.includes('bad_credentials')
+      ) {
+        setLoginError('La contraseña ingresada es incorrecta.');
       } else {
         setLoginError('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
       }

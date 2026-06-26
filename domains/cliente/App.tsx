@@ -105,7 +105,13 @@ export default function App() {
       setPendingView(null);
       setCurrentView(nextView);
     } catch (err) {
-      setAuthError(err instanceof ApiError ? err.message : 'No se pudo iniciar sesión. Intenta nuevamente.');
+      if (err instanceof ApiError) {
+        const isBadCredentials =
+          err.status === 401 || err.message.toLowerCase() === 'invalid credentials';
+        setAuthError(isBadCredentials ? 'La contraseña ingresada es incorrecta.' : err.message);
+      } else {
+        setAuthError('No se pudo iniciar sesión. Intenta nuevamente.');
+      }
     } finally {
       setAuthLoading(false);
     }

@@ -6,7 +6,12 @@ import { PasswordRecovery } from '@/domains/cliente/components/PasswordRecovery'
 
 function RecuperacionContent() {
   const searchParams = useSearchParams();
-  return <PasswordRecovery token={searchParams.get('token')} />;
+  return (
+    <PasswordRecovery
+      token={searchParams.get('token')}
+      storeSlug={searchParams.get('store')}
+    />
+  );
 }
 
 export default function RecuperacionPage() {

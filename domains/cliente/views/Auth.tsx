@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, CreditCard, Phone, Calendar, Users, AlertCircle, CheckCircle2, Circle } from 'lucide-react';
+import { User, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, CreditCard, Phone, Calendar, Users, AlertCircle, CheckCircle2, Circle, Eye, EyeOff } from 'lucide-react';
 import { Store, View, RegisterCustomerDTO } from '../types';
 import { Button } from '../components/ui/Button';
 
@@ -57,6 +57,7 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [verificationCode, setVerificationCode] = useState('');
   const [isResending, setIsResending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const passwordRequirements = {
     length: formData.password.length >= 8,
@@ -637,23 +638,39 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
                       type="button"
                       className="text-[11px] font-bold hover:underline cursor-pointer"
                       style={{ color: 'var(--accent-on-secondary)' }}
-                      onClick={() => window.location.assign('/recuperacion')}
+                      onClick={() => {
+                        const recoveryUrl = store.slug
+                          ? `/recuperacion?store=${encodeURIComponent(store.slug)}`
+                          : '/recuperacion';
+                        window.location.assign(recoveryUrl);
+                      }}
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
                   </div>
-                  <input
-                    type="password"
-                    placeholder="********"
-                    className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'var(--text-on-primary)'
-                    }}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="********"
+                      className="w-full px-5 py-4 pr-12 rounded-xl font-medium text-[14px] border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-on-primary)] transition-all"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--text-on-primary)'
+                      }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      onClick={() => setShowPassword(value => !value)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors hover:opacity-80"
+                      style={{ color: 'var(--text-on-primary)' }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
               </>
             )}

@@ -45,10 +45,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
-export function requestPasswordReset(email: string): Promise<{ message: string }> {
+export function requestPasswordReset(email: string, storeSlug?: string | null): Promise<{ message: string }> {
+  const trimmedStoreSlug = storeSlug?.trim();
   return request('/auth/password/forgot', {
     method: 'POST',
-    body: JSON.stringify({ email: email.trim() }),
+    body: JSON.stringify({
+      email: email.trim(),
+      ...(trimmedStoreSlug ? { storeSlug: trimmedStoreSlug } : {}),
+    }),
   });
 }
 
