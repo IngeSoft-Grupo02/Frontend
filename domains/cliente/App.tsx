@@ -145,15 +145,15 @@ export default function App() {
     setCurrentView(View.AUTH_LOGIN);
   }, [currentUser, currentView, isHydrated, pathForView, pathname, router, selectedStore?.slug, setCurrentView, setPendingView]);
 
-  const handleSelectStore = (store: Store) => {
+  const handleSelectStore = (store: Store, targetView: View = View.STOREFRONT_PUBLIC) => {
     // If the user is logged in to a different store, log them out
     if (currentUser && currentUser.storeId !== store.id) {
       setCurrentUser(null);
     }
 
     setSelectedStore(store);
-    router.push(viewToClientePath(View.STOREFRONT_PUBLIC, store.slug));
-    setCurrentView(View.STOREFRONT_PUBLIC);
+    router.push(viewToClientePath(targetView, store.slug));
+    setCurrentView(targetView);
   };
 
   const handleSelectQuote = (quote: Quote) => {

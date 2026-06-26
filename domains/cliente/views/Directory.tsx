@@ -15,7 +15,7 @@ import { StoreLogo } from '../components/ui/StoreLogo';
 import { messageFromError } from '../../shared/errors';
 
 interface DirectoryProps {
-  onSelectStore: (store: Store) => void;
+  onSelectStore: (store: Store, targetView?: View) => void;
   onNavigate: (view: View) => void;
   onLogout?: () => void;
 }
@@ -204,8 +204,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                       borderColor: 'rgba(0,0,0,0.1)'
                     }}
                     onClick={() => {
-                        onSelectStore(store);
-                        onNavigate(View.AUTH_REGISTER);
+                        onSelectStore(store, View.AUTH_REGISTER);
                     }}
                   >
                     Registrarme
