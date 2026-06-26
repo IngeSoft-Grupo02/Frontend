@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Search, ShoppingCart, LogOut, User, ChevronDown, ClipboardCheck, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Store, User as UserType, View } from '../../types';
+import { StoreLogo } from '../ui/StoreLogo';
 
 interface TopBarProps {
   store: Store | null;
@@ -51,12 +52,13 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
         {store && (
           <div className="flex items-center gap-8 pl-6 border-l h-10" style={{ borderColor: isDirectory ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
             <div className="flex items-center gap-3">
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-[14px] shadow-sm animate-fade-in"
+              <StoreLogo
+                store={store}
+                className="w-8 h-8 rounded-lg shadow-sm animate-fade-in"
                 style={{ backgroundColor: store.color }}
-              >
-                {store.logo}
-              </div>
+                fallbackClassName="text-white font-black text-[14px]"
+                objectFit="contain"
+              />
               <span className="font-black text-[15px]" style={{ color: headerText }}>
                 {store.name}
               </span>

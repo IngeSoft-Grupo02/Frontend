@@ -11,6 +11,7 @@ import { fetchPublicStores, toStore } from '../lib/api';
 import { getReadableMutedTextColor, getReadableTextColor } from '../lib/themeContrast';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { StoreLogo } from '../components/ui/StoreLogo';
 import { messageFromError } from '../../shared/errors';
 
 interface DirectoryProps {
@@ -158,12 +159,14 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                 style={{ backgroundColor: storeBgColor }}
               >
                 <div className="flex items-center gap-4" style={{ color: cardCoverText }}>
-                  <div
-                    className="w-12 h-12 rounded-[8px] flex items-center justify-center font-extrabold text-[18px] shadow-sm transition-transform group-hover:scale-105"
-                    style={{ backgroundColor: cardCoverText, color: storeBgColor }}
-                  >
-                    {store.logo}
-                  </div>
+                  <StoreLogo
+                    store={store}
+                    className="w-12 h-12 rounded-[8px] shadow-sm transition-transform group-hover:scale-105"
+                    style={{ backgroundColor: cardCoverText }}
+                    fallbackClassName="font-extrabold text-[18px]"
+                    fallbackStyle={{ color: storeBgColor }}
+                    objectFit="contain"
+                  />
                   <div>
                     <h3 className="text-[18px] font-extrabold tracking-tight">{store.name}</h3>
                     <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: cardCoverSub, contentVisibility: 'auto' }}>{store.category}</span>

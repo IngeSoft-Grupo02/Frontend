@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { User, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, CreditCard, Phone, Calendar, Users, AlertCircle, CheckCircle2, Circle, Eye, EyeOff } from 'lucide-react';
 import { Store, View, RegisterCustomerDTO } from '../types';
 import { Button } from '../components/ui/Button';
+import { StoreLogo } from '../components/ui/StoreLogo';
 
 type Gender = 'MALE' | 'FEMALE' | 'NOT_SPECIFIED';
 type DocumentTypeValue = 'DNI' | 'PASSPORT' | 'FOREIGN_ID_CARD';
@@ -278,16 +279,17 @@ export const Auth: React.FC<AuthProps> = ({ store, type, onNavigate, onLogin, on
           </div>
 
           <div className="max-w-md">
-             <div
-               className="w-24 h-24 rounded-3xl flex items-center justify-center mb-10 font-black text-4xl shadow-2xl border"
+             <StoreLogo
+               store={store}
+               className="w-24 h-24 rounded-3xl mb-10 shadow-2xl border"
                style={{
                  backgroundColor: 'var(--color-secondary)',
-                 color: 'var(--color-text-on-secondary)',
                  borderColor: 'rgba(255, 255, 255, 0.1)'
                }}
-             >
-               {store.logo}
-             </div>
+               fallbackClassName="font-black text-4xl"
+               fallbackStyle={{ color: 'var(--color-text-on-secondary)' }}
+               objectFit="contain"
+             />
              <h2 className="text-[42px] font-extrabold leading-tight mb-6">Accede a {store.name}</h2>
              <p
                className="text-[18px] leading-relaxed mb-10 opacity-80"

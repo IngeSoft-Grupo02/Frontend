@@ -18,6 +18,7 @@ import {
 import { Store, User, Product, View } from '../types';
 import { fetchPublicProducts, toProduct } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
+import { StoreLogo } from '../components/ui/StoreLogo';
 import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
 import { messageFromError } from '../../shared/errors';
 import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
@@ -222,12 +223,14 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 style={{ background: 'radial-gradient(circle at 100% 0%, var(--color-camel-light) 0%, transparent 60%), #FFFFFF' }}
               >
                 <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} className="relative z-10 max-w-2xl flex flex-col items-start gap-6 pl-4">
-                  <div
-                    className="w-28 h-28 rounded-[32px] flex items-center justify-center font-black text-4xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] border mb-8 backdrop-blur-md"
-                    style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0, 0, 0, 0.08)' }}
-                  >
-                    {store.logo}
-                  </div>
+                  <StoreLogo
+                    store={store}
+                    className="w-28 h-28 rounded-[32px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] border mb-8 backdrop-blur-md"
+                    style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0, 0, 0, 0.08)' }}
+                    fallbackClassName="font-black text-4xl"
+                    fallbackStyle={{ color: 'var(--text-on-primary)' }}
+                    objectFit="contain"
+                  />
 
                   <div className="space-y-4">
                     <div className="inline-flex items-center gap-3 bg-gray-50 border px-5 py-2 rounded-full mb-2" style={{ borderColor: 'rgba(0,0,0,0.08)', color: '#475569' }}>
