@@ -150,7 +150,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                     {latestProduct.discounts.map((discount) => (
                       <div key={discount.id} className="flex justify-between items-center px-4 py-3 rounded-xl border text-[12px] font-bold" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                         <span>{discount.name} ({discount.minQuantity}-{discount.maxQuantity} u.)</span>
-                        <span style={{ color: 'var(--color-tertiary)' }}>{discount.discountPercentage}%</span>
+                        <span style={{ color: 'var(--accent-on-primary)' }}>{discount.discountPercentage}%</span>
                       </div>
                     ))}
                   </div>

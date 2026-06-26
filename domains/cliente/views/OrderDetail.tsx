@@ -95,7 +95,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-10 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
-                <Truck size={20} style={{ color: 'var(--color-tertiary)' }} /> Seguimiento del pedido
+                <Truck size={20} style={{ color: 'var(--accent-on-secondary)' }} /> Seguimiento del pedido
               </h3>
               
               <div className="space-y-0 relative">
@@ -129,14 +129,14 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
                <h3 className="text-[14px] font-black uppercase tracking-widest mb-8 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
-                <Package size={20} style={{ color: 'var(--color-tertiary)' }} /> Detalle de artículos
+                <Package size={20} style={{ color: 'var(--accent-on-secondary)' }} /> Detalle de artículos
               </h3>
               
               <div className="divide-y" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                 <div className="py-6 first:pt-0 flex items-center gap-6">
                   <div 
                     className="w-24 h-24 rounded-2xl border flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-tertiary)', borderColor: 'rgba(0,0,0,0.05)' }}
+                    style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
                   >
                     <Package size={32} />
                   </div>
@@ -190,14 +190,14 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                 </div>
                 <div className="pt-4 border-t flex justify-between items-center" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="text-[16px] font-black uppercase tracking-widest" style={{ color: 'var(--text-on-secondary)' }}>Total Pagado</span>
-                  <span className="text-[28px] font-black leading-none" style={{ color: 'var(--color-tertiary)' }}>S/ {order.amount.toFixed(2)}</span>
+                  <span className="text-[28px] font-black leading-none" style={{ color: 'var(--accent-on-secondary)' }}>S/ {order.amount.toFixed(2)}</span>
                 </div>
               </div>
  
               <div className="p-4 rounded-2xl border" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                    <CreditCard size={16} style={{ color: 'var(--color-tertiary)' }} />
+                    <CreditCard size={16} style={{ color: 'var(--accent-on-secondary)' }} />
                   </div>
                   <span className="text-[13px] font-black" style={{ color: 'var(--text-on-primary)' }}>Pago con Tarjeta VISA</span>
                 </div>
@@ -211,7 +211,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-6 flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>
-                <MapPin size={18} style={{ color: 'var(--color-tertiary)' }} /> Dirección de envío
+                <MapPin size={18} style={{ color: 'var(--accent-on-secondary)' }} /> Dirección de envío
               </h3>
               <div className="flex gap-4">
                 <div className="space-y-1">

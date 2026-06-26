@@ -136,7 +136,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
               <h2 className="text-[42px] font-black mb-4 tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>¡Pago Registrado!</h2>
               <div className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border mb-10" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60" style={{ color: 'var(--text-on-primary)' }}>Pedido N°:</span>
-                <span className="text-[20px] font-black tracking-tight" style={{ color: 'var(--color-tertiary)' }}>{order.id}</span>
+                <span className="text-[20px] font-black tracking-tight" style={{ color: 'var(--accent-on-primary)' }}>{order.id}</span>
               </div>
               <p className="text-[18px] font-bold mb-12 max-w-sm mx-auto leading-snug opacity-80" style={{ color: 'var(--text-on-secondary)' }}>
                 Pago registrado correctamente. Tu pedido está siendo procesado.
@@ -262,7 +262,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   {rucError ? (
                     <p className="text-[11px] text-red-500 font-bold px-1">{rucError}</p>
                   ) : (
-                    <p className="text-[10px] font-bold px-1 flex items-center gap-1" style={{ color: 'var(--color-tertiary)' }}>
+                    <p className="text-[10px] font-bold px-1 flex items-center gap-1" style={{ color: 'var(--accent-on-secondary)' }}>
                       <Info size={12} /> Para emitir Factura es necesario un RUC válido de 11 dígitos.
                     </p>
                   )}
@@ -273,7 +273,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
               <div className="flex items-center justify-between p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                    <CreditCard size={24} style={{ color: 'var(--color-tertiary)' }} />
+                    <CreditCard size={24} style={{ color: 'var(--accent-on-secondary)' }} />
                   </div>
                   <div>
                     <p className="text-[14px] font-black" style={{ color: 'var(--text-on-primary)' }}>Tarjeta VISA</p>
@@ -366,7 +366,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                     <ShieldCheck size={14} className="text-blue-500" /> Cifrado SSL
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-tighter">
-                    <CheckCircle2 size={14} style={{ color: 'var(--color-tertiary)' }} /> Verificado por Visa
+                    <CheckCircle2 size={14} style={{ color: 'var(--accent-on-secondary)' }} /> Verificado por Visa
                   </div>
                 </div>
               </div>
@@ -377,7 +377,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
           <aside>
             <div className="rounded-3xl border p-8 sticky top-[100px] shadow-lg" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h3 className="text-[18px] font-extrabold mb-6 flex items-center gap-2">
-                <ShoppingBag size={20} style={{ color: 'var(--color-tertiary)' }} /> Resumen del pedido
+                <ShoppingBag size={20} style={{ color: 'var(--accent-on-secondary)' }} /> Resumen del pedido
               </h3>
 
               <div className="space-y-4 mb-8">
@@ -410,7 +410,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   {discount > 0 && (
                     <div className="flex justify-between text-[13px]">
                       <span className="font-medium opacity-75">Descuento:</span>
-                      <span className="font-bold" style={{ color: 'var(--color-tertiary)' }}>- S/ {discount.toFixed(2)}</span>
+                      <span className="font-bold" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[13px]">

@@ -46,7 +46,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
           <div className="lg:col-span-12 xl:col-span-8 space-y-8">
             <div className="rounded-[24px] border p-8 md:p-10 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h3 className="text-[20px] font-black mb-8 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
-                <FileText size={22} style={{ color: 'var(--color-tertiary)' }} /> Detalle de la cotización
+                <FileText size={22} style={{ color: 'var(--accent-on-secondary)' }} /> Detalle de la cotización
               </h3>
 
               <div className="space-y-0 text-[15px]">
@@ -64,7 +64,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                 </div>
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Descuento</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--color-tertiary)' }}>S/ {(quote.discount ?? 0).toLocaleString()}</span>
+                  <span className="font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>S/ {(quote.discount ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Monto total</span>
@@ -147,7 +147,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
               <p className="text-[16px] mb-8 leading-relaxed font-bold" style={{ color: 'var(--text-on-secondary)' }}>Si tienes dudas sobre esta cotización, comunícate con la tienda.</p>
               <div className="rounded-2xl p-7 text-center shadow-md" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)' }}>
                 <div className="font-extrabold text-[24px] mb-1 tracking-tighter" style={{ color: 'var(--text-on-primary)' }}>{store.whatsapp ? `+51 ${store.whatsapp}` : 'Contacto de tienda'}</div>
-                <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--color-tertiary)' }}>Contacto directo</div>
+                <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--accent-on-primary)' }}>Contacto directo</div>
               </div>
             </div>
 
@@ -157,7 +157,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                 <div className="flex flex-col gap-4">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--color-primary)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                      <CheckCircle2 size={20} style={{ color: 'var(--color-tertiary)' }} />
+                      <CheckCircle2 size={20} style={{ color: 'var(--accent-on-primary)' }} />
                     </div>
                     <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>
                       Tu cotización fue aprobada. Ve a <strong>Mis pedidos</strong> para realizar el pago.
@@ -174,7 +174,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
               ) : quote.status === 'Propuesta enviada' ? (
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--color-primary)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                    <CheckCircle2 size={20} style={{ color: 'var(--color-tertiary)' }} />
+                    <CheckCircle2 size={20} style={{ color: 'var(--accent-on-primary)' }} />
                   </div>
                   <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>La tienda ha enviado una propuesta. Revisa los detalles y espera la aprobación final.</p>
                 </div>
@@ -183,7 +183,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
               ) : (
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--color-primary)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                    <AlertCircle size={20} style={{ color: 'var(--color-tertiary)' }} />
+                    <AlertCircle size={20} style={{ color: 'var(--accent-on-primary)' }} />
                   </div>
                   <p className="text-[14px] font-bold leading-relaxed" style={{ color: 'var(--text-on-secondary)' }}>La tienda está revisando stock y condiciones. Verás la respuesta en esta pantalla cuando esté disponible.</p>
                 </div>

@@ -73,7 +73,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
               </div>
               <h3 className="text-[18px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{user.name}</h3>
               <p className="text-[13px] font-medium mb-2 opacity-70" style={{ color: 'var(--text-on-secondary)' }}>{user.email}</p>
-              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-tertiary)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent-on-secondary)' }}>
                 {user.documentType} {user.documentId}
               </p>
               
@@ -159,7 +159,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-2 font-bold text-[13px]"
-                        style={{ color: 'var(--color-tertiary)' }}
+                        style={{ color: 'var(--accent-on-secondary)' }}
                      >
                        <CheckCircle2 size={16} /> ¡Datos guardados!
                      </motion.div>

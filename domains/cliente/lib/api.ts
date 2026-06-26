@@ -27,7 +27,7 @@ import {
   StorePublicDTO,
   TertiaryColor,
 } from '../types';
-import { getColorLabel } from '../../shared/colors';
+import { getColorDisplay, getColorLabel } from '../../shared/colors';
 import { translateErrorMessage } from '../../shared/errors';
 
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
@@ -116,8 +116,18 @@ function resolveColor(
   if (key && key in enumObj) {
     return enumObj[key];
   }
-  if (key && (/^#[\da-f]{3,8}$/i.test(key.trim()) || /^rgba?\(/i.test(key.trim()))) {
-    return key.trim();
+  const trimmed = key?.trim();
+  if (trimmed && (/^#[\da-f]{3,8}$/i.test(trimmed) || /^rgba?\(/i.test(trimmed))) {
+    return trimmed;
+  }
+  // Cobertura completa de los enums del backend: el enum local de types.ts solo
+  // mapea un subconjunto, así que para el resto (ej. RICH_CAMEL, OLIVE_DRAB,
+  // DEEP_ZINC) consultamos el mapa compartido en vez de colapsar al fallback.
+  if (trimmed) {
+    const display = getColorDisplay(trimmed);
+    if (display.mapped) {
+      return display.swatch;
+    }
   }
   return fallback;
 }

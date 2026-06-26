@@ -185,7 +185,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                           </div>
                           <span
                             className="text-[9px] font-black uppercase tracking-tighter"
-                            style={step >= idx ? { color: 'var(--color-tertiary)' } : { color: 'var(--text-on-secondary)', opacity: 0.35 }}
+                            style={step >= idx ? { color: 'var(--accent-on-secondary)' } : { color: 'var(--text-on-secondary)', opacity: 0.35 }}
                           >
                             {s.label}
                           </span>
@@ -251,7 +251,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                 className="rounded-2xl p-4 px-6 border flex items-center gap-4 shadow-sm"
                 style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
               >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}>
                   <MessageCircle size={20} style={{ color: 'var(--text-on-tertiary)' }} />
                 </div>
                 <div>

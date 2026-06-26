@@ -311,9 +311,9 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               </div>
 
               <div className="border-2 rounded-2xl p-8 mb-10 flex items-start gap-5 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
-                <Info size={24} style={{ color: 'var(--color-tertiary)' }} className="shrink-0 mt-1" />
+                <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
                 <p className="text-[15px] font-bold leading-relaxed">
-                  <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--color-tertiary)' }}>Nota de Producción</span>
+                  <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Nota de Producción</span>
                   La inclusión de un diseño personalizado conlleva un incremento del {store.designFeePercentage || '10%'} sobre el monto total de esta cotización. Este incremento se aplica automáticamente al adjuntar archivos de referencia.
                 </p>
               </div>
@@ -332,7 +332,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   onChange={handleFileSelection}
                 />
                 <div className="w-16 h-16 rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
-                  <Upload size={24} style={{ color: 'var(--color-tertiary)' }} />
+                  <Upload size={24} style={{ color: 'var(--accent-on-secondary)' }} />
                 </div>
                 <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
                   {uploadedFiles.length >= 5 ? 'Límite de archivos alcanzado' : 'Sube tus referencias de diseño'}
@@ -361,7 +361,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                            <FileText size={16} style={{ color: 'var(--color-tertiary)' }} />
+                            <FileText size={16} style={{ color: 'var(--accent-on-secondary)' }} />
                           </div>
                           <div className="overflow-hidden">
                             <div className="text-[12px] font-black truncate" style={{ color: 'var(--text-on-primary)' }}>{file.name}</div>
@@ -445,7 +445,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   <ImageIcon size={16} />
                   Incremento por diseño ({store.designFeePercentage || '10%'})
                 </div>
-                <div className="text-[14px] font-black" style={{ color: 'var(--color-tertiary)' }}>
+                <div className="text-[14px] font-black" style={{ color: 'var(--accent-on-primary)' }}>
                   {designFeeAmount > 0 ? `+ S/ ${designFeeAmount.toLocaleString()}` : 'S/ 0.00'}
                 </div>
               </div>

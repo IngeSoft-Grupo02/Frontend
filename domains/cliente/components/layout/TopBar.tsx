@@ -8,6 +8,7 @@ import { Search, ShoppingCart, LogOut, User, ChevronDown, ClipboardCheck, Packag
 import { Button } from '../ui/Button';
 import { Store, User as UserType, View } from '../../types';
 import { StoreLogo } from '../ui/StoreLogo';
+import { getReadableTextColor } from '../../lib/themeContrast';
 
 interface TopBarProps {
   store: Store | null;
@@ -56,7 +57,8 @@ export const TopBar: React.FC<TopBarProps> = ({ store, user, onNavigate, onLogou
                 store={store}
                 className="w-8 h-8 rounded-lg shadow-sm animate-fade-in"
                 style={{ backgroundColor: store.color }}
-                fallbackClassName="text-white font-black text-[14px]"
+                fallbackClassName="font-black text-[14px]"
+                fallbackStyle={{ color: getReadableTextColor(store.color || store.primaryColor || '#0F1011') }}
                 objectFit="contain"
               />
               <span className="font-black text-[15px]" style={{ color: headerText }}>
