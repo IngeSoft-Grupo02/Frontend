@@ -3,6 +3,7 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
+import { merchantApi } from '@/domains/comerciante/lib/api';
 import { getColorLabel } from '@/domains/shared/colors';
 import { messageFromError } from '@/domains/shared/errors';
 import { AlertCircle, Check, ImageIcon, RotateCcw, Save, Upload, X } from 'lucide-react';
@@ -74,7 +75,7 @@ const formatFileSize = (bytes: number) => {
 };
 
 export default function SettingsPage() {
-  const { store, saveStore } = useStore();
+  const { store, saveStore, setStore, setStores, isAuthenticated } = useStore();
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [storeName, setStoreName] = useState(store.name);
@@ -84,6 +85,7 @@ export default function SettingsPage() {
   const [secondaryColor, setSecondaryColor] = useState(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
   const [tertiaryColor, setTertiaryColor] = useState(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
   const [logoPreviewUrl, setLogoPreviewUrl] = useState(store.logoUrl || store.logo || '');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoFileName, setLogoFileName] = useState('');
 
   const categoryLabel = store.categoryName || store.type || 'Sin categoría asignada';
@@ -109,6 +111,7 @@ export default function SettingsPage() {
     setSecondaryColor(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
     setTertiaryColor(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
     setLogoPreviewUrl(store.logoUrl || store.logo || '');
+    setLogoFile(null);
     setLogoFileName('');
     setErrors({});
   }, [store]);
@@ -127,6 +130,7 @@ export default function SettingsPage() {
     const reader = new FileReader();
     reader.onload = () => {
       setLogoPreviewUrl(String(reader.result || ''));
+      setLogoFile(file);
       setLogoFileName(`${file.name} · ${formatFileSize(file.size)}`);
       setErrors(prev => ({ ...prev, logo: '' }));
     };
@@ -141,6 +145,7 @@ export default function SettingsPage() {
     setSecondaryColor(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
     setTertiaryColor(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
     setLogoPreviewUrl(store.logoUrl || store.logo || '');
+    setLogoFile(null);
     setLogoFileName('');
     setErrors({});
   };
@@ -154,26 +159,37 @@ export default function SettingsPage() {
       return;
     }
 
+    const nextStore = {
+      ...store,
+      name: storeName.trim(),
+      type: store.type,
+      categoryId: store.categoryId,
+      categoryName: store.categoryName,
+      description: storeDescription.trim(),
+      customizationIncrement,
+      palette: selectedPrimaryHex,
+      logo: logoPreviewUrl || undefined,
+      logoUrl: logoPreviewUrl || undefined,
+      colors: {
+        primary: primaryColor,
+        secondary: secondaryColor,
+        tertiary: tertiaryColor
+      }
+    };
+
     try {
-      await saveStore({
-        ...store,
-        name: storeName.trim(),
-        type: store.type,
-        categoryId: store.categoryId,
-        categoryName: store.categoryName,
-        description: storeDescription.trim(),
-        customizationIncrement,
-        palette: selectedPrimaryHex,
-        logo: logoPreviewUrl || undefined,
-        logoUrl: logoPreviewUrl || undefined,
-        colors: {
-          primary: primaryColor,
-          secondary: secondaryColor,
-          tertiary: tertiaryColor
-        }
-      });
+      if (logoFile && isAuthenticated) {
+        const updated = await merchantApi.updateStoreWithLogo(nextStore, logoFile);
+        setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
+        setStore(updated);
+        setLogoPreviewUrl(updated.logoUrl || updated.logo || '');
+      } else {
+        await saveStore(nextStore);
+      }
 
       setErrors({});
+      setLogoFile(null);
+      setLogoFileName('');
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
@@ -327,7 +343,7 @@ export default function SettingsPage() {
                         />
                       </label>
                       {logoPreviewUrl && (
-                        <Button type="button" variant="ghost" className="h-11 px-5 rounded-xl text-red-500" onClick={() => { setLogoPreviewUrl(''); setLogoFileName(''); }}>
+                        <Button type="button" variant="ghost" className="h-11 px-5 rounded-xl text-red-500" onClick={() => { setLogoPreviewUrl(''); setLogoFile(null); setLogoFileName(''); }}>
                           <X size={16} /> Quitar
                         </Button>
                       )}
@@ -352,8 +368,12 @@ export default function SettingsPage() {
             </Card>
           </div>
 
-          <aside className="xl:col-span-4 xl:sticky xl:top-24 space-y-8">
-            <Card title="Control de cambios" subtitle="Guardar sin volver arriba">
+          <aside className="xl:col-span-4">
+            <Card
+              title="Control de cambios"
+              subtitle="Guardar sin volver arriba"
+              className="xl:fixed xl:top-24 xl:right-8 xl:z-30 xl:w-[calc((100vw-408px)/3)] 2xl:w-[380px]"
+            >
               <div className="space-y-4">
                 <div className="rounded-3xl border border-brand-neutral-border overflow-hidden bg-brand-neutral-light">
                   <div className="h-20 flex items-center justify-center" style={{ backgroundColor: selectedPrimaryHex }}>

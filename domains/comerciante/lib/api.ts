@@ -102,8 +102,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
-    // Sesión inválida/expirada en una request autenticada: limpiar y notificar.
-    if (token && (response.status === 401 || response.status === 403)) {
+    // Sesión inválida/expirada: limpiar solo ante 401. Un 403 puede ser falta de permiso puntual.
+    if (token && response.status === 401) {
       handleSesionNoAutorizada();
     }
     const raw = await response.text();
@@ -260,6 +260,17 @@ const logoUrlPayload = (store: Store | Omit<Store, 'id'>) => {
   if (!value || value.startsWith('data:') || value.startsWith('blob:')) return undefined;
   return value;
 };
+
+const storePayload = (store: Store | Omit<Store, 'id'>) => ({
+  name: store.name,
+  description: store.description,
+  categoryId: store.categoryId,
+  primaryColor: colorEnum(store.colors?.primary || store.palette, PRIMARY_COLOR_HEX, 'ONYX_BLACK'),
+  secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
+  tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
+  logoUrl: logoUrlPayload(store),
+  status: store.status
+});
 
 export const mapStore = (raw: JsonValue): Store => {
   const primaryColor = raw.primaryColor || raw.colors?.primary || 'ONYX_BLACK';
@@ -651,6 +662,15 @@ export const merchantApi = {
       status: store.status
     })
   }).then(mapStore),
+  updateStoreWithLogo: (store: Store, file: File) => {
+    const data = new FormData();
+    data.append('store', new Blob([JSON.stringify(storePayload(store))], { type: 'application/json' }));
+    data.append('logo', file);
+    return request<JsonValue>(`/merchant/stores/${store.id}`, {
+      method: 'PUT',
+      body: data
+    }).then(mapStore);
+  },
   deleteStore: (id: string) => request<JsonValue>(`/merchant/stores/${id}`, { method: 'DELETE' }),
   products: (storeId?: string) => request<JsonValue[]>(`/merchant/products${withStore(storeId)}`).then(list => list.map(mapProduct)),
   createProduct: (product: Product | Omit<Product, 'id'>, storeId?: string) => request<JsonValue>(`/merchant/products${withStore(storeId)}`, {
