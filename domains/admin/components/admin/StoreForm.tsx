@@ -45,7 +45,6 @@ export const TERTIARY_COLORS: ColorOption[] = [
 
 export interface StoreFormValues {
   storeName: string;
-  slug: string;
   description: string;
   categoryId: string;
   primaryColor: string;
@@ -55,7 +54,6 @@ export interface StoreFormValues {
 
 export const EMPTY_STORE_FORM: StoreFormValues = {
   storeName: '',
-  slug: '',
   description: '',
   categoryId: '',
   primaryColor: 'ONYX_BLACK',
@@ -125,8 +123,6 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
     const nextErrors: Record<string, string> = {};
     if (!form.storeName.trim()) nextErrors.storeName = 'El nombre es obligatorio.';
     if (form.storeName.length > 100) nextErrors.storeName = 'Máximo 100 caracteres.';
-    if (!form.slug.trim()) nextErrors.slug = 'El slug es obligatorio.';
-    if (form.slug && !/^[a-z0-9-]+$/.test(form.slug)) nextErrors.slug = 'Solo minúsculas, números y guiones.';
     if (!form.categoryId) nextErrors.categoryId = 'La categoría es obligatoria.';
     if (!selectedMerchant) nextErrors.merchant = 'El comerciante es obligatorio.';
     setErrors(nextErrors);
@@ -178,11 +174,9 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
                    setForm(current => ({ ...current, storeName: event.target.value }));
                    setErrors(current => ({ ...current, storeName: '' }));
                  }} />
-          <Input label="Slug único *" placeholder="canvas-lab" value={form.slug} error={errors.slug}
-                 onChange={event => {
-                   setForm(current => ({ ...current, slug: event.target.value.toLowerCase().replace(/\s+/g, '-') }));
-                   setErrors(current => ({ ...current, slug: '' }));
-                 }} />
+          <div className="flex items-center rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-3.5 text-[13px] font-medium text-neutral-500">
+            El enlace de la tienda se generará automáticamente a partir del nombre.
+          </div>
 
           <div>
             <label className="block text-[11px] font-bold text-neutral-500 mb-1.5 ml-1 uppercase">Categoría *</label>

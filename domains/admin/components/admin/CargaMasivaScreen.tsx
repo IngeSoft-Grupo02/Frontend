@@ -41,7 +41,7 @@ const MERCHANT_COLUMNS = [
   'email','password','firstName','paternalSurname','maternalSurname',
   'documentType','documentNumber','birthDate','phone','gender','ruc',
 ];
-const STORE_COLUMNS = ['storeName','slug','categoryId','primaryColor','secondaryColor','tertiaryColor','categoryId','primaryColor','secondaryColor','tertiaryColor','description','merchantEmail','logoFileName'];
+const STORE_COLUMNS = ['storeName','categoryId','primaryColor','secondaryColor','tertiaryColor','description','merchantEmail','logoFileName'];
 const VALID_DOC_TYPES     = ['DNI','PASSPORT','FOREIGN_ID_CARD'];
 const VALID_PRIMARY_COLORS   = ['ONYX_BLACK','DEEP_ZINC','MIDNIGHT','CHARCOAL','ESPRESSO'];
 const VALID_SECONDARY_COLORS = ['OLIVE_DRAB','SAGE','SLATE','TERRA','DUSTY_RED'];
@@ -145,7 +145,6 @@ async function validateMerchantsCsv(
 
 async function validateStoresCsv(
     file: File,
-    existingStoreNames: string[],
     existingMerchantEmails: string[],
     merchantsInFile: string[],
     logosInZip: string[],   // nombres de archivos dentro del ZIP (vacío si no se cargó ZIP)
@@ -162,7 +161,6 @@ async function validateStoresCsv(
     return { incidences, rowCount: rows.length, logosReferenced };
   }
 
-  const slugsEnArchivo: string[] = [];
   const allMerchants = [...existingMerchantEmails, ...merchantsInFile];
 
   rows.forEach((row, idx) => {
@@ -173,19 +171,6 @@ async function validateStoresCsv(
       incidences.push({ block:'Tiendas', row:n, detail:'El campo storeName es obligatorio.', isError:true });
     else if (row.storeName.length > 100)
       incidences.push({ block:'Tiendas', row:n, detail:'storeName supera 100 caracteres.', isError:true });
-    else if (existingStoreNames.map(s=>s.toLowerCase()).includes(row.storeName.toLowerCase()))
-      incidences.push({ block:'Tiendas', row:n,
-        detail:`La tienda "${row.storeName}" ya existe en el sistema.`, isError:true });
-
-    // slug
-    if (!row.slug)
-      incidences.push({ block:'Tiendas', row:n, detail:'El campo slug es obligatorio.', isError:true });
-    else if (slugsEnArchivo.includes(row.slug.toLowerCase()))
-      incidences.push({ block:'Tiendas', row:n,
-        detail:`El slug "${row.slug}" está duplicado en el archivo.`, isError:true });
-    else
-      slugsEnArchivo.push(row.slug.toLowerCase());
-
     // categoryId — obligatorio y numérico
     if (!row.categoryId || row.categoryId.trim() === '') {
       incidences.push({ block:'Tiendas', row:n, detail:'El campo categoryId es obligatorio.', isError:true });
@@ -334,10 +319,10 @@ function downloadMerchantsTemplate() {
 
 function downloadStoresTemplate() {
   const csv = [
-    'storeName,slug,categoryId,primaryColor,secondaryColor,tertiaryColor,description,merchantEmail,logoFileName',
-    '# INSTRUCCIONES:,minúsculas-sin-espacios,CORESTREET|ATELIERMONO|UTILITYDROP|LUXECAPSULE,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
-    'Mi Tienda Urbana,mi-tienda-urbana,1,ONYX_BLACK,OLIVE_DRAB,RICH_CAMEL,Ropa urbana para jóvenes,juan.perez@ejemplo.com,MiTiendaUrbana.png',
-    'Luxe Moda,luxe-moda,2,MIDNIGHT,SAGE,RAW_GOLD,Alta costura accesible,maria.torres@ejemplo.com,',
+    'storeName,categoryId,primaryColor,secondaryColor,tertiaryColor,description,merchantEmail,logoFileName',
+    '# INSTRUCCIONES:,ID de categoría,Color principal,Color secundario,Color terciario,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
+    'Mi Tienda Urbana,1,ONYX_BLACK,OLIVE_DRAB,RICH_CAMEL,Ropa urbana para jóvenes,juan.perez@ejemplo.com,MiTiendaUrbana.png',
+    'Luxe Moda,2,MIDNIGHT,SAGE,RAW_GOLD,Alta costura accesible,maria.torres@ejemplo.com,',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_tiendas.csv');
 }
@@ -348,11 +333,11 @@ function downloadLogosInstructions() {
     '==============================================',
     '',
     'El ZIP debe contener UNA imagen por tienda.',
-    'El nombre del archivo debe ser exactamente el SLUG de la tienda.',
+    'El nombre del archivo debe coincidir con el enlace generado automaticamente desde el nombre de la tienda.',
     '',
     'Ejemplos:',
-    '  mi-tienda-urbana.png  ->  logo de la tienda con slug "mi-tienda-urbana"',
-    '  luxe-moda.jpg         ->  logo de la tienda con slug "luxe-moda"',
+    '  mi-tienda-urbana.png  ->  logo de la tienda "Mi Tienda Urbana"',
+    '  luxe-moda.jpg         ->  logo de la tienda "Luxe Moda"',
     '',
     'Formatos permitidos: .jpg  .jpeg  .png  .webp',
     'Tamaño máximo por imagen: 2 MB',
@@ -398,7 +383,6 @@ export function CargaMasivaScreen() {
 
   // ── Datos reales de la BD ─────────────────────────────────────
   const [existingEmails,         setExistingEmails]         = useState<string[]>([]);
-  const [existingStoreNames,     setExistingStoreNames]     = useState<string[]>([]);
   const [existingMerchantEmails, setExistingMerchantEmails] = useState<string[]>([]);
   const [dataLoaded,             setDataLoaded]             = useState(false);
 
@@ -410,7 +394,6 @@ export function CargaMasivaScreen() {
         api.bulk.existingStores(),
       ]);
       setExistingEmails(emails);
-      setExistingStoreNames(storesData.storeNames);
       setExistingMerchantEmails(storesData.merchantEmails);
       setDataLoaded(true);
     }
@@ -448,7 +431,6 @@ export function CargaMasivaScreen() {
         if (currentBlocks.stores.file) {
           const sRes = await validateStoresCsv(
               currentBlocks.stores.file,
-              existingStoreNames,
               existingMerchantEmails,
               res.emailsFound,
               logosInZip,
@@ -461,7 +443,7 @@ export function CargaMasivaScreen() {
         }
       } else if (key === 'stores') {
         const res = await validateStoresCsv(
-            file, existingStoreNames, existingMerchantEmails, merchantEmailsInFile, logosInZip,
+            file, existingMerchantEmails, merchantEmailsInFile, logosInZip,
         );
         incidences = res.incidences;
         rowCount   = res.rowCount;
@@ -485,7 +467,6 @@ export function CargaMasivaScreen() {
         if (currentBlocks.stores.file) {
           const sRes = await validateStoresCsv(
               currentBlocks.stores.file,
-              existingStoreNames,
               existingMerchantEmails,
               merchantEmailsInFile,
               res.fileNames,
@@ -658,7 +639,7 @@ export function CargaMasivaScreen() {
       description:'Crea tiendas y las vincula a comerciantes. categoryId (ID de categoría), primaryColor, secondaryColor, tertiaryColor y merchantEmail son obligatorios.',
       icon:Store, accept:'.csv', onDownload:downloadStoresTemplate },
     { key:'images' as BlockKey, label:'ZIP de logos',
-      description:'ZIP con 1 logo por tienda (png/jpg/webp, máx 2 MB). El nombre del archivo debe ser el slug.',
+      description:'ZIP con 1 logo por tienda (png/jpg/webp, máx 2 MB). El nombre debe coincidir con el enlace generado desde el nombre.',
       icon:ImageIcon, accept:'.zip', onDownload:downloadLogosInstructions },
   ];
 

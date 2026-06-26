@@ -124,7 +124,6 @@ export interface StoreResponse {
 
 export interface StoreMutationRequest {
   storeName: string;
-  slug: string;
   description?: string;
   categoryId: number;
   merchantId: number;

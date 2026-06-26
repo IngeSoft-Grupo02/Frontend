@@ -87,7 +87,6 @@ export default function EditarTiendaPage() {
 
   const initialValues: StoreFormValues = {
     storeName: store.storeName,
-    slug: store.slug,
     description: store.description ?? '',
     categoryId: store.category?.id?.toString() ?? '',
     primaryColor: supportedColor(store.primaryColor, PRIMARY_COLORS, 'ONYX_BLACK'),
@@ -103,7 +102,6 @@ export default function EditarTiendaPage() {
       onSubmit={async (values, merchant) => {
         await api.stores.update(store.id, {
           storeName: values.storeName.trim(),
-          slug: values.slug.trim(),
           description: values.description.trim(),
           categoryId: Number(values.categoryId),
           primaryColor: values.primaryColor,
