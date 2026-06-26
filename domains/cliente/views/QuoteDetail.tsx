@@ -1,10 +1,10 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import React from 'react';
-import { ArrowLeft, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle2, AlertCircle, Download, ImageIcon } from 'lucide-react';
 import { Store, User, Quote, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
@@ -21,6 +21,7 @@ interface QuoteDetailProps {
 
 export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, onNavigate, onLogout, cartCount }) => {
   const items = quote.items || [];
+  const files = quote.files || [];
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -97,6 +98,39 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   </div>
                 )}
 
+                {files.length > 0 && (
+                  <div className="py-8 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Diseños adjuntos</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {files.map((file) => {
+                        const isImage = file.contentType?.startsWith('image/');
+                        return (
+                          <a
+                            key={`${file.id}-${file.url}`}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-xl border p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
+                            style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
+                          >
+                            {isImage ? (
+                              <img src={file.url} alt={file.fileName} className="w-14 h-14 rounded-xl object-cover border" />
+                            ) : (
+                              <div className="w-14 h-14 rounded-xl flex items-center justify-center border">
+                                <ImageIcon size={22} />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black truncate">{file.fileName}</p>
+                              <p className="text-[10px] font-bold opacity-60">{file.contentType}</p>
+                            </div>
+                            <Download size={18} className="shrink-0 opacity-70" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {quote.observations && (
                   <div className="py-8 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                     <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-3">Observación de la tienda</span>

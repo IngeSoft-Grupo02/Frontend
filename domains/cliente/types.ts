@@ -183,6 +183,7 @@ export interface Quote {
   description?: string | null;
   observations?: string | null;
   items?: QuotationItemResponseDTO[];
+  files?: QuotationDesignDTO[];
 }
 
 export interface CartResponseDTO {
@@ -238,11 +239,20 @@ export interface QuotationResponseDTO {
   observations: string | null;
   storeId: number;
   items: QuotationItemResponseDTO[];
+  designs?: QuotationDesignDTO[];
   customerName?: string | null;
   customerEmail?: string | null;
   customerPhone?: string | null;
   documentType?: string | null;
   documentNumber?: string | null;
+}
+
+export interface QuotationDesignDTO {
+  id: number;
+  fileName: string;
+  url: string;
+  contentType: string;
+  sizeBytes: number;
 }
 
 export interface QuotationItemResponseDTO {
@@ -314,6 +324,7 @@ export interface PaymentPayload {
 
 export interface QuotationCreatePayload {
   description?: string | null;
+  designs?: File[];
 }
 
 export interface PaymentResponseDTO {

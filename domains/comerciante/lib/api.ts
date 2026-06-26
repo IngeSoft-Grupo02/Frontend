@@ -474,9 +474,6 @@ const quoteStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Quote['s
   return 'Pendiente';
 };
 
-// Posibles campos de archivos/diseño que el backend podría enviar a futuro.
-// Hoy el backend NO devuelve archivos en la cotización (ver brecha documentada),
-// por lo que esto queda preparado para cuando exista el dato real.
 const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
   const source = raw.files || raw.attachments || raw.designFiles || raw.customDesigns || raw.designs;
   if (!Array.isArray(source)) return undefined;
@@ -485,7 +482,7 @@ const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
       const url = String(file.url || file.fileUrl || file.designUrl || file.imageUrl || '').trim();
       const name = String(file.name || file.fileName || file.filename || 'archivo').trim();
       const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
-      return { name, type: String(file.type || ext || 'file'), url };
+      return { name, type: String(file.contentType || file.type || ext || 'file'), url };
     })
     .filter((file: { url: string }) => Boolean(file.url));
 };

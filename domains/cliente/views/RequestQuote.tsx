@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -27,9 +27,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   const [rows, setRows] = useState<{id: string, size: string, color: string, quantity: number}[]>([
     { id: '1', size: 'S', color: 'BLANCO', quantity: 0 }
   ]);
-  const [uploadedFiles, setUploadedFiles] = useState<{name: string, size: string}[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const availableVariants = product?.variants || [];
   const SIZES = Array.from(new Set(availableVariants.map((variant) => variant.size))).filter(Boolean);
@@ -57,21 +58,48 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     }
   };
 
-  const addMockFile = () => {
-    if (uploadedFiles.length >= 5) {
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (selected.length === 0) return;
+
+    const remainingSlots = 5 - uploadedFiles.length;
+    if (remainingSlots <= 0) {
       setAddError('Máximo 5 archivos permitidos.');
       return;
     }
-    const names = ['Logo_Final.ai', 'Mockup_Ref.jpg', 'Ficha_Tecnica.pdf', 'Paleta_Colores.png', 'Logo_Variante.svg'];
-    const newFile = {
-      name: names[uploadedFiles.length] || `Archivo_${uploadedFiles.length + 1}.pdf`,
-      size: (Math.random() * 5 + 1).toFixed(1) + ' MB'
-    };
-    setUploadedFiles(prev => [...prev, newFile]);
+
+    const allowedFileTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+    const maxFileSizeBytes = 10 * 1024 * 1024;
+    const accepted: File[] = [];
+
+    for (const file of selected.slice(0, remainingSlots)) {
+      if (file.size === 0) {
+        setAddError('El archivo está vacío.');
+        return;
+      }
+      if (file.size > maxFileSizeBytes) {
+        setAddError('El archivo supera el tamaño máximo permitido.');
+        return;
+      }
+      if (!allowedFileTypes.has(file.type)) {
+        setAddError('Formato de archivo no permitido.');
+        return;
+      }
+      accepted.push(file);
+    }
+
+    setUploadedFiles(prev => [...prev, ...accepted]);
+    setAddError(null);
   };
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const fileSizeLabel = (file: File) => {
+    if (file.size < 1024 * 1024) return `${Math.max(1, Math.round(file.size / 1024))} KB`;
+    return `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const quantity = rows.reduce((acc, row) => acc + (row.quantity || 0), 0);
@@ -292,16 +320,24 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
               <div
                 className="border-2 border-dashed rounded-2xl p-16 text-center group transition-colors cursor-pointer"
-                onClick={addMockFile}
+                onClick={() => fileInputRef.current?.click()}
                 style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
               >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={handleFileSelection}
+                />
                 <div className="w-16 h-16 rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
                   <Upload size={24} style={{ color: 'var(--color-tertiary)' }} />
                 </div>
                 <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
                   {uploadedFiles.length >= 5 ? 'Límite de archivos alcanzado' : 'Sube tus referencias de diseño'}
                 </h4>
-                <p className="text-[13px] opacity-60 font-medium mb-8">Permitido: PNG, JPG, PDF, AI, SVG (Máx. 5 archivos)</p>
+                <p className="text-[13px] opacity-60 font-medium mb-8">Permitido: PNG, JPG, WEBP y PDF (máx. 5 archivos)</p>
                 <div className="flex justify-center gap-3">
                   <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                     <ImageIcon size={12} /> Referencias
@@ -329,7 +365,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                           </div>
                           <div className="overflow-hidden">
                             <div className="text-[12px] font-black truncate" style={{ color: 'var(--text-on-primary)' }}>{file.name}</div>
-                            <div className="text-[10px] opacity-60 font-bold">{file.size}</div>
+                            <div className="text-[10px] opacity-60 font-bold">{fileSizeLabel(file)}</div>
                           </div>
                         </div>
                         <button

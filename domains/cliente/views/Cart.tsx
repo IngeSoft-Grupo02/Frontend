@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, Info, Loader2, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, Info, Loader2, AlertTriangle, Upload, X } from 'lucide-react';
 import { Store, User, CartItem, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -23,11 +23,59 @@ interface CartProps {
   cartAlreadySubmitted?: boolean;
   quotationDescription?: string;
   onQuotationDescriptionChange?: (description: string) => void;
+  quotationFiles?: File[];
+  onQuotationFilesChange?: (files: File[]) => void;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const [fileError, setFileError] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const allowedFileTypes = React.useMemo(() => new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']), []);
+  const maxFileSizeBytes = 10 * 1024 * 1024;
+
+  const fileSizeLabel = (file: File) => {
+    if (file.size < 1024 * 1024) return `${Math.max(1, Math.round(file.size / 1024))} KB`;
+    return `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (selected.length === 0) return;
+
+    const remainingSlots = 5 - quotationFiles.length;
+    if (remainingSlots <= 0) {
+      setFileError('Máximo 5 archivos permitidos.');
+      return;
+    }
+
+    const accepted: File[] = [];
+    for (const file of selected.slice(0, remainingSlots)) {
+      if (file.size === 0) {
+        setFileError('El archivo está vacío.');
+        return;
+      }
+      if (file.size > maxFileSizeBytes) {
+        setFileError('El archivo supera el tamaño máximo permitido.');
+        return;
+      }
+      if (!allowedFileTypes.has(file.type)) {
+        setFileError('Formato de archivo no permitido.');
+        return;
+      }
+      accepted.push(file);
+    }
+
+    onQuotationFilesChange?.([...quotationFiles, ...accepted]);
+    setFileError(null);
+  };
+
+  const removeFile = (index: number) => {
+    onQuotationFilesChange?.(quotationFiles.filter((_, currentIndex) => currentIndex !== index));
+    setFileError(null);
+  };
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -151,6 +199,50 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                   />
                   <p className="text-[10px] text-right opacity-50 font-bold">{quotationDescription.length}/500</p>
+                </div>
+
+                <div className="mb-8 space-y-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden"
+                    onChange={handleFileSelection}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full px-4 py-3 rounded-xl border flex items-center justify-center gap-2 text-[12px] font-black cursor-pointer hover:opacity-85 transition-opacity"
+                    style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                  >
+                    <Upload size={16} /> Adjuntar diseños o fotos
+                  </button>
+                  <p className="text-[10px] opacity-55 font-bold text-center">PNG, JPG, WEBP o PDF. Máximo 5 archivos.</p>
+                  {fileError && (
+                    <p className="text-[11px] font-bold text-red-600">{fileError}</p>
+                  )}
+                  {quotationFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {quotationFiles.map((file, index) => (
+                        <div key={`${file.name}-${file.size}-${index}`} className="rounded-xl border px-3 py-2 flex items-center gap-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                          <FileText size={15} className="shrink-0 opacity-70" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-black truncate">{file.name}</p>
+                            <p className="text-[10px] opacity-55 font-bold">{fileSizeLabel(file)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="p-1 rounded-lg hover:bg-black/5 cursor-pointer"
+                            title="Quitar archivo"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {!user && (
