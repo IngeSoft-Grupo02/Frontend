@@ -33,6 +33,7 @@ export enum View {
 export interface CartItem {
   id: string;
   productId: string;
+  productVariantId: string;
   productName: string;
   quantity: number;
   specs: string;
@@ -196,6 +197,7 @@ export interface CartResponseDTO {
 
 export interface CartItemResponseDTO {
   id: number;
+  productId: number;
   productVariantId: number;
   productName: string;
   size: string;
@@ -253,9 +255,11 @@ export interface QuotationDesignDTO {
   url: string;
   contentType: string;
   sizeBytes: number;
+  quotationItemId?: number | null;
 }
 
 export interface QuotationItemResponseDTO {
+  id?: number;
   productId: number;
   productName: string;
   productVariantId: number;
@@ -265,6 +269,8 @@ export interface QuotationItemResponseDTO {
   quantity: number;
   unitPrice: number;
   subTotal: number;
+  customerDescription?: string | null;
+  designs?: QuotationDesignDTO[];
   product?: string;
   variant?: string;
   price?: number;
@@ -325,6 +331,7 @@ export interface PaymentPayload {
 export interface QuotationCreatePayload {
   description?: string | null;
   designs?: File[];
+  designAssociations?: ({ productVariantId: number } | null)[];
 }
 
 export interface PaymentResponseDTO {

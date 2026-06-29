@@ -17,7 +17,7 @@ import {
     TrendingUp,
     X
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const formatRequestDate = (value?: string) => {
   if (!value) return '';
@@ -418,7 +418,8 @@ export default function QuotesPage() {
                         </thead>
                         <tbody className="divide-y border-brand-neutral-border">
                           {selectedQuote.items.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-white transition-colors">
+                            <React.Fragment key={idx}>
+                            <tr className="hover:bg-white transition-colors">
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-11 bg-brand-black rounded-xl flex items-center justify-center shrink-0">
@@ -439,6 +440,31 @@ export default function QuotesPage() {
                               <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.price.toFixed(2)}</td>
                               <td className="px-4 py-3 text-right text-[15px] font-black tracking-tight text-brand-black whitespace-nowrap">S/ {(item.quantity * item.price).toFixed(2)}</td>
                             </tr>
+                            {(item.customerDescription || (item.designs && item.designs.length > 0)) && (
+                              <tr>
+                                <td colSpan={5} className="px-4 pb-3 pt-0">
+                                  <div className="ml-13 pl-3 border-l-2 border-brand-neutral-border space-y-1">
+                                    {item.customerDescription && (
+                                      <p className="text-[11px] text-brand-text-muted font-bold">
+                                        <span className="uppercase tracking-wider text-[9px] opacity-60 mr-1">Indicaciones:</span>
+                                        {item.customerDescription}
+                                      </p>
+                                    )}
+                                    {item.designs && item.designs.length > 0 && (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {item.designs.map((d, di) => (
+                                          <a key={di} href={d.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-brand-neutral-100 text-[10px] font-bold text-brand-text-muted hover:opacity-75 border border-brand-neutral-border">
+                                            <FileText size={10} />
+                                            <span className="truncate max-w-[100px]">{d.name}</span>
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            </React.Fragment>
                           ))}
                         </tbody>
                       </table>

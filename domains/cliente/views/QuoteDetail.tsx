@@ -21,7 +21,7 @@ interface QuoteDetailProps {
 
 export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, onNavigate, onLogout, cartCount }) => {
   const items = quote.items || [];
-  const files = quote.files || [];
+  const generalFiles = (quote.files || []).filter((f) => !f.quotationItemId);
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -76,15 +76,36 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                     <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Ítems</span>
                     <div className="space-y-3">
                       {items.map((item) => (
-                        <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-4" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                          <div>
-                            <div className="font-black text-[13px]">{item.productName || item.product}</div>
-                            <div className="text-[11px] font-bold opacity-70">{item.size} / {getColorLabel(item.color)} · Stock al solicitar: {item.stockAvailable}</div>
+                        <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                          <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                              <div className="font-black text-[13px]">{item.productName || item.product}</div>
+                              <div className="text-[11px] font-bold opacity-70">{item.size} / {getColorLabel(item.color)} · Stock al solicitar: {item.stockAvailable}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.unitPrice || item.price || 0).toFixed(2)}</div>
+                              <div className="text-[14px] font-black">S/ {item.subTotal.toLocaleString()}</div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.unitPrice || item.price || 0).toFixed(2)}</div>
-                            <div className="text-[14px] font-black">S/ {item.subTotal.toLocaleString()}</div>
-                          </div>
+                          {item.customerDescription && (
+                            <div className="pt-2 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                              <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Indicaciones</span>
+                              <p className="text-[12px] font-bold opacity-75 whitespace-pre-line">{item.customerDescription}</p>
+                            </div>
+                          )}
+                          {item.designs && item.designs.length > 0 && (
+                            <div className="pt-2 border-t flex flex-wrap gap-2" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                              {item.designs.map((d) => {
+                                const isImg = d.contentType?.startsWith('image/');
+                                return (
+                                  <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg border px-2 py-1 text-[10px] font-bold hover:opacity-80" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                                    {isImg ? <ImageIcon size={12} /> : <FileText size={12} />}
+                                    <span className="truncate max-w-[120px]">{d.fileName}</span>
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -98,11 +119,11 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   </div>
                 )}
 
-                {files.length > 0 && (
+                {generalFiles.length > 0 && (
                   <div className="py-8 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Diseños adjuntos</span>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Adjuntos generales</span>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {files.map((file) => {
+                      {generalFiles.map((file) => {
                         const isImage = file.contentType?.startsWith('image/');
                         return (
                           <a

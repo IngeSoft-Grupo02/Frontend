@@ -90,6 +90,7 @@ export interface Quote {
   responseDate?: string;
   responseAt?: string;
   items: {
+    id?: string;
     product: string;
     variant: string;
     quantity: number;
@@ -101,6 +102,8 @@ export interface Quote {
     color?: string;
     unitPrice?: number;
     subTotal?: number;
+    customerDescription?: string | null;
+    designs?: { name: string; type: string; url: string; quotationItemId?: number | null }[];
   }[];
   message?: string;
   observations?: string;
