@@ -1,7 +1,6 @@
-'use client';
-
-import App from '@/domains/cliente/App';
+import { ClienteRouteView } from '@/domains/cliente/RouteView';
+import { View } from '@/domains/cliente/types';
 
 export default function Home() {
-  return <App />;
+  return <ClienteRouteView view={View.DIRECTORY} />;
 }
