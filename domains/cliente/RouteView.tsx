@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import App from './App';
@@ -30,6 +30,8 @@ export function ClienteRouteView({ view, slug, path }: ClienteRouteViewProps) {
   } = useApp();
   const [loading, setLoading] = useState(Boolean(slug));
   const [routeError, setRouteError] = useState<string | null>(null);
+  const storeRef = useRef(selectedStore);
+  storeRef.current = selectedStore;
 
   const routeState = useMemo(() => {
     return slug ? parseClientePath(path) : { view: view ?? View.DIRECTORY };
@@ -51,9 +53,12 @@ export function ClienteRouteView({ view, slug, path }: ClienteRouteViewProps) {
       setLoading(true);
       setRouteError(null);
       try {
-        const store = toStore(await fetchPublicStore(slug));
-        if (!active) return;
-        setSelectedStore(store);
+        let store = storeRef.current;
+        if (!store || store.slug !== slug) {
+          store = toStore(await fetchPublicStore(slug));
+          if (!active) return;
+          setSelectedStore(store);
+        }
 
         if (routeState.productId) {
           const product = toProduct(await fetchPublicProduct(slug, routeState.productId), store.slug || store.id);
