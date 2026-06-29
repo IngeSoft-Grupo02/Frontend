@@ -73,6 +73,14 @@ export default function App() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const activeView = pathname === '/' ? View.DIRECTORY : currentView;
+
+  useEffect(() => {
+    if (pathname === '/' && currentView !== View.DIRECTORY) {
+      setCurrentView(View.DIRECTORY);
+    }
+  }, [pathname, currentView, setCurrentView]);
+
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
@@ -435,7 +443,7 @@ export default function App() {
   };
 
   const renderCurrentView = () => {
-    switch (currentView) {
+    switch (activeView) {
       case View.DIRECTORY:
         return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
 
@@ -516,7 +524,7 @@ export default function App() {
     <div className="text-text-main font-sans">
       <AnimatePresence mode="wait">
         <motion.div
-           key={currentView}
+           key={activeView}
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
            exit={{ opacity: 0 }}
