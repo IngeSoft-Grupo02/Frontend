@@ -25,9 +25,10 @@ interface CartProps {
   onQuotationDescriptionChange?: (description: string) => void;
   quotationFiles?: File[];
   onQuotationFilesChange?: (files: File[]) => void;
+  itemDesignFiles?: Record<string, File[]>;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange, itemDesignFiles = {} }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const [fileError, setFileError] = React.useState<string | null>(null);
@@ -142,6 +143,14 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     {item.specs && (
                       <p className="text-[11px] mt-2 truncate max-w-[300px] italic opacity-60">"{item.specs}"</p>
                     )}
+                    {item.quoteDescription && (
+                      <p className="text-[10px] mt-1 truncate max-w-[300px] font-bold opacity-50">Indicaciones: {item.quoteDescription}</p>
+                    )}
+                    {(itemDesignFiles[item.productVariantId] || []).length > 0 && (
+                      <p className="text-[10px] mt-1 font-bold opacity-50">
+                        {(itemDesignFiles[item.productVariantId] || []).length} archivo(s) de diseño adjunto(s)
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right">
@@ -216,7 +225,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     className="w-full px-4 py-3 rounded-xl border flex items-center justify-center gap-2 text-[12px] font-black cursor-pointer hover:opacity-85 transition-opacity"
                     style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                   >
-                    <Upload size={16} /> Adjuntar diseños o fotos
+                    <Upload size={16} /> Adjuntar archivos generales
                   </button>
                   <p className="text-[10px] opacity-55 font-bold text-center">PNG, JPG, WEBP o PDF. Máximo 5 archivos.</p>
                   {fileError && (

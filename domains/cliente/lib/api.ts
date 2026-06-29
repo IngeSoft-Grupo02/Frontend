@@ -233,7 +233,8 @@ export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
 export function toCartItems(dto: CartResponseDTO): CartItem[] {
   return (dto.items || []).map((item) => ({
     id: String(item.id),
-    productId: String(item.productVariantId),
+    productId: String(item.productId),
+    productVariantId: String(item.productVariantId),
     productName: item.productName,
     quantity: item.quantity,
     specs: [item.size, item.color ? getColorLabel(item.color) : ''].filter(Boolean).join(' / '),
@@ -275,7 +276,7 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     date: formatDate(dto.requestedAt),
     amount: dto.totalAmount ?? 0,
     status: toQuoteStatus(dto),
-    hasDesign: Boolean(dto.description || dto.observations || dto.designs?.length),
+    hasDesign: Boolean(dto.description || dto.observations || dto.designs?.length || items.some((item) => item.customerDescription || item.designs?.length)),
     rawStatus: dto.status,
     subTotal: dto.subTotal ?? 0,
     discount: dto.discount ?? 0,
@@ -340,10 +341,14 @@ export function addCartDesign(
 export function createQuotation(slug: string, token: string, payload: QuotationCreatePayload = {}): Promise<QuotationResponseDTO> {
   const description = payload.description?.trim() ? payload.description.trim() : null;
   const designs = payload.designs || [];
+  const designAssociations = payload.designAssociations;
   if (designs.length > 0) {
     const body = new FormData();
     if (description) body.append('description', description);
     designs.forEach((file) => body.append('designs', file));
+    if (designAssociations && designAssociations.length > 0) {
+      body.append('designAssociations', JSON.stringify(designAssociations));
+    }
     return request<QuotationResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations`, {
       method: 'POST',
       headers: authHeaders(token),

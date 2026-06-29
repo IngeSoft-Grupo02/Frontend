@@ -489,6 +489,7 @@ const mapQuoteFiles = (raw: JsonValue): Quote['files'] => {
   const source = raw.files || raw.attachments || raw.designFiles || raw.customDesigns || raw.designs;
   if (!Array.isArray(source)) return undefined;
   return source
+    .filter((file: JsonValue) => !file.quotationItemId)
     .map((file: JsonValue) => {
       const url = String(file.url || file.fileUrl || file.designUrl || file.imageUrl || '').trim();
       const name = String(file.name || file.fileName || file.filename || 'archivo').trim();
@@ -524,6 +525,7 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   responseDate: raw.responseAt ? String(raw.responseAt).slice(0, 10) : undefined,
   responseAt: raw.responseAt ? String(raw.responseAt) : undefined,
   items: (raw.items || []).map((item: JsonValue) => ({
+    id: item.id != null ? String(item.id) : undefined,
     product: item.productName || item.name || item.product || 'Producto sin nombre registrado',
     variant: buildVariantLabel(item),
     quantity: Number(item.quantity || 0),
@@ -534,7 +536,14 @@ export const mapQuote = (raw: JsonValue): Quote => ({
     size: item.size || undefined,
     color: item.color ? getColorLabel(item.color) : undefined,
     unitPrice: item.unitPrice != null ? Number(item.unitPrice) : undefined,
-    subTotal: item.subTotal != null ? Number(item.subTotal) : undefined
+    subTotal: item.subTotal != null ? Number(item.subTotal) : undefined,
+    customerDescription: item.customerDescription || undefined,
+    designs: (item.designs || []).map((d: JsonValue) => ({
+      name: d.fileName || d.name || '',
+      type: d.contentType || d.type || '',
+      url: d.url || '',
+      quotationItemId: d.quotationItemId ?? null
+    }))
   })),
   // "Requerimiento del cliente" usa solo description real (no observations ni texto técnico de seeds).
   message: cleanCustomerDescription(raw.description),
