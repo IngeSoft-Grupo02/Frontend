@@ -12,6 +12,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
 import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
+import { discountRuleLabel } from '../lib/pricing';
 
 interface ProductDetailProps {
   store: Store;
@@ -149,7 +150,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                   <div className="space-y-2">
                     {latestProduct.discounts.map((discount) => (
                       <div key={discount.id} className="flex justify-between items-center px-4 py-3 rounded-xl border text-[12px] font-bold" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                        <span>{discount.name} ({discount.minQuantity}-{discount.maxQuantity} u.)</span>
+                        <span>{discount.name} ({discountRuleLabel(discount)})</span>
                         <span style={{ color: 'var(--accent-on-primary)' }}>{discount.discountPercentage}%</span>
                       </div>
                     ))}

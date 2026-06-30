@@ -9,6 +9,7 @@ import { Store, User, Quote, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
 import { getColorLabel } from '../../shared/colors';
+import { money } from '../lib/pricing';
 
 interface QuoteDetailProps {
   store: Store;
@@ -22,6 +23,9 @@ interface QuoteDetailProps {
 export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, onNavigate, onLogout, cartCount }) => {
   const items = quote.items || [];
   const generalFiles = (quote.files || []).filter((f) => !f.quotationItemId);
+  const productSubtotal = quote.productSubtotal ?? quote.subTotal ?? quote.amount;
+  const discountTotal = quote.discountTotal ?? quote.discount ?? 0;
+  const designFeeTotal = quote.designFeeTotal ?? items.reduce((sum, item) => sum + (item.designFeeAmount || 0), 0);
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -59,16 +63,20 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   <span className="font-black" style={{ color: 'var(--text-on-secondary)' }}>{quote.quantity} unidades</span>
                 </div>
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                  <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Subtotal</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>S/ {(quote.subTotal ?? quote.amount).toLocaleString()}</span>
+                  <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Subtotal productos</span>
+                  <span className="font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(productSubtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Descuento</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>S/ {(quote.discount ?? 0).toLocaleString()}</span>
+                  <span className="font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {money(discountTotal)}</span>
+                </div>
+                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                  <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Cargo extra por diseño</span>
+                  <span className="font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>+ S/ {money(designFeeTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Monto total</span>
-                  <span className="font-black text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {quote.amount.toLocaleString()}</span>
+                  <span className="font-black text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(quote.amount)}</span>
                 </div>
 
                 {items.length > 0 && (
@@ -83,10 +91,18 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                               <div className="text-[11px] font-bold opacity-70">{item.size} / {getColorLabel(item.color)} · Stock al solicitar: {item.stockAvailable}</div>
                             </div>
                             <div className="text-right">
-                              <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.unitPrice || item.price || 0).toFixed(2)}</div>
-                              <div className="text-[14px] font-black">S/ {item.subTotal.toLocaleString()}</div>
+                              <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.baseUnitPrice || item.unitPrice || item.price || 0).toFixed(2)}</div>
+                              <div className="text-[14px] font-black">S/ {money(item.lineTotal ?? item.subTotal)}</div>
                             </div>
                           </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-bold opacity-70">
+                            <span>Base: S/ {money(item.baseSubtotal ?? item.subTotal)}</span>
+                            <span>Descuento: -S/ {money(item.discountAmount || 0)}</span>
+                            <span>Diseño: +S/ {money(item.designFeeAmount || 0)}</span>
+                          </div>
+                          {item.discountRuleLabel && (
+                            <p className="text-[10px] font-bold text-emerald-600">{item.discountRuleLabel}</p>
+                          )}
                           {item.customerDescription && (
                             <div className="pt-2 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                               <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Indicaciones</span>
