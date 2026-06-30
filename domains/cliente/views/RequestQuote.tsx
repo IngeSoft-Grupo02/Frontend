@@ -10,6 +10,7 @@ import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { getColorLabel } from '../../shared/colors';
+import { DESIGN_FEE_RATE, bestDiscount, discountRuleLabel, money } from '../lib/pricing';
 
 interface RequestQuoteProps {
   store: Store;
@@ -135,18 +136,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   const basePrice = product?.price || 28;
   const subtotal = basePrice * quantity;
 
-  const designFeeRate = parseFloat(store.designFeePercentage || '10') / 100;
-  const designFeeAmount = uploadedFiles.length > 0 ? (subtotal * designFeeRate) : 0;
-
-  const amountBeforeDiscount = subtotal + designFeeAmount;
-
-  const applicableDiscount = (product?.discounts || [])
-    .filter((discount) => quantity >= discount.minQuantity && quantity <= discount.maxQuantity)
-    .reduce((best, discount) => Math.max(best, discount.discountPercentage || 0), 0);
-  const discountRate = applicableDiscount / 100;
-  const discountAmount = amountBeforeDiscount * discountRate;
-
-  const total = amountBeforeDiscount - discountAmount;
+  const designFeeAmount = uploadedFiles.length > 0 ? subtotal * DESIGN_FEE_RATE : 0;
+  const applicableDiscount = bestDiscount(product?.discounts || [], quantity);
+  const discountRate = Number(applicableDiscount?.discountPercentage || 0) / 100;
+  const discountAmount = subtotal * discountRate;
+  const total = subtotal - discountAmount + designFeeAmount;
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -314,7 +308,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
                 <p className="text-[15px] font-bold leading-relaxed">
                   <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Nota de Producción</span>
-                  La inclusión de un diseño personalizado conlleva un incremento del {store.designFeePercentage || '10%'} sobre el monto total de esta cotización. Este incremento se aplica automáticamente al adjuntar archivos de referencia.
+                  La inclusión de un diseño personalizado conlleva un incremento del 10% sobre el subtotal de este producto. Este incremento se aplica solo cuando adjuntas archivos de referencia para el producto.
                 </p>
               </div>
 
@@ -437,16 +431,16 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       <div className="text-[11px] font-bold opacity-60" style={{ color: 'var(--text-on-primary)' }}>S/ {basePrice.toFixed(2)} c/u</div>
                    </div>
                 </div>
-                <div className="text-[14px] font-black" style={{ color: 'var(--text-on-primary)' }}>S/ {subtotal.toLocaleString()}</div>
+                <div className="text-[14px] font-black" style={{ color: 'var(--text-on-primary)' }}>S/ {money(subtotal)}</div>
               </div>
 
               <div className="flex justify-between items-center px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-2 font-bold" style={{ color: 'var(--text-on-primary)' }}>
                   <ImageIcon size={16} />
-                  Incremento por diseño ({store.designFeePercentage || '10%'})
+                  Incremento por diseño (10%)
                 </div>
                 <div className="text-[14px] font-black" style={{ color: 'var(--accent-on-primary)' }}>
-                  {designFeeAmount > 0 ? `+ S/ ${designFeeAmount.toLocaleString()}` : 'S/ 0.00'}
+                  {designFeeAmount > 0 ? `+ S/ ${money(designFeeAmount)}` : 'S/ 0.00'}
                 </div>
               </div>
 
@@ -454,9 +448,9 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 <div className="flex justify-between items-center px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)', color: 'var(--text-on-secondary)' }}>
                   <div className="flex items-center gap-2 font-bold">
                     <CheckCircle2 size={16} className="text-emerald-500" />
-                    Descuento vol. ({(discountRate * 100).toFixed(0)}%)
+                    {applicableDiscount ? discountRuleLabel(applicableDiscount) : 'Descuento vol.'}
                   </div>
-                  <div className="text-[14px] font-black text-emerald-500">- S/ {discountAmount.toLocaleString()}</div>
+                  <div className="text-[14px] font-black text-emerald-500">- S/ {money(discountAmount)}</div>
                 </div>
               )}
             </div>
@@ -465,7 +459,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                <div className="flex justify-between items-end">
                   <div className="text-[14px] font-black uppercase tracking-widest opacity-60">Total</div>
                   <div className="text-right">
-                     <div className="text-[32px] font-black leading-none mb-1 tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>S/ {total.toLocaleString()}</div>
+                     <div className="text-[32px] font-black leading-none mb-1 tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(total)}</div>
                      <div className="text-[10px] font-black uppercase tracking-widest opacity-50">Monto final sujeto a revisión</div>
                   </div>
                </div>

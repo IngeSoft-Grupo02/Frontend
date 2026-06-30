@@ -241,6 +241,14 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     hasDesign: Boolean(item.customDesign),
     price: item.price,
     quoteDescription: item.customDesign?.description ?? null,
+    baseUnitPrice: item.baseUnitPrice ?? item.price,
+    baseSubtotal: item.baseSubtotal ?? item.price * item.quantity,
+    discountAmount: item.discountAmount ?? 0,
+    designFeeAmount: item.designFeeAmount ?? 0,
+    lineTotal: item.lineTotal ?? item.subtotal ?? item.price * item.quantity,
+    discountApplied: item.discountApplied ?? 0,
+    discountRuleLabel: item.discountRuleLabel ?? null,
+    hasDesignFee: item.hasDesignFee ?? false,
   }));
 }
 
@@ -280,6 +288,9 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     rawStatus: dto.status,
     subTotal: dto.subTotal ?? 0,
     discount: dto.discount ?? 0,
+    productSubtotal: dto.productSubtotal,
+    discountTotal: dto.discountTotal,
+    designFeeTotal: dto.designFeeTotal,
     description: dto.description,
     observations: dto.observations,
     items,

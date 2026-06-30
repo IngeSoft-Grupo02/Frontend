@@ -40,6 +40,14 @@ export interface CartItem {
   hasDesign: boolean;
   price: number;
   quoteDescription?: string | null;
+  baseUnitPrice?: number;
+  baseSubtotal?: number;
+  discountAmount?: number;
+  designFeeAmount?: number;
+  lineTotal?: number;
+  discountApplied?: number;
+  discountRuleLabel?: string | null;
+  hasDesignFee?: boolean;
 }
 
 export interface Store {
@@ -181,6 +189,9 @@ export interface Quote {
   rawStatus?: string;
   subTotal?: number;
   discount?: number;
+  productSubtotal?: number;
+  discountTotal?: number;
+  designFeeTotal?: number;
   description?: string | null;
   observations?: string | null;
   items?: QuotationItemResponseDTO[];
@@ -193,6 +204,9 @@ export interface CartResponseDTO {
   subTotal: number;
   discount: number;
   totalAmount: number;
+  productSubtotal?: number;
+  discountTotal?: number;
+  designFeeTotal?: number;
 }
 
 export interface CartItemResponseDTO {
@@ -207,6 +221,13 @@ export interface CartItemResponseDTO {
   subtotal: number;
   discountApplied: number;
   customDesign: CartCustomDesignResponseDTO | null;
+  baseUnitPrice?: number;
+  baseSubtotal?: number;
+  discountAmount?: number;
+  designFeeAmount?: number;
+  lineTotal?: number;
+  discountRuleLabel?: string | null;
+  hasDesignFee?: boolean;
 }
 
 export interface CartCustomDesignResponseDTO {
@@ -235,6 +256,9 @@ export interface QuotationResponseDTO {
   subTotal: number;
   discount: number;
   totalAmount: number;
+  productSubtotal?: number;
+  discountTotal?: number;
+  designFeeTotal?: number;
   requestedAt: string | null;
   responseAt: string | null;
   description: string | null;
@@ -269,6 +293,13 @@ export interface QuotationItemResponseDTO {
   quantity: number;
   unitPrice: number;
   subTotal: number;
+  baseUnitPrice?: number;
+  baseSubtotal?: number;
+  discountAmount?: number;
+  designFeeAmount?: number;
+  lineTotal?: number;
+  discountRuleLabel?: string | null;
+  hasDesignFee?: boolean;
   customerDescription?: string | null;
   designs?: QuotationDesignDTO[];
   product?: string;

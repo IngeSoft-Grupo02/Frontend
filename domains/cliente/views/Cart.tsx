@@ -9,6 +9,7 @@ import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, Info, Loader2, A
 import { Store, User, CartItem, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { DESIGN_FEE_RATE, money } from '../lib/pricing';
 
 interface CartProps {
   store: Store;
@@ -30,7 +31,28 @@ interface CartProps {
 
 export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange, itemDesignFiles = {} }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const pricedItems = items.map((item) => {
+    const localDesignFiles = itemDesignFiles[item.productVariantId] || [];
+    const hasDesign = item.hasDesign || item.hasDesignFee || localDesignFiles.length > 0;
+    const hasDesignCharge = Boolean(item.hasDesignFee) || localDesignFiles.length > 0;
+    const baseSubtotal = item.baseSubtotal ?? item.price * item.quantity;
+    const discountAmount = item.discountAmount ?? 0;
+    const designFeeAmount = hasDesignCharge ? baseSubtotal * DESIGN_FEE_RATE : 0;
+    const lineTotal = baseSubtotal - discountAmount + designFeeAmount;
+    return {
+      ...item,
+      hasDesign,
+      localDesignFiles,
+      baseSubtotal,
+      discountAmount,
+      designFeeAmount,
+      lineTotal,
+    };
+  });
+  const productsSubtotal = pricedItems.reduce((sum, item) => sum + item.baseSubtotal, 0);
+  const discountTotal = pricedItems.reduce((sum, item) => sum + item.discountAmount, 0);
+  const designFeeTotal = pricedItems.reduce((sum, item) => sum + item.designFeeAmount, 0);
+  const totalAmount = productsSubtotal - discountTotal + designFeeTotal;
   const [fileError, setFileError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const allowedFileTypes = React.useMemo(() => new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']), []);
@@ -120,7 +142,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* List of items */}
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item, i) => (
+              {pricedItems.map((item, i) => (
                 <motion.div
                   key={item.id}
                   layout
@@ -146,16 +168,29 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     {item.quoteDescription && (
                       <p className="text-[10px] mt-1 truncate max-w-[300px] font-bold opacity-50">Indicaciones: {item.quoteDescription}</p>
                     )}
-                    {(itemDesignFiles[item.productVariantId] || []).length > 0 && (
+                    {item.localDesignFiles.length > 0 && (
                       <p className="text-[10px] mt-1 font-bold opacity-50">
-                        {(itemDesignFiles[item.productVariantId] || []).length} archivo(s) de diseño adjunto(s)
+                        {item.localDesignFiles.length} archivo(s) de diseño adjunto(s)
+                      </p>
+                    )}
+                    {item.discountAmount > 0 && (
+                      <p className="text-[10px] mt-1 font-bold text-emerald-600">
+                        {item.discountRuleLabel || `Descuento por volumen: -S/ ${money(item.discountAmount)}`}
+                      </p>
+                    )}
+                    {item.designFeeAmount > 0 && (
+                      <p className="text-[10px] mt-1 font-bold opacity-60">
+                        Cargo por diseño: +S/ {money(item.designFeeAmount)}
                       </p>
                     )}
                   </div>
 
                   <div className="text-right">
                     <div className="text-[18px] font-extrabold mb-2" style={{ color: '#0F1011' }}>
-                      S/ {(item.price * item.quantity).toLocaleString()}
+                      S/ {money(item.lineTotal)}
+                    </div>
+                    <div className="text-[10px] font-bold opacity-50 mb-2">
+                      Base S/ {money(item.baseSubtotal)}
                     </div>
                     <button
                       onClick={() => onRemoveItem(item.id)}
@@ -186,10 +221,32 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     <span className="font-medium opacity-75">Total de unidades:</span>
                     <span className="font-bold">{totalItems}</span>
                   </div>
+                  <div className="flex justify-between text-[14px]">
+                    <span className="font-medium opacity-75">Subtotal productos:</span>
+                    <span className="font-bold">S/ {money(productsSubtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[14px]">
+                    <span className="font-medium opacity-75">Descuento aplicado:</span>
+                    <span className="font-bold text-emerald-600">- S/ {money(discountTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[14px]">
+                    <span className="font-medium opacity-75">Cargo extra por diseño:</span>
+                    <span className="font-bold">+ S/ {money(designFeeTotal)}</span>
+                  </div>
+                  {designFeeTotal > 0 && (
+                    <div className="rounded-xl border px-3 py-2 text-[11px] font-bold opacity-75" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                      Diseño aplicado a: {pricedItems.filter((item) => item.designFeeAmount > 0).map((item) => item.productName).join(', ')}
+                    </div>
+                  )}
+                  {discountTotal > 0 && (
+                    <div className="rounded-xl border px-3 py-2 text-[11px] font-bold opacity-75" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                      Descuentos: {pricedItems.filter((item) => item.discountAmount > 0).map((item) => item.discountRuleLabel || item.productName).join(', ')}
+                    </div>
+                  )}
                   <div className="border-t pt-4 flex justify-between items-end" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                    <span className="font-bold text-[12px] uppercase opacity-60">Monto Total Estimado</span>
+                    <span className="font-bold text-[12px] uppercase opacity-60">Total final</span>
                     <span className="text-[24px] font-extrabold leading-tight" style={{ color: '#0F1011' }}>
-                      S/ {totalAmount.toLocaleString()}
+                      S/ {money(totalAmount)}
                     </span>
                   </div>
                 </div>
