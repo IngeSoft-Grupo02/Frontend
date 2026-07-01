@@ -63,17 +63,17 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} showSearch={false} cartCount={cartCount} currentView={View.PRODUCT_DETAIL} />
 
-      <div className="max-w-7xl mx-auto px-10 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12 lg:py-16">
         <button
           type="button"
           onClick={() => onNavigate(View.CATALOG)}
-          className="mb-10 flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer"
+          className="mb-8 sm:mb-10 flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer"
           style={{ color: '#475569' }}
         >
           <ArrowLeft size={16} /> Volver al catálogo
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-16">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
           <div className="flex-1 space-y-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -90,7 +90,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                 </div>
               )}
             </motion.div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {(gallery.length ? gallery.slice(0, 4) : [null, null, null, null]).map((url, index) => (
                 <div key={`${url || 'fallback'}-${index}`} className="aspect-square border rounded-xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: index % 3 === 0 ? 'var(--color-primary)' : index % 3 === 1 ? 'var(--color-secondary)' : 'var(--color-tertiary)', borderColor: 'rgba(0,0,0,0.08)' }}>
                   {url ? <img src={url} alt={`${latestProduct.name} ${index + 1}`} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" /> : <FileText size={22} className="opacity-40" />}
@@ -100,7 +100,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
           </div>
 
           <div className="flex-1 max-w-xl">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex flex-wrap items-center gap-3 mb-5 sm:mb-6">
               <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
                 {store.name}
               </span>
@@ -108,14 +108,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
               <span className="text-[12px] font-medium uppercase tracking-widest opacity-60">Producto {latestProduct.id}</span>
             </div>
 
-            <h1 className="text-[42px] font-extrabold leading-tight mb-4" style={{ color: '#0F1011' }}>{latestProduct.name}</h1>
-            <p className="text-[18px] font-medium mb-10 leading-relaxed" style={{ color: '#475569' }}>{latestProduct.description}</p>
+            <h1 className="text-[32px] sm:text-[38px] lg:text-[42px] font-extrabold leading-tight mb-4" style={{ color: '#0F1011' }}>{latestProduct.name}</h1>
+            <p className="text-[15px] sm:text-[17px] lg:text-[18px] font-medium mb-8 sm:mb-10 leading-relaxed" style={{ color: '#475569' }}>{latestProduct.description}</p>
 
-            <div className="rounded-2xl border p-8 mb-10 space-y-8" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-              <div className="flex justify-between items-end border-b pb-6" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+            <div className="rounded-2xl border p-5 sm:p-8 mb-8 sm:mb-10 space-y-7 sm:space-y-8" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end border-b pb-6" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-widest block mb-1 opacity-60">Precio base por unidad</span>
-                  <span className="text-[32px] font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>S/ {latestProduct.price.toFixed(2)}</span>
+                  <span className="text-[28px] sm:text-[32px] font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>S/ {latestProduct.price.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[12px] font-black" style={{ color: 'var(--accent-on-secondary)' }}>
                   <PackageCheck size={18} /> Stock: {stock}
@@ -158,7 +158,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-8 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 pt-4">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center"><Ruler size={20} style={{ color: 'var(--text-on-secondary)', opacity: 0.6 }} /></div>
                   <div><div className="text-[12px] font-bold mb-1">Guía de tallas</div><p className="text-[11px] opacity-75">Según variantes disponibles</p></div>
@@ -192,7 +192,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
               </Button>
             </div>
 
-            <div className="mt-12 space-y-6 pt-12 border-t" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+            <div className="mt-8 sm:mt-12 space-y-6 pt-8 sm:pt-12 border-t" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
               <div className="flex gap-4">
                 <RefreshCw size={20} className="shrink-0 opacity-45" />
                 <p className="text-[13px] font-medium" style={{ color: '#475569' }}>Producción por demanda: el comerciante revisará stock y condiciones antes de aprobar la cotización.</p>

@@ -47,24 +47,24 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.PROFILE} />
       
-      <div className="max-w-4xl mx-auto px-10 py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12 lg:py-16">
         <button 
           onClick={() => onNavigate(View.CATALOG)}
-          className="flex items-center gap-2 text-[13px] font-bold transition-colors mb-10 cursor-pointer"
+          className="flex items-center gap-2 text-[13px] font-bold transition-colors mb-8 sm:mb-10 cursor-pointer"
           style={{ color: 'var(--text-on-primary)', opacity: 0.8 }}
         >
           <ArrowLeft size={16} /> Volver al catálogo
         </button>
 
-        <header className="mb-12">
-          <h1 className="text-[40px] font-extrabold tracking-tight mb-2" style={{ color: 'var(--text-on-primary)' }}>Mi Cuenta</h1>
+        <header className="mb-8 sm:mb-12">
+          <h1 className="text-[32px] sm:text-[40px] font-extrabold tracking-tight mb-2" style={{ color: 'var(--text-on-primary)' }}>Mi Cuenta</h1>
           <p className="font-medium opacity-75" style={{ color: 'var(--text-on-primary)' }}>Gestiona tu información personal y preferencias de contacto.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
           {/* Avatar and Summary */}
           <div className="space-y-6">
-            <div className="rounded-[24px] border p-8 text-center shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="rounded-[24px] border p-5 sm:p-8 text-center shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <div 
                 className="w-24 h-24 rounded-full flex items-center justify-center font-extrabold text-[32px] mx-auto mb-6 shadow-sm"
                 style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
@@ -72,7 +72,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
                 {user.name.split(' ').map(n => n[0]).join('')}
               </div>
               <h3 className="text-[18px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{user.name}</h3>
-              <p className="text-[13px] font-medium mb-2 opacity-70" style={{ color: 'var(--text-on-secondary)' }}>{user.email}</p>
+              <p className="break-all text-[13px] font-medium mb-2 opacity-70" style={{ color: 'var(--text-on-secondary)' }}>{user.email}</p>
               <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent-on-secondary)' }}>
                 {user.documentType} {user.documentId}
               </p>
@@ -93,7 +93,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
 
           {/* Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="rounded-[24px] border p-10 shadow-sm space-y-8" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <form onSubmit={handleSubmit} className="rounded-[24px] border p-5 sm:p-8 lg:p-10 shadow-sm space-y-8" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -152,8 +152,8 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
                 </div>
               </div>
 
-              <div className="pt-8 border-t flex items-center justify-between" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                <div>
+              <div className="pt-8 border-t flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="min-h-5">
                   {showSuccess && (
                      <motion.div 
                         initial={{ opacity: 0, x: -10 }}
@@ -167,7 +167,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
                 </div>
                 <Button 
                   variant="primary" 
-                  className="flex items-center gap-2 px-10 py-4 font-black cursor-pointer shadow-sm" 
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 sm:px-10 py-4 font-black cursor-pointer shadow-sm" 
                   style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                   disabled={isSaving}
                 >

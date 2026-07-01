@@ -146,28 +146,28 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} showSearch={false} cartCount={cartCount} currentView={View.REQUEST_QUOTE} />
 
-      <div className="max-w-7xl mx-auto px-10 pt-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-8 sm:pt-12">
         <button
           type="button"
           onClick={() => onNavigate(product ? View.PRODUCT_DETAIL : View.CATALOG)}
-          className="mb-10 flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer"
+          className="mb-8 sm:mb-10 flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer"
           style={{ color: '#475569' }}
         >
           <ArrowLeft size={16} /> {product ? 'Volver al producto' : 'Volver al catálogo'}
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-10 pb-12 flex gap-12">
-        <main className="flex-1">
-          <header className="mb-12">
-            <div className="flex items-center gap-3 text-[12px] font-bold uppercase tracking-widest mb-6 opacity-60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pb-12 flex flex-col xl:flex-row gap-8 xl:gap-12">
+        <main className="min-w-0 flex-1">
+          <header className="mb-8 sm:mb-12">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-[12px] font-bold uppercase tracking-widest mb-5 sm:mb-6 opacity-60">
               <span style={step >= 1 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Configuración</span>
               <ChevronRight size={14} />
               <span style={step >= 2 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Diseño</span>
               <ChevronRight size={14} />
               <span style={step >= 3 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Resumen</span>
             </div>
-            <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Solicitar cotización</h2>
+            <h2 className="text-[30px] sm:text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Solicitar cotización</h2>
             <p className="font-medium text-[15px] opacity-75" style={{ color: '#475569' }}>Personaliza tu pedido por volumen. El equipo de {store.name} revisará tu solicitud.</p>
           </header>
 
@@ -176,10 +176,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
             <motion.div
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
-               className="rounded-2xl border p-10"
+               className="rounded-2xl border p-5 sm:p-8 lg:p-10"
                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
-              <div className="flex items-start gap-6 mb-10">
+              <div className="flex items-start gap-4 sm:gap-6 mb-8 sm:mb-10">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>1</div>
                 <div>
                   <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Detalles del Producto</h3>
@@ -197,7 +197,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               </div>
 
               <div className="mt-10 space-y-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                   <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Distribución por Tallas y Colores</label>
                   <Button
                     variant="ghost"
@@ -216,10 +216,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       key={row.id}
-                      className="flex flex-wrap items-end gap-6 p-6 rounded-2xl border"
+                      className="grid grid-cols-1 gap-4 p-5 sm:flex sm:flex-wrap sm:items-end sm:gap-6 sm:p-6 rounded-2xl border"
                       style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
                     >
-                      <div className="flex-1 min-w-[120px] space-y-2">
+                      <div className="flex-1 sm:min-w-[120px] space-y-2">
                         <label className="text-[10px] font-black tracking-widest uppercase opacity-60">Talla</label>
                         <select
                           value={row.size}
@@ -230,7 +230,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                           {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
-                      <div className="flex-1 min-w-[150px] space-y-2">
+                      <div className="flex-1 sm:min-w-[150px] space-y-2">
                         <label className="text-[10px] font-black tracking-widest uppercase opacity-60">Color</label>
                         <select
                           value={row.color}
@@ -241,7 +241,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                           {COLORS.map(c => <option key={c} value={c}>{getColorLabel(c)}</option>)}
                         </select>
                       </div>
-                      <div className="w-32 space-y-2">
+                      <div className="w-full sm:w-32 space-y-2">
                         <label className="text-[10px] font-black tracking-widest uppercase opacity-60">Cantidad</label>
                         <input
                           type="number"
@@ -294,10 +294,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: 0.1 }}
-               className="rounded-2xl border p-10"
+               className="rounded-2xl border p-5 sm:p-8 lg:p-10"
                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
-              <div className="flex items-start gap-6 mb-10">
+              <div className="flex items-start gap-4 sm:gap-6 mb-8 sm:mb-10">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>2</div>
                 <div>
                   <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Diseño o personalización</h3>
@@ -305,7 +305,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 </div>
               </div>
 
-              <div className="border-2 rounded-2xl p-8 mb-10 flex items-start gap-5 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
+              <div className="border-2 rounded-2xl p-5 sm:p-8 mb-8 sm:mb-10 flex items-start gap-4 sm:gap-5 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
                 <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
                 <p className="text-[15px] font-bold leading-relaxed">
                   <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Importante</span>
@@ -314,7 +314,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               </div>
 
               <div
-                className="border-2 border-dashed rounded-2xl p-16 text-center group transition-colors cursor-pointer"
+                className="border-2 border-dashed rounded-2xl p-8 sm:p-12 lg:p-16 text-center group transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
                 style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
               >
@@ -332,7 +332,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
                   {uploadedFiles.length >= 5 ? 'Ya agregaste el máximo de archivos' : 'Adjuntar archivos del diseño'}
                 </h4>
-                <p className="text-[13px] opacity-60 font-medium mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
+                <p className="text-[13px] opacity-60 font-medium mb-6 sm:mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
                 <div className="flex justify-center gap-3">
                   <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                     <ImageIcon size={12} /> Logo, foto o PDF
@@ -395,11 +395,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               </div>
             )}
 
-            <div className="flex justify-end gap-6 pt-6">
-               <Button variant="ghost" onClick={() => onNavigate(View.CATALOG)} style={{ color: '#475569' }}>Cancelar</Button>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-6 pt-6">
+               <Button variant="ghost" className="w-full sm:w-auto" onClick={() => onNavigate(View.CATALOG)} style={{ color: '#475569' }}>Cancelar</Button>
                <Button
                 variant="primary"
-                className="px-16 cursor-pointer font-black flex items-center gap-2"
+                className="w-full sm:w-auto sm:px-16 cursor-pointer font-black flex items-center justify-center gap-2"
                 onClick={handleAddToCart}
                 disabled={quantity <= 0 || availableVariants.length === 0 || isAddingToCart}
                 style={{
@@ -415,8 +415,8 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
         </main>
 
         {/* Sidebar Summary */}
-        <aside className="w-[380px] flex-shrink-0">
-          <div className="rounded-2xl border p-10 sticky top-28 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+        <aside className="w-full xl:w-[380px] flex-shrink-0">
+          <div className="rounded-2xl border p-5 sm:p-8 xl:p-10 xl:sticky xl:top-28 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
             <h4 className="text-[15px] font-black uppercase tracking-widest mb-8 pb-4 border-b-2" style={{ color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.1)' }}>
               Resumen
             </h4>

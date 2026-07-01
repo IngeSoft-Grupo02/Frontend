@@ -87,9 +87,9 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_ORDERS} />
 
-      <div className="max-w-7xl mx-auto px-10 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
         <header className="mb-8">
-          <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis pedidos</h2>
+          <h2 className="text-[30px] sm:text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis pedidos</h2>
           <p className="text-[15px] font-medium opacity-75" style={{ color: '#475569' }}>
             Consulta el historial de tus compras y el progreso de tus órdenes activas.
           </p>
@@ -140,7 +140,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.07 }}
-                  className="rounded-2xl border p-8 flex flex-wrap lg:flex-nowrap items-center gap-10 group hover:shadow-lg transition-all cursor-pointer"
+                  className="rounded-2xl border p-5 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:flex-nowrap lg:items-center gap-6 lg:gap-10 group hover:shadow-lg transition-all cursor-pointer"
                   style={{
                     backgroundColor: 'var(--color-secondary)',
                     color: 'var(--text-on-secondary)',
@@ -149,7 +149,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   onClick={() => onSelectOrder(order)}
                 >
                   {/* Info básica */}
-                  <div className="flex items-center gap-6 min-w-[280px]">
+                  <div className="flex w-full items-center gap-4 sm:gap-6 lg:min-w-[280px] lg:w-auto">
                     <div
                       className="w-16 h-16 rounded-2xl flex items-center justify-center border transition-all"
                       style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
@@ -164,7 +164,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   </div>
 
                   {/* Timeline de estado */}
-                  <div className="flex-1 flex items-center gap-2 px-6 border-x mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                  <div className="w-full flex-1 flex items-center gap-2 overflow-x-auto px-0 py-4 no-scrollbar lg:px-6 lg:py-0 lg:border-x lg:mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
                     {[
                       { label: 'Pagado', icon: CreditCard },
                       { label: 'En proceso', icon: Clock },
@@ -200,7 +200,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   </div>
 
                   {/* Monto y estado */}
-                  <div className="flex flex-col items-end gap-2 pr-4 min-w-[150px]">
+                  <div className="flex w-full flex-row items-center justify-between gap-2 pr-0 lg:w-auto lg:min-w-[150px] lg:flex-col lg:items-end lg:pr-4">
                     <Badge status={order.status} />
                     <div className="text-[22px] font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>
                       S/ {order.amount.toFixed(2)}
@@ -208,7 +208,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   </div>
 
                   {/* Acciones */}
-                  <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex w-full flex-col gap-3 sm:w-auto" onClick={(e) => e.stopPropagation()}>
                     {canPay && (
                       <Button
                         variant="primary"
@@ -238,17 +238,17 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
         )}
 
         <div
-          className="mt-20 p-12 rounded-3xl flex items-center justify-between overflow-hidden relative border shadow-sm"
+          className="mt-12 sm:mt-20 p-6 sm:p-8 lg:p-12 rounded-3xl flex items-center justify-between overflow-hidden relative border shadow-sm"
           style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
         >
           <div className="relative z-10 w-full md:w-auto">
-            <h3 className="text-[28px] font-black mb-2 tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>¿Necesitas ayuda con un pedido?</h3>
+            <h3 className="text-[24px] sm:text-[28px] font-black mb-2 tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>¿Necesitas ayuda con un pedido?</h3>
             <p className="font-bold mb-8 max-w-md opacity-75" style={{ color: 'var(--text-on-secondary)' }}>
               Nuestro equipo está listo para asistirte con cualquier duda sobre tus órdenes.
             </p>
             <div className="flex flex-wrap gap-6 items-center">
               <div
-                className="rounded-2xl p-4 px-6 border flex items-center gap-4 shadow-sm"
+                className="w-full rounded-2xl p-4 sm:px-6 border flex items-center gap-4 shadow-sm"
                 style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}>
@@ -261,7 +261,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
               </div>
             </div>
           </div>
-          <ShoppingBag size={200} className="absolute -right-10 -bottom-10 opacity-5 rotate-12" />
+          <ShoppingBag size={160} className="absolute -right-10 -bottom-10 opacity-5 rotate-12 sm:size-[200px]" />
         </div>
       </div>
     </div>

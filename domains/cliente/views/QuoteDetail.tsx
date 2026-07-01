@@ -31,15 +31,15 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.QUOTE_DETAIL} />
 
-      <div className="max-w-7xl mx-auto px-6 md:px-10 py-12">
-        <button onClick={() => onNavigate(View.MY_QUOTES)} className="flex items-center gap-2 text-[12px] font-bold transition-colors mb-10 group cursor-pointer" style={{ color: '#475569' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 sm:py-12">
+        <button onClick={() => onNavigate(View.MY_QUOTES)} className="flex items-center gap-2 text-[12px] font-bold transition-colors mb-8 sm:mb-10 group cursor-pointer" style={{ color: '#475569' }}>
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> Volver a mis cotizaciones
         </button>
 
-        <header className="flex flex-wrap justify-between items-start gap-8 mb-12">
+        <header className="flex flex-wrap justify-between items-start gap-8 mb-8 sm:mb-12">
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-4 mb-4">
-              <h1 className="text-[38px] md:text-[48px] font-black leading-tight tracking-tight" style={{ color: '#0F1011' }}>Resumen de cotización</h1>
+              <h1 className="text-[30px] sm:text-[38px] md:text-[48px] font-black leading-tight tracking-tight" style={{ color: '#0F1011' }}>Resumen de cotización</h1>
               <div className="scale-110 origin-left"><Badge status={quote.status} /></div>
             </div>
             <p className="font-bold text-[15px] opacity-75 leading-relaxed" style={{ color: '#475569' }}>
@@ -50,7 +50,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           <div className="lg:col-span-12 xl:col-span-8 space-y-8">
-            <div className="rounded-[24px] border p-8 md:p-10 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="rounded-[24px] border p-5 sm:p-8 md:p-10 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h3 className="text-[20px] font-black mb-4 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
                 <FileText size={22} style={{ color: 'var(--accent-on-secondary)' }} /> Resumen
               </h3>
@@ -59,29 +59,29 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
               </p>
 
               <div className="space-y-0 text-[15px]">
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Producto principal</span>
                   <span className="font-black" style={{ color: 'var(--text-on-secondary)' }}>{quote.productName}</span>
                 </div>
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Cantidad total</span>
                   <span className="font-black" style={{ color: 'var(--text-on-secondary)' }}>{quote.quantity} unidades</span>
                 </div>
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Subtotal productos</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(productSubtotal)}</span>
+                  <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(productSubtotal)}</span>
                 </div>
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Descuento</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {money(discountTotal)}</span>
+                  <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {money(discountTotal)}</span>
                 </div>
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Cargo extra por diseño</span>
-                  <span className="font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>+ S/ {money(designFeeTotal)}</span>
+                  <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>+ S/ {money(designFeeTotal)}</span>
                 </div>
-                <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Monto total</span>
-                  <span className="font-black text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(quote.amount)}</span>
+                  <span className="whitespace-nowrap font-black text-[22px] sm:text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(quote.amount)}</span>
                 </div>
 
                 {items.length > 0 && (
@@ -184,16 +184,16 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
           </div>
 
           <aside className="lg:col-span-12 xl:col-span-4 space-y-8">
-            <div className="rounded-[24px] p-8 border relative overflow-hidden group shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="rounded-[24px] p-5 sm:p-8 border relative overflow-hidden group shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h4 className="text-[11px] font-black uppercase tracking-[0.25em] mb-6 opacity-60">Asistencia directa</h4>
               <p className="text-[16px] mb-8 leading-relaxed font-bold" style={{ color: 'var(--text-on-secondary)' }}>Si tienes dudas sobre esta cotización, comunícate con la tienda.</p>
-              <div className="rounded-2xl p-7 text-center shadow-md" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)' }}>
-                <div className="font-extrabold text-[24px] mb-1 tracking-tighter" style={{ color: 'var(--text-on-primary)' }}>{store.whatsapp ? `+51 ${store.whatsapp}` : 'Contacto de tienda'}</div>
+              <div className="rounded-2xl p-5 sm:p-7 text-center shadow-md" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)' }}>
+                <div className="font-extrabold text-[20px] sm:text-[24px] mb-1 tracking-tight sm:tracking-tighter" style={{ color: 'var(--text-on-primary)' }}>{store.whatsapp ? `+51 ${store.whatsapp}` : 'Contacto de tienda'}</div>
                 <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--accent-on-primary)' }}>Contacto directo</div>
               </div>
             </div>
 
-            <div className="rounded-[24px] border p-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="rounded-[24px] border p-5 sm:p-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h4 className="text-[11px] font-black uppercase tracking-widest mb-8 block opacity-60">Siguiente paso</h4>
               {quote.status === 'Aprobadas' ? (
                 <div className="flex flex-col gap-4">
