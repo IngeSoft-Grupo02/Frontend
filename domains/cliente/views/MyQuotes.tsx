@@ -76,20 +76,27 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
         if (selectedStatus === 'Rechazadas') return quote.status === 'Rechazadas';
         return true;
       });
+  const emptyTitle = quotes.length === 0
+    ? 'No hay cotizaciones por aquí'
+    : `No hay cotizaciones ${selectedStatus.toLowerCase()} por ahora`;
+  const emptyMessage = quotes.length === 0
+    ? 'Cuando solicites una cotización desde el catálogo, podrás revisar aquí su estado y respuesta de la tienda.'
+    : 'No hay nada nuevo en esta lista. Cuando una cotización cambie a este estado, aparecerá aquí.';
+  const emptyActionLabel = quotes.length === 0 ? 'Ver catálogo' : 'Ver todas';
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_QUOTES} />
 
-      <div className="max-w-7xl mx-auto px-10 py-12">
-        <header className="flex justify-between items-end mb-12">
+      <div className="max-w-7xl mx-auto px-10 py-10">
+        <header className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis cotizaciones</h2>
             <p className="text-[15px] font-medium opacity-75" style={{ color: '#475569' }}>Administra y revisa el estado de tus solicitudes en {store.name}.</p>
           </div>
         </header>
 
-        <div className="p-3 rounded-2xl mb-8 flex gap-3 overflow-x-auto no-scrollbar border shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+        <div className="p-3 rounded-2xl mb-6 flex gap-3 overflow-x-auto no-scrollbar border shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
           {['Todas', 'Pendientes', 'Aprobadas', 'Rechazadas'].map((status) => (
             <button
               key={status}
@@ -144,7 +151,7 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
                     <td className="px-6 py-6"><div className="scale-110 origin-left"><Badge status={quote.status} /></div></td>
                     <td className="px-10 py-6 text-center">
                       <Button variant="primary" className="px-5 py-2 !text-[11px] flex items-center gap-2 mx-auto cursor-pointer font-black" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', borderColor: 'transparent' }} onClick={() => onSelectQuote(quote)}>
-                        Ver detalle <ArrowRight size={14} />
+                        Ver resumen <ArrowRight size={14} />
                       </Button>
                     </td>
                   </motion.tr>
@@ -155,16 +162,14 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
         )}
 
         {!loading && !error && filteredQuotes.length === 0 && (
-          <div className="py-32 text-center" style={{ color: 'var(--text-on-primary)' }}>
-            <div className="w-20 h-20 border rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
-              <FileSearch size={32} />
+          <div className="py-16 text-center">
+            <div className="w-16 h-16 border rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
+              <FileSearch size={26} />
             </div>
-            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
-              {quotes.length === 0 ? 'Aún no tienes cotizaciones registradas.' : 'No hay cotizaciones para este filtro'}
-            </h4>
-            <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>Cuando envíes una cotización desde el carrito, aparecerá aquí.</p>
-            <Button variant="primary" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }} onClick={() => onNavigate(View.CATALOG)}>
-              Ver catálogo
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: '#0F1011' }}>{emptyTitle}</h4>
+            <p className="text-[14px] max-w-md mx-auto mb-7 leading-relaxed" style={{ color: '#64748B' }}>{emptyMessage}</p>
+            <Button variant="primary" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }} onClick={() => quotes.length === 0 ? onNavigate(View.CATALOG) : setSelectedStatus('Todas')}>
+              {emptyActionLabel}
             </Button>
           </div>
         )}

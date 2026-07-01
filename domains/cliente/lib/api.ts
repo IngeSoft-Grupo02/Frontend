@@ -236,6 +236,7 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     productId: String(item.productId),
     productVariantId: String(item.productVariantId),
     productName: item.productName,
+    productImageUrl: item.productImageUrl ?? null,
     quantity: item.quantity,
     specs: [item.size, item.color ? getColorLabel(item.color) : ''].filter(Boolean).join(' / '),
     hasDesign: Boolean(item.customDesign),

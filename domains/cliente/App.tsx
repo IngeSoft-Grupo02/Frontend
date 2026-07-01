@@ -44,6 +44,12 @@ import { getColorLabel } from '../shared/colors';
 import { messageFromError } from '../shared/errors';
 import { useAutoRefresh } from '../shared/hooks/useAutoRefresh';
 import { PROTECTED_CLIENT_VIEWS, viewToClientePath, ClienteRouteParams } from './lib/navigation';
+import {
+  deleteDraftItemDesignFiles,
+  deleteDraftItemDesignFilesMany,
+  loadDraftItemDesignFiles,
+  saveDraftItemDesignFiles,
+} from './lib/draftDesignFiles';
 
 // Vistas que requieren sesión de cliente iniciada (ya protegidas en renderCurrentView)
 export default function App() {
@@ -67,6 +73,12 @@ export default function App() {
     setSelectedOrder,
     cartItems,
     setCartItems,
+    quotationDescription,
+    setQuotationDescription,
+    itemDesignFiles,
+    setItemDesignFiles,
+    generalDesignFiles,
+    setGeneralDesignFiles,
     isHydrated,
   } = useApp();
 
@@ -74,6 +86,7 @@ export default function App() {
   const pathname = usePathname();
 
   const activeView = pathname === '/' ? View.DIRECTORY : currentView;
+  const previousStoreSlugRef = React.useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (pathname === '/' && currentView !== View.DIRECTORY) {
@@ -87,9 +100,7 @@ export default function App() {
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [cartAlreadySubmitted, setCartAlreadySubmitted] = useState(false);
-  const [quotationDescription, setQuotationDescription] = useState('');
-  const [itemDesignFiles, setItemDesignFiles] = useState<Record<string, File[]>>({});
-  const [generalDesignFiles, setGeneralDesignFiles] = useState<File[]>([]);
+  const pendingDesignImageMarker = 'pending-upload://cart-item-design';
 
   const getRouteParams = React.useCallback((overrides: ClienteRouteParams = {}): ClienteRouteParams => ({
     productId: overrides.productId ?? selectedProduct?.id,
@@ -139,10 +150,15 @@ export default function App() {
   // memoria para no arrastrar el conteo/contenido de la tienda anterior. Cada tienda
   // recarga su propio carrito (en login y en el auto-refresh de la vista de carrito).
   useEffect(() => {
+    const currentSlug = selectedStore?.slug;
+    const previousSlug = previousStoreSlugRef.current;
+    previousStoreSlugRef.current = currentSlug;
+    if (!previousSlug || previousSlug === currentSlug) return;
+
     setCartItems([]);
     setItemDesignFiles({});
     setGeneralDesignFiles([]);
-  }, [selectedStore?.slug, setCartItems]);
+  }, [selectedStore?.slug, setCartItems, setItemDesignFiles, setGeneralDesignFiles]);
 
   useEffect(() => {
     if (!isHydrated || currentUser || !selectedStore?.slug) return;
@@ -186,7 +202,20 @@ export default function App() {
     if (options.showLoading) setIsCartLoading(true);
     try {
       const cart = await fetchCart(slug, token);
-      setCartItems(toCartItems(cart));
+      const mappedItems = toCartItems(cart);
+      const persistedFiles = await loadDraftItemDesignFiles(slug, mappedItems.map((item) => item.id));
+      setItemDesignFiles((current) => {
+        const next: Record<string, File[]> = {};
+        for (const item of mappedItems) {
+          const files = current[item.id]?.length ? current[item.id] : persistedFiles[item.id];
+          if (files?.length) next[item.id] = files;
+        }
+        return next;
+      });
+      setCartItems(mappedItems.map((item) => ({
+        ...item,
+        localDesignFiles: persistedFiles[item.id] || [],
+      })));
       return cart;
     } finally {
       if (options.showLoading) setIsCartLoading(false);
@@ -257,8 +286,16 @@ export default function App() {
       return;
     }
 
+    const newestItemForVariant = (cart: any, variantId: number) => {
+      const matches = (cart.items || []).filter((cartItem: any) => cartItem.productVariantId === variantId);
+      return matches.sort((left: any, right: any) => Number(right.id) - Number(left.id))[0] || null;
+    };
+
     let latestCart = null;
+    const filesByItemId: Record<string, File[]> = {};
     const validRows = (item.rows || []).filter((row: any) => Number(row.quantity) > 0);
+    const customerDescription = String(item.specs || '').trim();
+    const hasDesignFiles = item.files?.length > 0;
     for (const row of validRows) {
       const variant = selectedProduct.variants.find(
         (entry) => entry.size === row.size && String(entry.color) === String(row.color),
@@ -271,28 +308,33 @@ export default function App() {
         quantity: Number(row.quantity),
       });
 
-      const addedItem = latestCart.items.find((cartItem) => cartItem.productVariantId === variant.id);
+      const addedItem = newestItemForVariant(latestCart, variant.id);
       if (addedItem) {
-        if (item.specs) {
-          const customerDescription = String(item.specs || '').trim();
-          if (customerDescription) {
-            latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
-              description: customerDescription,
-            });
-          }
+        if (customerDescription || hasDesignFiles) {
+          latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
+            description: customerDescription || null,
+            imageUrl: hasDesignFiles ? pendingDesignImageMarker : null,
+          });
         }
-        if (item.files?.length > 0) {
-          const variantKey = String(addedItem.productVariantId);
-          setItemDesignFiles((current) => ({
-            ...current,
-            [variantKey]: [...(current[variantKey] || []), ...item.files],
-          }));
+        if (hasDesignFiles) {
+          const itemKey = String(addedItem.id);
+          filesByItemId[itemKey] = [...(filesByItemId[itemKey] || []), ...item.files];
         }
       }
     }
 
     if (latestCart) {
-      setCartItems(toCartItems(latestCart));
+      await Promise.all(Object.entries(filesByItemId).map(([itemId, files]) => (
+        saveDraftItemDesignFiles(selectedStore.slug!, itemId, files)
+      )));
+      setItemDesignFiles((current) => ({
+        ...current,
+        ...filesByItemId,
+      }));
+      setCartItems(toCartItems(latestCart).map((cartItem) => ({
+        ...cartItem,
+        localDesignFiles: filesByItemId[cartItem.id] || itemDesignFiles[cartItem.id] || [],
+      })));
     } else {
       await loadCart(selectedStore.slug, customerToken, { showLoading: currentView === View.CART });
     }
@@ -300,8 +342,20 @@ export default function App() {
   };
 
   const removeFromCart = async (id: string) => {
+    const removeLocalItem = async () => {
+      setCartItems((current) => current.filter((item) => item.id !== id));
+      setItemDesignFiles((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      if (selectedStore?.slug) {
+        await deleteDraftItemDesignFiles(selectedStore.slug, id);
+      }
+    };
+
     if (!selectedStore?.slug || !customerToken) {
-      setCartItems(prev => prev.filter(item => item.id !== id));
+      await removeLocalItem();
       return;
     }
 
@@ -316,28 +370,44 @@ export default function App() {
       } else if (removedItem) {
         setItemDesignFiles((current) => {
           const next = { ...current };
-          delete next[removedItem.productVariantId];
+          delete next[removedItem.id];
           return next;
         });
+      }
+      if (removedItem) {
+        await deleteDraftItemDesignFiles(selectedStore.slug, removedItem.id);
       }
       // El carrito cambió: descartamos el estado de recuperación previo.
       setCartError(null);
       setCartAlreadySubmitted(false);
     } catch (err) {
-      setCartError(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
+      const message = messageFromError(err, 'No se pudo eliminar el producto del detalle de cotización.');
+      if (/no se encontr/i.test(message)) {
+        await removeLocalItem();
+        setCartError(null);
+        setCartAlreadySubmitted(false);
+        return;
+      }
+      setCartError(message);
     }
   };
 
-  const updateItemDesignFiles = (productVariantId: string, files: File[]) => {
+  const updateItemDesignFiles = (itemId: string, files: File[]) => {
+    if (selectedStore?.slug) {
+      void saveDraftItemDesignFiles(selectedStore.slug, itemId, files);
+    }
     setItemDesignFiles((current) => {
       const next = { ...current };
       if (files.length === 0) {
-        delete next[productVariantId];
+        delete next[itemId];
       } else {
-        next[productVariantId] = files;
+        next[itemId] = files;
       }
       return next;
     });
+    setCartItems((current) => current.map((item) => (
+      item.id === itemId ? { ...item, localDesignFiles: files } : item
+    )));
   };
 
   const updateItemDesignDescription = async (itemId: string, description: string) => {
@@ -348,8 +418,12 @@ export default function App() {
     if (!trimmed || !selectedStore?.slug || !customerToken) return;
 
     try {
+      const targetItem = cartItems.find((item) => item.id === itemId);
+      const localFiles = itemDesignFiles[itemId] || [];
+      const shouldPreserveDesignFee = Boolean(targetItem?.hasDesignFee) || localFiles.length > 0;
       const cart = await addCartDesign(selectedStore.slug, customerToken, itemId, {
         description: trimmed,
+        imageUrl: shouldPreserveDesignFee ? pendingDesignImageMarker : null,
       });
       setCartItems(toCartItems(cart));
       setCartError(null);
@@ -373,10 +447,14 @@ export default function App() {
       const allDesigns: File[] = [];
       const associations: ({ productVariantId: number } | null)[] = [];
 
-      for (const [productVariantId, files] of Object.entries(itemDesignFiles)) {
+      for (const [itemId, files] of Object.entries(itemDesignFiles)) {
+        const cartItem = cartItems.find((item) => item.id === itemId);
+        if (!cartItem) continue;
         for (const file of files) {
           allDesigns.push(file);
-          associations.push({ productVariantId: Number(productVariantId) });
+          associations.push({
+            productVariantId: Number(cartItem.productVariantId),
+          });
         }
       }
       for (const file of generalDesignFiles) {
@@ -392,6 +470,7 @@ export default function App() {
       const mappedQuote = toQuote(quotation);
       setSelectedQuote(mappedQuote);
       setQuotationDescription('');
+      await deleteDraftItemDesignFilesMany(selectedStore.slug, Object.keys(itemDesignFiles));
       setItemDesignFiles({});
       setGeneralDesignFiles([]);
       await loadCart(selectedStore.slug, customerToken);

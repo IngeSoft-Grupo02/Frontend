@@ -35,6 +35,7 @@ export interface CartItem {
   productId: string;
   productVariantId: string;
   productName: string;
+  productImageUrl?: string | null;
   quantity: number;
   specs: string;
   hasDesign: boolean;
@@ -48,6 +49,7 @@ export interface CartItem {
   discountApplied?: number;
   discountRuleLabel?: string | null;
   hasDesignFee?: boolean;
+  localDesignFiles?: File[];
 }
 
 export interface Store {
@@ -214,6 +216,7 @@ export interface CartItemResponseDTO {
   productId: number;
   productVariantId: number;
   productName: string;
+  productImageUrl?: string | null;
   size: string;
   color: string;
   price: number;

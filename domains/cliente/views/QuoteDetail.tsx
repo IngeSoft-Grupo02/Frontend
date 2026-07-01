@@ -37,21 +37,26 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
         </button>
 
         <header className="flex flex-wrap justify-between items-start gap-8 mb-12">
-          <div>
-            <div className="flex items-center gap-8 mb-4">
-              <h2 className="text-[48px] md:text-[56px] font-black leading-tight tracking-tighter" style={{ color: '#0F1011' }}>{quote.id}</h2>
-              <div className="scale-125 md:scale-150 origin-left ml-4"><Badge status={quote.status} /></div>
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+              <h1 className="text-[38px] md:text-[48px] font-black leading-tight tracking-tight" style={{ color: '#0F1011' }}>Resumen de cotización</h1>
+              <div className="scale-110 origin-left"><Badge status={quote.status} /></div>
             </div>
-            <p className="font-bold text-[15px] opacity-75" style={{ color: '#475569' }}>Solicitada el {quote.date} para {store.name}</p>
+            <p className="font-bold text-[15px] opacity-75 leading-relaxed" style={{ color: '#475569' }}>
+              Cotización #{quote.id} solicitada el {quote.date} para {store.name}. Revisa aquí los productos, comentarios y archivos que enviaste.
+            </p>
           </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           <div className="lg:col-span-12 xl:col-span-8 space-y-8">
             <div className="rounded-[24px] border p-8 md:p-10 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-              <h3 className="text-[20px] font-black mb-8 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
-                <FileText size={22} style={{ color: 'var(--accent-on-secondary)' }} /> Detalle de la cotización
+              <h3 className="text-[20px] font-black mb-4 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
+                <FileText size={22} style={{ color: 'var(--accent-on-secondary)' }} /> Resumen
               </h3>
+              <p className="text-[13px] font-bold opacity-70 mb-8 leading-relaxed">
+                Este es el resumen de tu solicitud. La tienda usará esta información para responderte con la confirmación o ajustes necesarios.
+              </p>
 
               <div className="space-y-0 text-[15px]">
                 <div className="flex justify-between items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
@@ -81,7 +86,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
 
                 {items.length > 0 && (
                   <div className="py-8">
-                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Ítems</span>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Productos solicitados</span>
                     <div className="space-y-3">
                       {items.map((item) => (
                         <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
