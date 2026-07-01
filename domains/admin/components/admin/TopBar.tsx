@@ -21,7 +21,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   // Obtener título y subtítulo según la ruta cuando no se reciben por props
   const getPageMeta = () => {
     if (pathname === '/admin') return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
-    if (pathname.startsWith(ADMIN_ROUTES.stores)) return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname.startsWith(ADMIN_ROUTES.stores)) return { title: 'Gestión de tiendas', subtitle: 'Administra tiendas activas, suspendidas e inactivas' };
     if (pathname.startsWith(ADMIN_ROUTES.users)) return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
     if (pathname === ADMIN_ROUTES.bulk) return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
     if (pathname.startsWith(ADMIN_ROUTES.categories)) return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
@@ -34,6 +34,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   const pageMeta = getPageMeta();
   const finalTitle = title ?? pageMeta.title;
   const finalSubtitle = subtitle ?? pageMeta.subtitle;
+  const roleLabel = currentUser?.role === 'SYSTEM_ADMIN' ? 'SUPER ADMIN' : currentUser?.role ?? 'ADMINISTRADOR';
 
   const handleLogout = () => {
     logout();
@@ -72,7 +73,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
                 {currentUser?.name || 'Admin'}
               </p>
               <p className="text-[10px] font-medium text-neutral-400 mt-0.5 tracking-wide uppercase">
-                {currentUser?.role || 'ADMINISTRADOR'}
+                {roleLabel}
               </p>
             </div>
             <ChevronDown

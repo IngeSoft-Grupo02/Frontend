@@ -47,23 +47,25 @@ export default function LoginPage() {
         return;
       }
 
-      // Guardar token en localStorage para las llamadas a la API
+      // Guardar token para las llamadas autenticadas del panel admin.
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
 
+      const profile = await api.users.getById(data.id);
+      const profileName = `${profile.firstName ?? ''} ${profile.paternalSurname ?? ''}`.trim();
       const adminUser = {
         id: data.id,
-        name: data.email,
-        email: data.email,
-        role: 'Super admin',
+        name: profileName || profile.email,
+        email: profile.email,
+        role: data.role,
       };
 
       // Persistir datos mínimos del usuario para rehidratar la sesión al refrescar
       localStorage.setItem('adminUser', JSON.stringify(adminUser));
 
       // Actualizar contexto con datos reales del backend
-      login(email, password, adminUser);
+      login(adminUser);
 
       router.push(ADMIN_ROUTES.dashboard);
 
@@ -93,23 +95,23 @@ export default function LoginPage() {
   };
 
   return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6 lg:p-10 overflow-hidden">
-        <div className="w-full max-w-6xl flex flex-col md:flex-row gap-0 md:gap-12 bg-white rounded-[40px] shadow-2xl overflow-hidden h-auto md:h-[750px]">
+      <div className="min-h-dvh bg-neutral-50 flex items-center justify-center p-4 sm:p-6 lg:p-6 overflow-y-auto">
+        <div className="w-full max-w-[1040px] flex flex-col md:flex-row bg-white rounded-[30px] lg:rounded-[36px] shadow-2xl overflow-hidden h-auto md:min-h-[620px] md:max-h-[calc(100dvh-2rem)]">
 
           {/* Left Section - Branding */}
-          <div className="w-full md:w-[450px] bg-brand-black p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden shrink-0">
+          <div className="w-full md:w-[360px] lg:w-[400px] bg-brand-black p-8 md:p-10 lg:p-12 flex flex-col justify-between text-white relative overflow-hidden shrink-0">
             <div className="z-10">
-              <h1 className="text-[48px] lg:text-[64px] font-display font-extrabold leading-none mb-8 tracking-tighter">
+              <h1 className="text-[40px] lg:text-[54px] font-display font-extrabold leading-none mb-5 lg:mb-7 tracking-tighter">
                 Kingstore
               </h1>
-              <p className="text-[16px] lg:text-[18px] text-neutral-400 font-medium max-w-[280px] leading-relaxed">
+              <p className="text-[15px] lg:text-[17px] text-neutral-400 font-medium max-w-[280px] leading-relaxed">
                 Gestiona tiendas, usuarios, límites globales y trazabilidad operacional desde un único panel.
               </p>
             </div>
-            <div className="absolute top-0 right-0 w-[800px] h-full opacity-10 pointer-events-none -mr-[300px] flex items-center justify-center">
-              <LayoutDashboard size={800} />
+            <div className="absolute top-0 right-0 w-[560px] h-full opacity-10 pointer-events-none -mr-[240px] hidden md:flex items-center justify-center">
+              <LayoutDashboard size={560} />
             </div>
-            <div className="z-10 mt-auto pt-12">
+            <div className="z-10 mt-auto pt-10">
               <div className="flex gap-2">
                 <div className="w-3 h-3 rounded-full bg-brand-camel"></div>
                 <div className="w-3 h-3 rounded-full bg-neutral-700"></div>
@@ -119,11 +121,11 @@ export default function LoginPage() {
           </div>
 
           {/* Right Section - Login Form */}
-          <div className="flex-1 p-10 lg:p-24 flex flex-col justify-center bg-white overflow-y-auto">
-            <div className="max-w-md w-full mx-auto">
+          <div className="flex-1 p-7 sm:p-9 lg:p-12 flex flex-col justify-center bg-white overflow-y-auto">
+            <div className="max-w-[420px] w-full mx-auto">
 
-              <div className="mb-10">
-                <h2 className="text-[32px] lg:text-[42px] font-display font-extrabold leading-none mb-3 tracking-tight text-[#0a0a0a]">
+              <div className="mb-7 lg:mb-8">
+                <h2 className="text-[30px] lg:text-[38px] font-display font-extrabold leading-none mb-3 tracking-tight text-[#0a0a0a]">
                   Iniciar sesión
                 </h2>
                 <p className="text-[16px] text-neutral-400 font-medium">
@@ -131,7 +133,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="space-y-6" onKeyPress={handleKeyPress}>
+              <div className="space-y-5" onKeyPress={handleKeyPress}>
 
                 {/* Email */}
                 <div className="space-y-1">
@@ -140,11 +142,11 @@ export default function LoginPage() {
                   </label>
                   <input
                       type="email"
-                      placeholder="admin@kingstore.com"
+                      placeholder="correo@dominio.com"
                       value={email}
                       onChange={(e) => validateEmail(e.target.value)}
                       disabled={loading}
-                      className={`w-full px-5 py-4 bg-neutral-50 border ${emailError ? 'border-red-300' : 'border-neutral-200'} rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all disabled:opacity-50`}
+                      className={`w-full px-5 py-3.5 bg-neutral-50 border ${emailError ? 'border-red-300' : 'border-neutral-200'} rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all disabled:opacity-50`}
                   />
                   {emailError && (
                       <p className="text-[12px] text-red-500 ml-1 font-medium">{emailError}</p>
@@ -163,7 +165,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => { setPassword(e.target.value); setLoginError(null); }}
                         disabled={loading}
-                        className="w-full px-5 py-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all pr-12 disabled:opacity-50"
+                        className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl text-[15px] font-medium outline-none focus:bg-white focus:border-brand-camel focus:ring-4 focus:ring-brand-camel/10 transition-all pr-12 disabled:opacity-50"
                     />
                     <button
                         type="button"
@@ -199,7 +201,7 @@ export default function LoginPage() {
                 <button
                     onClick={handleLogin}
                     disabled={loading}
-                    className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-8 shadow-lg shadow-brand-black/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                    className="w-full h-14 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-6 shadow-lg shadow-brand-black/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {loading
                       ? <><Loader2 size={20} className="animate-spin" /> Cargando...</>

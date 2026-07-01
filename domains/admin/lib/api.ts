@@ -3,6 +3,18 @@ import { translateErrorMessage } from '@/domains/shared/errors';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+function decodeTokenPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export function getAuthHeader(): Record<string, string> {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem('token');
@@ -11,18 +23,23 @@ export function getAuthHeader(): Record<string, string> {
 
 export function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    if (!payload.exp) return false;
+    const payload = decodeTokenPayload(token);
+    if (!payload || typeof payload.exp !== 'number') return false;
     return Date.now() >= payload.exp * 1000;
   } catch {
     return true;
   }
 }
 
-function handleSesionNoAutorizada() {
+export function clearAdminSessionStorage(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('adminUser');
+}
+
+function handleSesionNoAutorizada() {
+  if (typeof window === 'undefined') return;
+  clearAdminSessionStorage();
   window.dispatchEvent(new Event('admin:session-expired'));
 }
 
@@ -80,9 +97,9 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
     throw new ApiError('No se pudo conectar con el servidor.', 0, endpoint);
   }
   if (!response.ok) {
-    // Un 403 puede ser una regla de autorización o negocio. Solo cerramos la
-    // sesión si falta el JWT o si el propio token ya está vencido.
-    if (auth && shouldClearSession(response.status)) handleSesionNoAutorizada();
+    if (auth && shouldClearSession(response.status)) {
+      handleSesionNoAutorizada();
+    }
     throw new ApiError(translateErrorMessage(await readErrorMessage(response, endpoint)), response.status, endpoint);
   }
   const text = await response.text();
@@ -135,7 +152,7 @@ export interface StoreMutationRequest {
 export interface UserResponseDTO {
   id: number; email: string; active: boolean; role: string;
   firstName: string; paternalSurname: string; maternalSurname: string;
-  documentNumber: string; documentType: string; phone: string;
+  documentNumber: string; documentType: string; birthDate?: string | null; phone: string; gender?: string | null;
   ruc?: string; storeName?: string; storeId?: number;
 }
 

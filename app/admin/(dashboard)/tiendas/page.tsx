@@ -6,11 +6,14 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
   Ban,
+  ChevronLeft,
+  ChevronRight,
   Edit2,
   Loader2,
   PauseCircle,
   PlayCircle,
   Plus,
+  RefreshCw,
   Search,
   UploadCloud,
   X,
@@ -35,6 +38,7 @@ const STATUS_MAP: Record<string, string> = {
 const PRIMARY_MAP = Object.fromEntries(PRIMARY_COLORS.map(color => [color.id, color.code]));
 const SECONDARY_MAP = Object.fromEntries(SECONDARY_COLORS.map(color => [color.id, color.code]));
 const TERTIARY_MAP = Object.fromEntries(TERTIARY_COLORS.map(color => [color.id, color.code]));
+const STORES_PAGE_SIZE = 6;
 
 function mapStatus(status: string) {
   return STATUS_MAP[status] ?? status;
@@ -46,6 +50,11 @@ function getStatusVariant(status: string): 'active' | 'suspended' | 'inactive' |
   if (normalized === 'SUSPENDED') return 'suspended';
   if (normalized === 'INACTIVE') return 'inactive';
   return 'neutral';
+}
+
+function canDeactivate(status: string) {
+  const normalized = status.toUpperCase();
+  return normalized !== 'INACTIVE' && normalized !== 'DEACTIVATED';
 }
 
 function formatDate(value: string | null) {
@@ -73,6 +82,7 @@ export default function TiendasPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const hasLoadedStoresRef = useRef(false);
   const [sortOrder, setSortOrder] = useState('Más reciente');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadStores = useCallback(async (background = false) => {
     try {
@@ -118,6 +128,10 @@ export default function TiendasPage() {
     return () => window.clearTimeout(timeout);
   }, [successMessage]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterCategory, sortOrder]);
+
   const visibleStores = [...stores]
     .filter(store => !filterCategory || store.category?.id === Number(filterCategory))
     .sort((first, second) => {
@@ -126,6 +140,14 @@ export default function TiendasPage() {
       if (sortOrder === 'Más antiguo') return (first.createdAt ?? '').localeCompare(second.createdAt ?? '');
       return (second.createdAt ?? '').localeCompare(first.createdAt ?? '');
     });
+  const totalPages = Math.max(1, Math.ceil(visibleStores.length / STORES_PAGE_SIZE));
+  const pageStart = (currentPage - 1) * STORES_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + STORES_PAGE_SIZE, visibleStores.length);
+  const paginatedStores = visibleStores.slice(pageStart, pageEnd);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const handleAction = async (action: StoreAction, store: StoreResponse) => {
     const question = {
@@ -154,22 +176,7 @@ export default function TiendasPage() {
     actionLoading?.id === storeId && actionLoading.action === action;
 
   return (
-    <div className="space-y-8 relative max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h2 className="text-[28px] font-display font-extrabold tracking-tight">Directorio de tiendas</h2>
-          <p className="text-[14px] font-medium text-neutral-400">Gestión de activos y configuración de marca</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <Button variant="secondary" className="rounded-full shadow-sm px-6" onClick={() => router.push(ADMIN_ROUTES.bulk)}>
-            <UploadCloud size={14} className="mr-2" /> Carga masiva
-          </Button>
-          <Button onClick={() => router.push(ADMIN_ROUTES.newStore)} className="rounded-full px-6">
-            <Plus size={14} className="mr-2" /> Nueva tienda
-          </Button>
-        </div>
-      </div>
-
+    <div className="space-y-6 relative max-w-[1400px] mx-auto animate-in fade-in duration-500">
       {successMessage && (
         <div role="status" className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-[14px] font-bold text-green-800">
           {successMessage}
@@ -197,7 +204,27 @@ export default function TiendasPage() {
         </Select>
       </div>
 
-      <Card className="px-0 py-2 overflow-hidden">
+      <Card className="px-0 py-0 overflow-hidden">
+        <div className="px-8 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <h3 className="text-[18px] font-display font-extrabold">Directorio de tiendas</h3>
+            <span className="inline-flex items-center rounded-full bg-brand-beige-light px-3 py-1 text-[12px] font-bold text-neutral-500">
+              {visibleStores.length} tienda{visibleStores.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <Button variant="secondary" className="rounded-full h-10 px-4 inline-flex items-center justify-center gap-2 whitespace-nowrap" title="Actualizar"
+                    onClick={() => loadStores()} disabled={loading}>
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/>
+            </Button>
+            <Button className="flex-1 lg:flex-none rounded-full px-6 inline-flex items-center justify-center gap-2 whitespace-nowrap" onClick={() => router.push(ADMIN_ROUTES.bulk)}>
+              <UploadCloud size={14} /> Carga masiva
+            </Button>
+            <Button onClick={() => router.push(ADMIN_ROUTES.newStore)} className="flex-1 lg:flex-none rounded-full px-6 inline-flex items-center justify-center gap-2 whitespace-nowrap">
+              <Plus size={14} /> Nueva tienda
+            </Button>
+          </div>
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-3 text-neutral-400"><Loader2 size={20} className="animate-spin" /> Cargando tiendas...</div>
         ) : error ? (
@@ -206,55 +233,96 @@ export default function TiendasPage() {
             <Button type="button" variant="secondary" onClick={() => loadStores()}>Reintentar</Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[980px]">
-              <thead className="bg-[#f1ede4]">
-                <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                  <th className="py-4 px-8">Nombre</th>
-                  <th className="py-4 px-4">Categoría</th>
-                  <th className="py-4 px-4">Comerciante</th>
-                  <th className="py-4 px-4">Estado</th>
-                  <th className="py-4 px-4 text-center w-[136px]">Acciones</th>
-                  <th className="py-4 px-8 text-right">Registro</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {visibleStores.map(store => (
-                  <tr key={store.id} className="text-[13px] hover:bg-neutral-50 cursor-pointer transition-colors" onClick={() => setShowDetail(store)}>
-                    <td className="py-5 px-8 font-extrabold text-neutral-900">{store.storeName}</td>
-                    <td className="py-5 px-4 font-medium text-neutral-600">{store.category?.storeCategoryName ?? <span className="text-neutral-300 italic">Sin categoría</span>}</td>
-                    <td className="py-5 px-4 font-mono text-[12px] text-neutral-500">{store.merchant?.userAccount?.email ?? '—'}</td>
-                    <td className="py-5 px-4"><Badge variant={getStatusVariant(store.storeStatus)}>{mapStatus(store.storeStatus)}</Badge></td>
-                    <td className="py-5 px-4" onClick={event => event.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-2 min-h-10">
-                        <button type="button" aria-label={`Editar ${store.storeName}`} title="Editar tienda"
-                                onClick={() => router.push(ADMIN_ROUTES.editStore(store.id))}
-                                className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:border-brand-camel hover:text-brand-camel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel disabled:opacity-50">
-                          <Edit2 size={17} />
-                        </button>
-                        {store.storeStatus === 'ACTIVE' && (
-                          <button type="button" aria-label={`Suspender ${store.storeName}`} title="Suspender tienda"
-                                  disabled={actionLoading !== null} onClick={() => handleAction('suspend', store)}
-                                  className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-amber-700 hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {actionIsLoading(store.id, 'suspend') ? <Loader2 size={17} className="animate-spin" /> : <PauseCircle size={17} />}
-                          </button>
-                        )}
-                        {store.storeStatus === 'SUSPENDED' && (
-                          <button type="button" aria-label={`Reactivar ${store.storeName}`} title="Reactivar tienda"
-                                  disabled={actionLoading !== null} onClick={() => handleAction('reactivate', store)}
-                                  className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-green-700 hover:border-green-400 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {actionIsLoading(store.id, 'reactivate') ? <Loader2 size={17} className="animate-spin" /> : <PlayCircle size={17} />}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-5 px-8 text-right font-medium text-neutral-500">{formatDate(store.createdAt)}</td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[980px]">
+                <thead className="bg-[#f1ede4]">
+                  <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                    <th className="py-4 px-8">Nombre</th>
+                    <th className="py-4 px-4">Categoría</th>
+                    <th className="py-4 px-4">Comerciante</th>
+                    <th className="py-4 px-4">Estado</th>
+                    <th className="py-4 px-4 text-center w-[168px]">Acciones</th>
+                    <th className="py-4 px-8 text-right">Registro</th>
                   </tr>
-                ))}
-                {visibleStores.length === 0 && <tr><td colSpan={6} className="py-20 text-center text-neutral-400 italic">No se encontraron tiendas.</td></tr>}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {paginatedStores.map(store => (
+                    <tr key={store.id} className="text-[13px] hover:bg-neutral-50 cursor-pointer transition-colors" onClick={() => setShowDetail(store)}>
+                      <td className="py-5 px-8 font-extrabold text-neutral-900">{store.storeName}</td>
+                      <td className="py-5 px-4 font-medium text-neutral-600">{store.category?.storeCategoryName ?? <span className="text-neutral-300 italic">Sin categoría</span>}</td>
+                      <td className="py-5 px-4 font-mono text-[12px] text-neutral-500">{store.merchant?.userAccount?.email ?? '—'}</td>
+                      <td className="py-5 px-4"><Badge variant={getStatusVariant(store.storeStatus)}>{mapStatus(store.storeStatus)}</Badge></td>
+                      <td className="py-5 px-4" onClick={event => event.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2 min-h-10">
+                          <button type="button" aria-label={`Editar ${store.storeName}`} title="Editar tienda"
+                                  onClick={() => router.push(ADMIN_ROUTES.editStore(store.id))}
+                                  className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:border-brand-camel hover:text-brand-camel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel disabled:opacity-50">
+                            <Edit2 size={17} />
+                          </button>
+                          {store.storeStatus === 'ACTIVE' && (
+                            <button type="button" aria-label={`Suspender ${store.storeName}`} title="Suspender tienda"
+                                    disabled={actionLoading !== null} onClick={() => handleAction('suspend', store)}
+                                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-amber-700 hover:border-amber-400 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                              {actionIsLoading(store.id, 'suspend') ? <Loader2 size={17} className="animate-spin" /> : <PauseCircle size={17} />}
+                            </button>
+                          )}
+                          {store.storeStatus === 'SUSPENDED' && (
+                            <button type="button" aria-label={`Reactivar ${store.storeName}`} title="Reactivar tienda"
+                                    disabled={actionLoading !== null} onClick={() => handleAction('reactivate', store)}
+                                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-green-700 hover:border-green-400 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                              {actionIsLoading(store.id, 'reactivate') ? <Loader2 size={17} className="animate-spin" /> : <PlayCircle size={17} />}
+                            </button>
+                          )}
+                          {canDeactivate(store.storeStatus) && (
+                            <button type="button" aria-label={`Desactivar ${store.storeName}`} title="Desactivar tienda"
+                                    disabled={actionLoading !== null} onClick={() => handleAction('deactivate', store)}
+                                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                              {actionIsLoading(store.id, 'deactivate') ? <Loader2 size={17} className="animate-spin" /> : <Ban size={17} />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-5 px-8 text-right font-medium text-neutral-500">{formatDate(store.createdAt)}</td>
+                    </tr>
+                  ))}
+                  {visibleStores.length === 0 && <tr><td colSpan={6} className="py-20 text-center text-neutral-400 italic">No se encontraron tiendas.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            {visibleStores.length > STORES_PAGE_SIZE && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-neutral-100 px-6 py-4">
+                <p className="text-[12px] font-bold text-neutral-400">
+                  Mostrando {pageStart + 1}-{pageEnd} de {visibleStores.length} tiendas
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    className="rounded-full inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={14} /> Anterior
+                  </Button>
+                  <span className="min-w-[92px] text-center text-[12px] font-black text-neutral-500">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                    className="rounded-full inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Siguiente <ChevronRight size={14} />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
 
@@ -293,22 +361,22 @@ export default function TiendasPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Button type="button" variant="secondary" className="h-12 rounded-2xl" onClick={() => router.push(ADMIN_ROUTES.editStore(showDetail.id))}>
-                    <Edit2 size={16} className="mr-2" /> Editar
+                  <Button type="button" variant="secondary" className="h-12 rounded-2xl border border-neutral-200 inline-flex items-center justify-center gap-2 whitespace-nowrap" onClick={() => router.push(ADMIN_ROUTES.editStore(showDetail.id))}>
+                    <Edit2 size={16} /> Editar
                   </Button>
                   {showDetail.storeStatus === 'ACTIVE' && (
-                    <Button type="button" className="h-12 rounded-2xl bg-brand-camel hover:bg-brand-camel-dark" disabled={actionLoading !== null} onClick={() => handleAction('suspend', showDetail)}>
-                      <PauseCircle size={16} className="mr-2" /> Suspender
+                    <Button type="button" className="h-12 rounded-2xl border border-brand-black inline-flex items-center justify-center gap-2 whitespace-nowrap" disabled={actionLoading !== null} onClick={() => handleAction('suspend', showDetail)}>
+                      <PauseCircle size={16} /> Suspender
                     </Button>
                   )}
                   {showDetail.storeStatus === 'SUSPENDED' && (
-                    <Button type="button" className="h-12 rounded-2xl" disabled={actionLoading !== null} onClick={() => handleAction('reactivate', showDetail)}>
-                      <PlayCircle size={16} className="mr-2" /> Reactivar
+                    <Button type="button" className="h-12 rounded-2xl border border-brand-black inline-flex items-center justify-center gap-2 whitespace-nowrap" disabled={actionLoading !== null} onClick={() => handleAction('reactivate', showDetail)}>
+                      <PlayCircle size={16} /> Reactivar
                     </Button>
                   )}
-                  {showDetail.storeStatus !== 'INACTIVE' && (
-                    <Button type="button" variant="secondary" className="col-span-2 h-12 rounded-2xl text-red-600 border-red-100 hover:bg-red-50" disabled={actionLoading !== null} onClick={() => handleAction('deactivate', showDetail)}>
-                      <Ban size={16} className="mr-2" /> Deshabilitar tienda
+                  {canDeactivate(showDetail.storeStatus) && (
+                    <Button type="button" variant="secondary" className="col-span-2 h-12 rounded-2xl border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center justify-center gap-2 whitespace-nowrap" disabled={actionLoading !== null} onClick={() => handleAction('deactivate', showDetail)}>
+                      <Ban size={16} /> Deshabilitar tienda
                     </Button>
                   )}
                 </div>

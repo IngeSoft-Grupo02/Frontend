@@ -3,6 +3,8 @@ const DEFAULT_ERROR_MESSAGE = 'Ocurrió un error. Inténtalo nuevamente.';
 const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/customer does not belong to this store/i, 'El cliente no pertenece a esta tienda.'],
   [/invalid credentials|bad credentials/i, 'Credenciales inválidas.'],
+  [/error\s*401|status\s*401/i, 'Tu sesión expiró. Vuelve a iniciar sesión.'],
+  [/error\s*403|status\s*403/i, 'No tienes permisos para realizar esta acción.'],
   [/unauthorized/i, 'No tienes autorización para realizar esta acción.'],
   [/forbidden/i, 'No tienes permisos para realizar esta acción.'],
   [/not found/i, 'No se encontró el recurso solicitado.'],
@@ -14,6 +16,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/product not found/i, 'Producto no encontrado.'],
   [/store not found/i, 'Tienda no encontrada.'],
   [/quote not found|quotation not found/i, 'Cotización no encontrada.'],
+  [/category already exists|categor[ií]a.*ya existe/i, 'Ya existe una categoría con ese nombre.'],
   [/correo.*no pertenece.*registrado.*tienda|customer_not_registered_in_store/i, 'Este correo no pertenece a ningún cliente registrado en esta tienda. Regístrate para crear una cuenta.'],
   // Unicidad por tienda (deben ir ANTES del patrón genérico de correo para no perder "en esta tienda").
   [/correo.*registrado.*tienda/i, 'El correo ya está registrado en esta tienda.'],
