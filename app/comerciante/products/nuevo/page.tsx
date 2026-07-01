@@ -6,12 +6,14 @@ import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
 import { Product } from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
+import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
 import {
   AlertCircle,
   ArrowLeft,
   Check,
   CheckCircle2,
   Layers,
+  Loader2,
   Plus,
   Save,
   Trash2,
@@ -257,7 +259,9 @@ function ProductFormPageContent() {
   if (isWaitingForProduct) {
     return (
       <MerchantLayout title="Editar producto" subtitle="Cargando información del catálogo">
-        <div className="grid gap-6 animate-pulse">
+        <div className="grid gap-6">
+          <LoadingSpinner label="Cargando..." className="py-4" />
+          <div className="grid gap-6 animate-pulse">
           <div className="h-12 w-80 rounded-2xl bg-brand-neutral-mid" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 space-y-6">
@@ -265,6 +269,7 @@ function ProductFormPageContent() {
               <div className="h-64 rounded-[2rem] bg-white border border-brand-neutral-border" />
             </div>
             <div className="lg:col-span-4 h-96 rounded-[2rem] bg-white border border-brand-neutral-border" />
+          </div>
           </div>
         </div>
       </MerchantLayout>
@@ -305,10 +310,10 @@ function ProductFormPageContent() {
           </div>
           <div className="flex gap-4">
             <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
-              <Save size={18} className="mr-2" /> {isSaving ? 'Guardando...' : 'Guardar como borrador'}
+              {isSaving ? <><Loader2 size={18} className="animate-spin mr-2" /> Cargando...</> : <><Save size={18} className="mr-2" /> Guardar como borrador</>}
             </Button>
             <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-              <Check size={20} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} catálogo`}
+              {isSaving ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Check size={20} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
             </Button>
           </div>
         </header>
@@ -621,10 +626,10 @@ function ProductFormPageContent() {
                 ))}
                 <div className="pt-4 border-t border-brand-neutral-border space-y-3">
                   <Button variant="ghost" className="w-full h-11 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
-                    <Save size={16} className="mr-2" /> {isSaving ? 'Guardando...' : 'Guardar borrador'}
+                    {isSaving ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : <><Save size={16} className="mr-2" /> Guardar borrador</>}
                   </Button>
                   <Button className="w-full gap-2 h-12 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-                    <Check size={18} /> {isSaving ? 'Guardando...' : `${editId ? 'Actualizar' : 'Publicar'} catálogo`}
+                    {isSaving ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : <><Check size={18} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
                   </Button>
                 </div>
               </div>
@@ -638,7 +643,7 @@ function ProductFormPageContent() {
 
 export default function ProductFormPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-brand-neutral-light p-10 text-[13px] font-black uppercase tracking-widest text-brand-text-muted">Cargando formulario...</div>}>
+    <Suspense fallback={<main className="min-h-screen bg-brand-neutral-light flex items-center justify-center p-8"><LoadingSpinner label="Cargando..." /></main>}>
       <ProductFormPageContent />
     </Suspense>
   );

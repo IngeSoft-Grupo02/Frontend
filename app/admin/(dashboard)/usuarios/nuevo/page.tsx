@@ -346,7 +346,7 @@ export default function NuevoUsuarioPage() {
                 <Button className={`w-full h-14 rounded-2xl transition-opacity ${!formValid ? 'opacity-40 cursor-not-allowed' : ''}`}
                         onClick={handleSave} disabled={loading || !formValid}>
                   {loading
-                      ? <><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</>
+                      ? <><Loader2 size={16} className="animate-spin mr-2"/>Cargando...</>
                       : 'Confirmar registro'}
                 </Button>
                 {!formValid && (

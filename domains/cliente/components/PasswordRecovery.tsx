@@ -121,7 +121,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
             />
             {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
             <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar enlace'}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : 'Enviar enlace'}
             </Button>
             <div className={canRegisterFromError ? 'grid gap-3 sm:grid-cols-2' : ''}>
               <Button type="button" variant="outline" fullWidth onClick={() => window.location.assign(loginPath)}>
@@ -205,7 +205,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
               </ul>
             </div>
             {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
-            <Button type="submit" fullWidth disabled={loading}>{loading ? 'Guardando...' : 'Guardar contraseña'}</Button>
+            <Button type="submit" fullWidth disabled={loading}>{loading ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : 'Guardar contraseña'}</Button>
           </form>
         )}
 

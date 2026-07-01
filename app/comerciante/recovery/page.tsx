@@ -1,6 +1,6 @@
 'use client';
 import { Button, Card, Input } from '@/domains/comerciante/components/ui';
-import { AlertCircle, ArrowLeft, Check, CheckCircle2, Eye, EyeOff, Key, Mail, RotateCcw, XCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, CheckCircle2, Eye, EyeOff, Key, Loader2, Mail, RotateCcw, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import {
@@ -11,6 +11,7 @@ import {
   validatePasswordResetToken,
 } from '@/domains/auth/passwordRecovery';
 import { messageFromError } from '@/domains/shared/errors';
+import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
 
 type RecoveryStep = 'request' | 'sent' | 'reset' | 'success' | 'invalid';
 
@@ -83,7 +84,7 @@ function RecoveryPageContent() {
           <form onSubmit={handleRequest} className="space-y-6">
             <Input type="email" label="Correo electrónico" placeholder="ejemplo@plataforma.com" value={email} onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }} onBlur={(e) => validateEmail(e.target.value)} error={emailError} />
             <div className="flex flex-col gap-3">
-              <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3">{loading ? 'Enviando...' : 'Enviar enlace'} <Mail size={18} /></Button>
+              <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3">{loading ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Mail size={18} /> Enviar enlace</>}</Button>
               <Button type="button" variant="ghost" size="lg" className="h-14 gap-2" onClick={() => router.push('/comerciante/login')}><ArrowLeft size={18} /> Cancelar y volver</Button>
             </div>
           </form>
@@ -141,7 +142,7 @@ function RecoveryPageContent() {
                 <div className={`flex items-center gap-2 text-[12px] font-bold ${/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-brand-text-muted'}`}>{/[a-z]/.test(password) && /[^A-Za-z0-9]/.test(password) ? <Check size={14} strokeWidth={3} /> : <AlertCircle size={14} />} Minúscula y símbolo</div>
               </div>
             </div>
-            <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3 w-full">{loading ? 'Guardando...' : 'Guardar contraseña'} <Key size={18} /></Button>
+            <Button type="submit" size="lg" disabled={loading} className="h-14 font-extrabold text-[15px] gap-3 w-full">{loading ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Key size={18} /> Guardar contraseña</>}</Button>
           </form>
         </div>
       );
@@ -185,7 +186,7 @@ function RecoveryPageContent() {
 
 export default function RecoveryPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<main className="min-h-screen bg-brand-neutral-light flex items-center justify-center p-8"><LoadingSpinner label="Cargando..." /></main>}>
       <RecoveryPageContent />
     </Suspense>
   );

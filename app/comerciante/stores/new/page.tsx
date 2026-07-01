@@ -7,6 +7,7 @@ import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
 import { Store as StoreType, StoreCategory } from '@/domains/comerciante/lib/types';
 import { getColorLabel } from '@/domains/shared/colors';
 import { messageFromError } from '@/domains/shared/errors';
+import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
 import { AlertCircle, ArrowLeft, Check, ImageIcon, Search, Tag, Trash2, Upload, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
@@ -552,7 +553,7 @@ function StoreFormPageContent() {
                 className="h-12 rounded-2xl font-bold"
               />
               <div className="max-h-[360px] overflow-y-auto space-y-2 pr-2">
-                {isLoadingCategories && <p className="py-12 text-center text-brand-text-muted font-bold">Cargando categorías...</p>}
+                {isLoadingCategories && <LoadingSpinner label="Cargando..." className="py-12" />}
                 {!isLoadingCategories && filteredCategories.map(category => (
                   <button
                     type="button"
@@ -587,7 +588,7 @@ function StoreFormPageContent() {
 
 export default function StoreFormPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<main className="min-h-screen bg-brand-neutral-light flex items-center justify-center p-8"><LoadingSpinner label="Cargando..." /></main>}>
       <StoreFormPageContent />
     </Suspense>
   );

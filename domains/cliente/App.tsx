@@ -84,6 +84,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [isCartLoading, setIsCartLoading] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [cartAlreadySubmitted, setCartAlreadySubmitted] = useState(false);
   const [quotationDescription, setQuotationDescription] = useState('');
@@ -181,10 +182,15 @@ export default function App() {
     moveToView(View.PAYMENT, { orderId: order.realId ?? order.id });
   };
 
-  const loadCart = async (slug: string, token: string) => {
-    const cart = await fetchCart(slug, token);
-    setCartItems(toCartItems(cart));
-    return cart;
+  const loadCart = async (slug: string, token: string, options: { showLoading?: boolean } = {}) => {
+    if (options.showLoading) setIsCartLoading(true);
+    try {
+      const cart = await fetchCart(slug, token);
+      setCartItems(toCartItems(cart));
+      return cart;
+    } finally {
+      if (options.showLoading) setIsCartLoading(false);
+    }
   };
 
   const refreshSelectedQuote = React.useCallback(async () => {
@@ -206,6 +212,26 @@ export default function App() {
       await loadCart(selectedStore!.slug!, customerToken!);
     },
   });
+
+  useEffect(() => {
+    if (activeView !== View.CART || !selectedStore?.slug || !customerToken) return;
+
+    let active = true;
+    setIsCartLoading(true);
+    setCartError(null);
+    loadCart(selectedStore.slug, customerToken)
+      .catch((error) => {
+        if (!active) return;
+        setCartError(messageFromError(error, 'No se pudo cargar el carrito.'));
+      })
+      .finally(() => {
+        if (active) setIsCartLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeView, selectedStore?.slug, customerToken]);
 
   useAutoRefresh({
     enabled: currentView === View.QUOTE_DETAIL && Boolean(selectedStore?.slug && customerToken && selectedQuote?.id),
@@ -268,7 +294,7 @@ export default function App() {
     if (latestCart) {
       setCartItems(toCartItems(latestCart));
     } else {
-      await loadCart(selectedStore.slug, customerToken);
+      await loadCart(selectedStore.slug, customerToken, { showLoading: currentView === View.CART });
     }
     moveToView(View.CART);
   };
@@ -299,6 +325,37 @@ export default function App() {
       setCartAlreadySubmitted(false);
     } catch (err) {
       setCartError(messageFromError(err, 'No se pudo eliminar el producto del carrito.'));
+    }
+  };
+
+  const updateItemDesignFiles = (productVariantId: string, files: File[]) => {
+    setItemDesignFiles((current) => {
+      const next = { ...current };
+      if (files.length === 0) {
+        delete next[productVariantId];
+      } else {
+        next[productVariantId] = files;
+      }
+      return next;
+    });
+  };
+
+  const updateItemDesignDescription = async (itemId: string, description: string) => {
+    const trimmed = description.trim();
+    setCartItems((current) => current.map((item) => (
+      item.id === itemId ? { ...item, quoteDescription: trimmed || null } : item
+    )));
+    if (!trimmed || !selectedStore?.slug || !customerToken) return;
+
+    try {
+      const cart = await addCartDesign(selectedStore.slug, customerToken, itemId, {
+        description: trimmed,
+      });
+      setCartItems(toCartItems(cart));
+      setCartError(null);
+      setCartAlreadySubmitted(false);
+    } catch (error) {
+      setCartError(messageFromError(error, 'No se pudo guardar el comentario del producto.'));
     }
   };
 
@@ -504,7 +561,7 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} quotationDescription={quotationDescription} onQuotationDescriptionChange={setQuotationDescription} quotationFiles={generalDesignFiles} onQuotationFilesChange={setGeneralDesignFiles} itemDesignFiles={itemDesignFiles} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} isLoading={isCartLoading} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} quotationDescription={quotationDescription} onQuotationDescriptionChange={setQuotationDescription} quotationFiles={generalDesignFiles} onQuotationFilesChange={setGeneralDesignFiles} itemDesignFiles={itemDesignFiles} onItemDesignFilesChange={updateItemDesignFiles} onItemDesignDescriptionChange={updateItemDesignDescription} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

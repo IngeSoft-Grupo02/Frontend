@@ -202,7 +202,7 @@ export default function LoginPage() {
                     className="w-full h-16 rounded-2xl bg-brand-black text-white font-bold text-[16px] hover:bg-neutral-800 active:scale-[0.98] transition-all mt-8 shadow-lg shadow-brand-black/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {loading
-                      ? <><Loader2 size={20} className="animate-spin" /> Verificando...</>
+                      ? <><Loader2 size={20} className="animate-spin" /> Cargando...</>
                       : 'Ingresar al panel'
                   }
                 </button>

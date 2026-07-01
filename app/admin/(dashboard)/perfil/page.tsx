@@ -202,7 +202,7 @@ export default function PerfilPage() {
                   <Button onClick={handleSave}
                           disabled={isSaving || !!(newPassword && (pwdError || confirmErr))}
                           className="rounded-full px-12 h-12">
-                    {isSaving ? <><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</> : 'Guardar cambios'}
+                    {isSaving ? <><Loader2 size={16} className="animate-spin mr-2"/>Cargando...</> : 'Guardar cambios'}
                   </Button>
                 </div>
               </div>

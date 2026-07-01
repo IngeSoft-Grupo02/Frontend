@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, Mail, Phone, Shield, ArrowLeft, Save, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Phone, Shield, ArrowLeft, Save, CheckCircle2, Loader2 } from 'lucide-react';
 import { Store, User as UserType, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
@@ -171,7 +171,7 @@ export const Profile: React.FC<ProfileProps> = ({ store, user, onNavigate, onLog
                   style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                   disabled={isSaving}
                 >
-                  {isSaving ? 'Guardando...' : <><Save size={18} /> Guardar cambios</>}
+                  {isSaving ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Save size={18} /> Guardar cambios</>}
                 </Button>
               </div>
             </form>

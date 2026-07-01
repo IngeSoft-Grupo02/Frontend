@@ -3,7 +3,7 @@
 import { Button } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { messageFromError } from '@/domains/shared/errors';
-import { AlertCircle, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
               className={`w-full h-12 !text-[14px] !rounded-[18px] transition-all ${isLoading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : ''}`}
               disabled={isLoading}
             >
-              {isLoading ? 'Verificando...' : 'Iniciar sesión'}
+              {isLoading ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : 'Iniciar sesión'}
             </Button>
           </form>
         </div>

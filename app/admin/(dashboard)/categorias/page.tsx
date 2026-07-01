@@ -72,7 +72,7 @@ function CategoryModal({ category, onClose, onSaved }: {
             <div className="flex gap-3 pt-4 border-t border-neutral-100">
               <Button variant="secondary" className="flex-1 rounded-2xl h-14" onClick={onClose}>Cancelar</Button>
               <Button className="flex-1 rounded-2xl h-14" onClick={handleSave} disabled={saving}>
-                {saving ? <><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</> : isEdit ? 'Guardar cambios' : 'Crear categoría'}
+                {saving ? <><Loader2 size={16} className="animate-spin mr-2"/>Cargando...</> : isEdit ? 'Guardar cambios' : 'Crear categoría'}
               </Button>
             </div>
           </div>

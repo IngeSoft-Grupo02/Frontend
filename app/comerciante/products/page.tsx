@@ -5,6 +5,7 @@ import { Badge, Button, Card } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Product } from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
+import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
 import {
   AlertTriangle,
   ChevronDown,
@@ -203,10 +204,13 @@ export default function ProductsPage() {
 
           <div className="min-h-[400px]">
             {isLoading ? (
-              <div className="p-8 space-y-4 animate-pulse">
+              <div className="p-8 space-y-5">
+                <LoadingSpinner label="Cargando..." className="py-4" />
+                <div className="space-y-4 animate-pulse">
                 {[0, 1, 2, 3].map(item => (
                   <div key={item} className="h-20 rounded-2xl bg-brand-neutral-light border border-brand-neutral-border" />
                 ))}
+                </div>
               </div>
             ) : filteredAndSortedProducts.length > 0 ? (
               <div className="overflow-x-auto">

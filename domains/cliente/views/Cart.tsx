@@ -20,6 +20,7 @@ interface CartProps {
   onNavigate: (view: View) => void;
   onLogout?: () => void;
   isSubmitting?: boolean;
+  isLoading?: boolean;
   cartError?: string | null;
   cartAlreadySubmitted?: boolean;
   quotationDescription?: string;
@@ -27,9 +28,11 @@ interface CartProps {
   quotationFiles?: File[];
   onQuotationFilesChange?: (files: File[]) => void;
   itemDesignFiles?: Record<string, File[]>;
+  onItemDesignFilesChange?: (productVariantId: string, files: File[]) => void;
+  onItemDesignDescriptionChange?: (itemId: string, description: string) => void;
 }
 
-export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange, itemDesignFiles = {} }) => {
+export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, isLoading = false, cartError, cartAlreadySubmitted = false, quotationDescription = '', onQuotationDescriptionChange, quotationFiles = [], onQuotationFilesChange, itemDesignFiles = {}, onItemDesignFilesChange, onItemDesignDescriptionChange }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const pricedItems = items.map((item) => {
     const localDesignFiles = itemDesignFiles[item.productVariantId] || [];
@@ -100,6 +103,48 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
     setFileError(null);
   };
 
+  const handleItemFileSelection = (productVariantId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (selected.length === 0) return;
+
+    const currentFiles = itemDesignFiles[productVariantId] || [];
+    const remainingSlots = 5 - currentFiles.length;
+    if (remainingSlots <= 0) {
+      setFileError('Máximo 5 archivos por producto.');
+      return;
+    }
+
+    const accepted: File[] = [];
+    for (const file of selected.slice(0, remainingSlots)) {
+      if (file.size === 0) {
+        setFileError('El archivo está vacío.');
+        return;
+      }
+      if (file.size > maxFileSizeBytes) {
+        setFileError('El archivo supera el tamaño máximo permitido.');
+        return;
+      }
+      if (!allowedFileTypes.has(file.type)) {
+        setFileError('Formato de archivo no permitido.');
+        return;
+      }
+      accepted.push(file);
+    }
+
+    onItemDesignFilesChange?.(productVariantId, [...currentFiles, ...accepted]);
+    setFileError(null);
+  };
+
+  const removeItemFile = (productVariantId: string, index: number) => {
+    const currentFiles = itemDesignFiles[productVariantId] || [];
+    onItemDesignFilesChange?.(
+      productVariantId,
+      currentFiles.filter((_, currentIndex) => currentIndex !== index),
+    );
+    setFileError(null);
+  };
+
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={items.length} currentView={View.CART} />
@@ -138,7 +183,12 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
           </div>
         )}
 
-        {items.length > 0 ? (
+        {isLoading && items.length === 0 ? (
+          <div className="text-center py-24 rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+            <Loader2 size={32} className="animate-spin opacity-60" />
+            <p className="text-[14px] font-bold opacity-60">Cargando...</p>
+          </div>
+        ) : items.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* List of items */}
             <div className="lg:col-span-2 space-y-4">
@@ -185,11 +235,11 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     )}
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-[18px] font-extrabold mb-2" style={{ color: '#0F1011' }}>
+                  <div className="w-24 shrink-0 text-right">
+                    <div className="text-[18px] font-extrabold mb-2 whitespace-nowrap tabular-nums" style={{ color: '#0F1011' }}>
                       S/ {money(item.lineTotal)}
                     </div>
-                    <div className="text-[10px] font-bold opacity-50 mb-2">
+                    <div className="text-[10px] font-bold opacity-50 mb-2 whitespace-nowrap tabular-nums">
                       Base S/ {money(item.baseSubtotal)}
                     </div>
                     <button
@@ -201,13 +251,65 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                       <Trash2 size={18} />
                     </button>
                   </div>
+
+                  <div className="basis-full border-t pt-4 mt-1 space-y-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                    <label className="text-[10px] font-black uppercase tracking-wider opacity-60">
+                      Diseño específico de este producto
+                    </label>
+                    <textarea
+                      defaultValue={item.quoteDescription || ''}
+                      onBlur={(event) => onItemDesignDescriptionChange?.(item.id, event.currentTarget.value)}
+                      placeholder="Comentario para este producto: logo, ubicación, acabado, referencia..."
+                      rows={2}
+                      maxLength={500}
+                      className="w-full px-4 py-3 rounded-xl border text-[12px] font-medium resize-none focus:outline-none"
+                      style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label
+                        className="px-3 py-2 rounded-xl border inline-flex items-center gap-2 text-[11px] font-black cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                      >
+                        <Upload size={14} /> Adjuntar diseño al producto
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          className="hidden"
+                          onChange={(event) => handleItemFileSelection(item.productVariantId, event)}
+                        />
+                      </label>
+                      <span className="text-[10px] font-bold opacity-50">PNG, JPG, WEBP o PDF. Máximo 5.</span>
+                    </div>
+                    {item.localDesignFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {item.localDesignFiles.map((file, index) => (
+                          <div key={`${item.productVariantId}-${file.name}-${file.size}-${index}`} className="rounded-xl border px-3 py-2 flex items-center gap-2 max-w-full" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                            <FileText size={14} className="shrink-0 opacity-70" />
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black truncate max-w-[160px]">{file.name}</p>
+                              <p className="text-[9px] opacity-55 font-bold">{fileSizeLabel(file)}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeItemFile(item.productVariantId, index)}
+                              className="p-1 rounded-lg hover:bg-black/5 cursor-pointer"
+                              title="Quitar archivo"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               ))}
             </div>
 
             {/* Summary / Final Quote button */}
-            <aside>
-              <div className="border rounded-[12px] p-8 sticky top-[100px] shadow-sm" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+            <aside className="self-start lg:sticky lg:top-6">
+              <div className="border rounded-[12px] p-8 shadow-sm" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                 <h3 className="text-[18px] font-extrabold mb-6 flex items-center gap-2">
                   <FileText size={20} style={{ color: 'var(--accent-on-light)' }} /> Resumen de Solicitud
                 </h3>

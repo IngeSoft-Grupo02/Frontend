@@ -322,7 +322,7 @@ export default function EditarUsuarioPage() {
               <div className="mt-12 space-y-3">
                 <Button className={`w-full h-14 rounded-2xl transition-opacity ${!formReady?'opacity-40 cursor-not-allowed':''}`}
                         onClick={handleSave} disabled={saving||!formReady}>
-                  {saving?<><Loader2 size={16} className="animate-spin mr-2"/>Guardando...</>:'Guardar cambios'}
+                  {saving?<><Loader2 size={16} className="animate-spin mr-2"/>Cargando...</>:'Guardar cambios'}
                 </Button>
                 {!formReady && (
                     <p className="text-[11px] text-neutral-400 text-center font-medium">

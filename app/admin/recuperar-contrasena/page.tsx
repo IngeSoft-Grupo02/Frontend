@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input } from '@/domains/admin/components/UI';
 import { motion } from 'motion/react';
-import { ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import {
   isStrongPassword,
   PASSWORD_REQUIREMENTS_MESSAGE,
@@ -14,6 +14,7 @@ import {
 } from '@/domains/auth/passwordRecovery';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
 import { messageFromError } from '@/domains/shared/errors';
+import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
 
 function RecuperarContrasenaContent() {
   const router = useRouter();
@@ -218,7 +219,7 @@ function RecuperarContrasenaContent() {
                       onClick={handleSendLink}
                       disabled={loading}
                     >
-                      {loading ? 'Enviando...' : 'Enviar enlace'}
+                      {loading ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : 'Enviar enlace'}
                     </Button>
                   </div>
                 </div>
@@ -369,7 +370,7 @@ function RecuperarContrasenaContent() {
                       onClick={handleResetPassword}
                       disabled={loading}
                     >
-                      {loading ? 'Actualizando...' : 'Actualizar contraseña'}
+                      {loading ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : 'Actualizar contraseña'}
                     </Button>
                   </div>
                 </div>
@@ -411,7 +412,7 @@ function RecuperarContrasenaContent() {
 
 export default function RecuperarContrasenaPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<main className="min-h-screen bg-[#f4f1eb] flex items-center justify-center p-8"><LoadingSpinner label="Cargando..." /></main>}>
       <RecuperarContrasenaContent />
     </Suspense>
   );

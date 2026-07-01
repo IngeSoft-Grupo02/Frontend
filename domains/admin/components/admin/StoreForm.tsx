@@ -271,7 +271,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-neutral-100 pt-8">
           <Button type="button" variant="secondary" className="rounded-full px-10" onClick={() => router.push(ADMIN_ROUTES.stores)}>Cancelar</Button>
           <Button type="button" className="rounded-full px-10" onClick={handleSave} disabled={saving || categoriesLoading}>
-            {saving ? <><Loader2 size={16} className="animate-spin mr-2" />Guardando...</> : mode === 'create' ? 'Crear tienda' : 'Guardar cambios'}
+            {saving ? <><Loader2 size={16} className="animate-spin mr-2" />Cargando...</> : mode === 'create' ? 'Crear tienda' : 'Guardar cambios'}
           </Button>
         </div>
       </Card>
