@@ -664,20 +664,35 @@ export default function DiscountsPage() {
                     <Edit3 size={20} /> Editar Regla
                   </Button>
                 </div>
+
                 <Button
-                  onClick={() => {
-                    if (confirm('¿Eliminar esta regla permanentemente?')) {
-                      deleteDiscount(selectedDiscount.id).catch(error => {
-                        setFormErrors({ form: messageFromError(error, 'No se pudo eliminar el descuento') });
-                      });
-                      setShowDetailId(null);
-                    }
-                  }}
-                  variant="ghost"
-                  className="h-14 rounded-xl font-bold text-red-500 hover:bg-red-50"
+                    onClick={async () => {
+                      if (confirm('¿Eliminar esta regla permanentemente?')) {
+                        // 1. Guardamos el ID porque al cerrar la ventana perderemos la referencia
+                        const idToDelete = selectedDiscount.id;
+
+                        // 2. Cerramos la ventana INMEDIATAMENTE para volver a la tabla de reglas
+                        setShowDetailId(null);
+
+                        try {
+                          // 3. El sistema elimina el descuento en el backend silenciosamente
+                          await deleteDiscount(idToDelete);
+
+                          // 4. Refresca los datos para que desaparezca de la tabla
+                          await refreshData({ background: true });
+                        } catch (error) {
+                          console.error("Error al eliminar:", error);
+                          alert("Hubo un problema al eliminar el descuento.");
+                        }
+                      }
+                    }}
+                    variant="ghost"
+                    className="h-14 rounded-xl font-bold text-red-500 hover:bg-red-50"
                 >
                   <Trash2 size={20} className="mr-2" /> Eliminar permanentemente
                 </Button>
+
+
               </div>
             </div>
           </div>

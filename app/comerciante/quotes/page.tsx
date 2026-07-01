@@ -583,7 +583,10 @@ export default function QuotesPage() {
                     </div>
                     {selectedQuote.status === 'Pendiente' ? (
                       <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                        <Button onClick={handleOpenRejectModal} variant="outline" className="h-12 px-6 !border-white/10 !bg-white/5 !text-white hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[12px]">
+                        <Button
+                            onClick={handleOpenRejectModal}
+                            className="h-12 px-6 !bg-red-600 !text-white !border-red-600 hover:!bg-red-700 hover:!border-red-700 gap-2 font-black uppercase tracking-widest !rounded-xl transition-all text-[12px]"
+                        >
                           <X size={18} /> Rechazar
                         </Button>
                         <Button onClick={() => handleStatusUpdate('Aprobada')} variant="camel" className="h-12 px-8 gap-2 !rounded-xl font-black text-[13px] uppercase tracking-widest shadow-lg shadow-brand-camel/20 hover:scale-105 active:scale-95 transition-all">

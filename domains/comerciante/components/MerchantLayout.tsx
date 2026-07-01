@@ -120,13 +120,13 @@ const Sidebar = () => {
             onClick={() => setShowStoreDropdown(!showStoreDropdown)}
             className="bg-brand-neutral-light border border-brand-neutral-border rounded-2xl p-4 cursor-pointer hover:bg-brand-neutral-mid transition-colors mb-8"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <StoreLogo store={store} logoUrl={logoUrl} size="large" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-[14px] font-extrabold truncate text-brand-black leading-tight">{store.name}</h3>
+                <h3 className="text-[18px] font-extrabold truncate text-brand-black leading-tight">{store.name}</h3>
                 <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mt-1">Tienda seleccionada</p>
               </div>
-              <ChevronDown size={14} className={`text-brand-text-muted shrink-0 transition-transform ${showStoreDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown size={12} className={`text-brand-text-muted shrink-0 transition-transform ${showStoreDropdown ? 'rotate-180' : ''}`} />
             </div>
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <span className="min-w-0 rounded-full bg-white border border-brand-neutral-border px-3 py-1.5 text-center text-[10px] font-black text-brand-black uppercase tracking-wider truncate">
@@ -172,15 +172,16 @@ const Sidebar = () => {
             <span className="text-[13px] font-extrabold">{item.label}</span>
           </Link>
         ))}
-      </nav>
+
       <div className="p-6 border-t border-brand-neutral-border">
-        <button 
-          onClick={() => router.push('/comerciante/stores/new')}
-          className="flex items-center justify-center gap-2 border border-brand-neutral-border bg-brand-neutral-light rounded-xl px-4 py-3 text-[12px] font-extrabold hover:bg-brand-neutral-mid transition-all w-full text-brand-black"
+        <button
+            onClick={() => router.push('/comerciante/stores/new')}
+            className="w-full flex items-center justify-center gap-3 bg-brand-black text-white hover:bg-neutral-800 rounded-xl px-4 py-4 text-[13px] font-black uppercase tracking-widest shadow-xl shadow-brand-black/20 transition-all transform hover:-translate-y-1 active:scale-95"
         >
-          <Plus size={16} /> Crear tienda
+          <Plus size={20} /> Crear tienda
         </button>
       </div>
+      </nav>
     </aside>
   );
 };
