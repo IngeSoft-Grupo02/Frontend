@@ -1,30 +1,12 @@
 'use client';
 
 import { Badge, Card } from '@/domains/admin/components/UI';
-import { api, StoreResponse, AuditLogResponse } from '@/domains/admin/lib/api';
+import { api, StoreResponse, AuditLogResponse, UserResponseDTO } from '@/domains/admin/lib/api';
+import { auditEventLabel } from '@/domains/admin/lib/audit-event';
+import { auditUserLabel } from '@/domains/admin/lib/audit-display';
+import { auditTimestampMs, formatAuditTimestamp } from '@/domains/admin/lib/audit-time';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-
-function endpointToEvento(method: string, endpoint: string, statusCode: number): string {
-  const e = endpoint.toLowerCase(); const ok = statusCode < 400;
-  if (e.includes('/auth/login'))     return ok ? 'Inicio de sesión'       : 'Inicio de sesión fallido';
-  if (e.includes('/auth/logout'))    return 'Cierre de sesión';
-  if (method==='POST' && e.includes('/admin/stores') && !e.includes('suspend') && !e.includes('deactivate') && !e.includes('reactivate'))
-    return ok ? 'Tienda registrada'      : 'Error al registrar tienda';
-  if (e.includes('/suspend'))        return ok ? 'Tienda suspendida'      : 'Error al suspender tienda';
-  if (e.includes('/reactivate'))     return ok ? 'Tienda reactivada'      : 'Error al reactivar tienda';
-  if (e.includes('/deactivate') && e.includes('/stores')) return ok ? 'Tienda desactivada' : 'Error al desactivar tienda';
-  if (method==='PUT'  && e.includes('/admin/stores')) return ok ? 'Tienda editada'       : 'Error al editar tienda';
-  if (method==='POST' && e.includes('/admin/users'))  return ok ? 'Usuario creado'       : 'Error al crear usuario';
-  if (method==='PUT'  && e.includes('/admin/users'))  return ok ? 'Usuario actualizado'  : 'Error al actualizar usuario';
-  if (e.includes('/deactivate') && e.includes('/users')) return ok ? 'Usuario desactivado' : 'Error al desactivar usuario';
-  if (e.includes('/admin/bulk/upload')) return ok ? 'Carga masiva ejecutada' : 'Error en carga masiva';
-  if (e.includes('/admin/audit'))       return 'Consulta de auditoría';
-  if (e.includes('/admin/stores/metrics')) return 'Consulta de métricas';
-  if (e.includes('/admin/system/config') && method==='PUT') return 'Parámetros actualizados';
-  if (e.includes('/admin/system/config')) return 'Consulta de configuración';
-  return `${method} ${endpoint}`;
-}
 
 function getStatusVariant(s: string) {
   if (s === 'ACTIVE') return 'active'; if (s === 'SUSPENDED') return 'suspended'; return 'neutral';
@@ -32,20 +14,16 @@ function getStatusVariant(s: string) {
 function mapStatus(s: string) {
   return ({ ACTIVE:'Activa', SUSPENDED:'Suspendida', DEACTIVATED:'Desactivada', INACTIVE:'Inactiva' } as any)[s] ?? s;
 }
-function formatTs(ts: string) {
-  try { return new Date(ts).toLocaleString('es-PE', { dateStyle:'short', timeStyle:'short' }); }
-  catch { return ts; }
-}
 
 export default function DashboardPage() {
   const [stores,  setStores]  = useState<StoreResponse[]>([]);
   const [logs,    setLogs]    = useState<AuditLogResponse[]>([]);
-  const [emails,  setEmails]  = useState<string[]>([]);
+  const [users,   setUsers]   = useState<UserResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.stores.getAll(), api.audit.getAll(), api.bulk.existingEmails()])
-        .then(([s, l, e]) => { setStores(s); setLogs(l); setEmails(e); })
+    Promise.all([api.stores.getAll(), api.audit.getAll(), api.users.getAll()])
+        .then(([s, l, u]) => { setStores(s); setLogs(l); setUsers(u); })
         .catch(console.error)
         .finally(() => setLoading(false));
   }, []);
@@ -54,15 +32,15 @@ export default function DashboardPage() {
   const suspendedStores = stores.filter(s => s.storeStatus === 'SUSPENDED').length;
   const errorLogs       = logs.filter(l => l.level === 'ERROR').length;
 
-  // Ordenar logs descendente (más reciente primero) y tomar los últimos 8
+  // Ordenar logs descendente (más reciente primero) y tomar los últimos 5
   const recentLogs = [...logs]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 8);
+      .sort((a, b) => auditTimestampMs(b.timestamp) - auditTimestampMs(a.timestamp))
+      .slice(0, 5);
 
   // Ordenar tiendas descendente por createdAt
   const recentStores = [...stores]
       .sort((a, b) => new Date(b.createdAt ?? '').getTime() - new Date(a.createdAt ?? '').getTime())
-      .slice(0, 6);
+      .slice(0, 5);
 
   if (loading) return (
       <div className="flex items-center justify-center h-[60vh] gap-3 text-neutral-400">
@@ -71,29 +49,24 @@ export default function DashboardPage() {
   );
 
   return (
-      <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
-        <div>
-          <h2 className="text-[28px] font-display font-extrabold tracking-tight">Resumen Operativo</h2>
-          <p className="text-[14px] font-medium text-neutral-400">Estado actual de la red de tiendas</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-5 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Tiendas activas',      value: activeStores },
-            { label: 'Usuarios registrados', value: emails.length },
+            { label: 'Usuarios registrados', value: users.length },
             { label: 'Tiendas suspendidas',  value: suspendedStores },
             { label: 'Errores en auditoría', value: errorLogs },
           ].map((m, i) => (
-              <Card key={i} className="flex flex-col gap-4 p-6">
-                <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
-                <span className="text-[32px] font-display font-extrabold">{m.value}</span>
+              <Card key={i} className="flex flex-col justify-center gap-3 p-5 min-h-[104px]">
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none">{m.label}</p>
+                <span className="text-[30px] font-display font-extrabold leading-none">{m.value}</span>
               </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 overflow-hidden px-0 py-2">
-            <div className="px-8 py-4 bg-white border-b border-neutral-100">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <Card className="lg:col-span-2 overflow-hidden px-0 py-0">
+            <div className="px-7 py-3.5 bg-white border-b border-neutral-100">
               <h3 className="text-[18px] font-display font-extrabold">Actividad reciente</h3>
               <p className="text-[12px] font-medium text-neutral-400">Últimos eventos auditables</p>
             </div>
@@ -101,31 +74,31 @@ export default function DashboardPage() {
               <table className="w-full text-left min-w-[500px]">
                 <thead className="bg-brand-beige-light">
                 <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                  <th className="py-4 px-8">Hora</th>
-                  <th className="py-4 px-6">Usuario</th>
-                  <th className="py-4 px-6">Evento</th>
+                  <th className="py-3 px-6">Hora</th>
+                  <th className="py-3 px-5">Usuario</th>
+                  <th className="py-3 px-5">Evento</th>
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-50">
                 {recentLogs.map(log => (
                     <tr key={log.id} className="text-[13px] hover:bg-neutral-50 transition-colors">
-                      <td className="py-5 px-8 font-medium text-neutral-500 text-[12px]">{formatTs(log.timestamp)}</td>
-                      <td className="py-5 px-6 font-bold text-neutral-900 text-[12px] font-mono">{log.userEmail || '—'}</td>
-                      <td className="py-5 px-6 font-extrabold text-[12px] uppercase tracking-tight">
-                        {endpointToEvento(log.httpMethod, log.endpoint, log.statusCode)}
+                      <td className="py-3.5 px-6 font-medium text-neutral-500 text-[12px]">{formatAuditTimestamp(log.timestamp)}</td>
+                      <td className="py-3.5 px-5 font-bold text-neutral-900 text-[12px] font-mono">{auditUserLabel(log)}</td>
+                      <td className="py-3.5 px-5 font-extrabold text-[12px] uppercase tracking-tight">
+                        {auditEventLabel(log.httpMethod, log.endpoint, log.statusCode)}
                       </td>
                     </tr>
                 ))}
                 {logs.length === 0 && (
-                    <tr><td colSpan={3} className="py-12 text-center text-neutral-400 italic text-[13px]">Sin actividad registrada.</td></tr>
+                    <tr><td colSpan={3} className="py-8 text-center text-neutral-400 italic text-[13px]">Sin actividad registrada.</td></tr>
                 )}
                 </tbody>
               </table>
             </div>
           </Card>
 
-          <Card className="flex flex-col h-fit overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
+          <Card className="flex flex-col h-fit overflow-hidden p-6">
+            <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-[18px] font-display font-extrabold">Tiendas recientes</h3>
                 <p className="text-[12px] font-medium text-neutral-400">Resumen rápido</p>
@@ -138,23 +111,23 @@ export default function DashboardPage() {
               </colgroup>
               <thead>
               <tr className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
-                <th className="pb-3 px-2">Tienda</th>
-                <th className="pb-3 px-2 text-right">Estado</th>
+                <th className="pb-2 px-2">Tienda</th>
+                <th className="pb-2 px-2 text-center">Estado</th>
               </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
               {recentStores.map(s => (
                   <tr key={s.id}>
-                    <td className="py-3 px-2 min-w-0 align-middle">
+                    <td className="py-2.5 px-2 min-w-0 align-middle">
                       <p className="font-extrabold text-neutral-900 text-[13px] truncate" title={s.storeName}>{s.storeName}</p>
                       <p className="text-[10px] text-neutral-400 font-mono truncate" title={s.slug}>{s.slug}</p>
                     </td>
-                    <td className="py-3 px-2 text-right align-middle">
+                    <td className="py-2.5 px-2 text-center align-middle">
                       <Badge className="inline-flex max-w-full justify-center whitespace-nowrap" variant={getStatusVariant(s.storeStatus) as any}>{mapStatus(s.storeStatus)}</Badge>
                     </td>
                   </tr>
               ))}
-              {stores.length === 0 && <tr><td colSpan={2} className="py-8 text-center text-neutral-400 italic text-[12px]">Sin tiendas.</td></tr>}
+              {stores.length === 0 && <tr><td colSpan={2} className="py-6 text-center text-neutral-400 italic text-[12px]">Sin tiendas.</td></tr>}
               </tbody>
             </table>
           </Card>

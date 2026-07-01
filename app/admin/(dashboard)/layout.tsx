@@ -20,7 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const getPageMeta = () => {
     if (pathname === ADMIN_ROUTES.dashboard) return { title: 'PANEL', subtitle: 'Visión ejecutiva del ecosistema multi-tenant' };
-    if (pathname.startsWith(ADMIN_ROUTES.stores)) return { title: 'Tiendas registradas', subtitle: 'Listado general de tenants con estado operativo' };
+    if (pathname.startsWith(ADMIN_ROUTES.stores)) return { title: 'Gestión de tiendas', subtitle: 'Administra tiendas activas, suspendidas e inactivas' };
     if (pathname.startsWith(ADMIN_ROUTES.users)) return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
     if (pathname === ADMIN_ROUTES.bulk) return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
     if (pathname.startsWith(ADMIN_ROUTES.categories)) return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };

@@ -186,7 +186,7 @@ function RecuperarContrasenaContent() {
                 <div className="space-y-8">
                   <Input 
                     label="Correo electrónico" 
-                    placeholder="admin@plataforma.com"
+                    placeholder="correo@dominio.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);

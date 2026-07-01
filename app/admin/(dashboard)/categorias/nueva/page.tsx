@@ -2,23 +2,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useApp } from '@/domains/admin/context/AppContext';
-import { ArrowLeft, Save } from 'lucide-react';
-import { Button, Input, Select, Card } from '@/domains/admin/components/UI';
+import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { Button, Input, Card } from '@/domains/admin/components/UI';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { api } from '@/domains/admin/lib/api';
+import { messageFromError } from '@/domains/shared/errors';
 
 export default function NuevaCategoriaPage() {
   const router = useRouter();
-  const { addCategory } = useApp();
-  
-  const [catName, setCatName] = useState('');
-  const [catDesc, setCatDesc] = useState('');
-  const [catStatus, setCatStatus] = useState('Activa');
 
-  const handleSave = () => {
+  const [catName, setCatName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
     if (!catName) return;
-    addCategory({ name: catName, description: catDesc, status: catStatus });
-    router.push(ADMIN_ROUTES.categories);
+    setSaving(true);
+    setError(null);
+    try {
+      await api.categories.create({ storeCategoryName: catName.trim() });
+      router.push(ADMIN_ROUTES.categories);
+    } catch (err) {
+      setError(messageFromError(err, 'No se pudo crear la categoría.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -39,26 +47,19 @@ export default function NuevaCategoriaPage() {
             label="Nombre de categoría" 
             placeholder="Ej. Accesorios" 
             value={catName} 
-            onChange={e => setCatName(e.target.value)} 
+            onChange={e => { setCatName(e.target.value); setError(null); }}
           />
-          <div className="space-y-2">
-            <label className="block text-[11px] font-bold text-neutral-500 mb-1.5 ml-1 uppercase">Descripción</label>
-            <textarea 
-              className="w-full h-40 px-4 py-3 bg-white border border-neutral-200 rounded-xl text-[14px] font-medium outline-none focus:border-brand-camel transition-colors resize-none shadow-inner"
-              placeholder="Breve detalle del alcance..."
-              value={catDesc}
-              onChange={e => setCatDesc(e.target.value)}
-            />
-          </div>
-          <Select label="Estado" value={catStatus} onChange={e => setCatStatus(e.target.value)}>
-            <option>Activa</option>
-            <option>Inactiva</option>
-          </Select>
+          {error && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+              <AlertCircle size={16} className="text-red-600 shrink-0" />
+              <p className="text-[13px] text-red-800 font-medium">{error}</p>
+            </div>
+          )}
 
           <div className="pt-8 flex gap-4">
             <Button variant="secondary" className="flex-1 h-14 rounded-2xl" onClick={() => router.back()}>Cancelar</Button>
-            <Button className="flex-1 h-14 rounded-2xl shadow-lg" onClick={handleSave}>
-              Crear categoría
+            <Button className="flex-1 h-14 rounded-2xl shadow-lg inline-flex items-center justify-center gap-2" onClick={handleSave} disabled={saving || !catName.trim()}>
+              {saving ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : 'Crear categoría'}
             </Button>
           </div>
         </div>

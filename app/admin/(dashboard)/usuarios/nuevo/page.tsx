@@ -330,7 +330,7 @@ export default function NuevoUsuarioPage() {
                 <CheckCircle2 size={20} className="text-brand-camel"/> Cuenta de Usuario
               </h3>
               <div className="space-y-6">
-                <Input label="Correo electrónico *" name="email" placeholder="luciana@street.com"
+                <Input label="Correo electrónico *" name="email" placeholder="correo@dominio.com"
                        value={form.email} onChange={handleChange} onBlur={handleBlur}
                        error={touched.email ? errors.email : ''}/>
                 <div>

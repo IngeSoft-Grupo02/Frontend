@@ -87,17 +87,24 @@ export default function EditarUsuarioPage() {
             firstName:      user.firstName ?? '',
             paternalSurname:user.paternalSurname ?? '',
             maternalSurname:user.maternalSurname ?? '',
-            birthDate:      '',
+            birthDate:      user.birthDate ?? '',
             phone:          user.phone ?? '',
-            gender:         'MALE',
+            gender:         user.gender ?? 'NOT_SPECIFIED',
             ruc:            user.ruc ?? '',
             email:          user.email,
             role:           user.role,
             storeId:        user.storeId?.toString() ?? '',
           });
-          // Pre-seleccionar tienda si es comerciante
-          if (user.role === 'MERCHANT' && user.storeName && user.storeId) {
-            setSelectedMerchantStores([{ id: user.storeId, name: user.storeName }]);
+          if (user.role === 'MERCHANT') {
+            const merchantStores = storeList
+              .filter(store => store.merchant?.userAccount?.id === user.id)
+              .map(store => ({ id: store.id, name: store.storeName }));
+
+            if (merchantStores.length > 0) {
+              setSelectedMerchantStores(merchantStores);
+            } else if (user.storeName && user.storeId) {
+              setSelectedMerchantStores([{ id: user.storeId, name: user.storeName }]);
+            }
           }
         })
         .catch(e => {

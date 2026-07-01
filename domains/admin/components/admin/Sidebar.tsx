@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { useApp } from '@/domains/admin/context/AppContext';
 
 const NAV_ITEMS = [
   { id: 'dashboard', path: ADMIN_ROUTES.dashboard, label: 'PANEL', icon: LayoutDashboard },
@@ -24,6 +25,8 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { currentUser } = useApp();
+  const roleLabel = currentUser?.role === 'SYSTEM_ADMIN' ? 'Super admin' : currentUser?.role ?? 'Administrador';
 
   return (
     <aside className="w-[280px] bg-white h-screen flex flex-col p-8 fixed left-0 top-0 z-50 border-r border-neutral-100">
@@ -63,10 +66,10 @@ export default function Sidebar() {
 
       <div className="mt-auto pt-10">
         <div className="bg-[#f1ede4] p-4 rounded-2xl flex flex-col gap-1 border border-neutral-100 shadow-sm">
-          <p className="text-[12px] font-bold text-neutral-800 break-all">admin@plataforma.com</p>
+          <p className="text-[12px] font-bold text-neutral-800 break-all">{currentUser?.email ?? '—'}</p>
           <div className="flex">
             <span className="bg-[#e2ead8] text-[#6d7a5b] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Super admin
+              {roleLabel}
             </span>
           </div>
           <p className="text-[10px] font-medium text-neutral-400 mt-1 uppercase">Entorno global</p>

@@ -633,41 +633,36 @@ export function CargaMasivaScreen() {
 
   const BLOCK_CONFIG = [
     { key:'merchants' as BlockKey, label:'Comerciantes',
-      description:'Crea cuentas de comerciantes. Descarga la plantilla para ver las columnas requeridas.',
+      description:'Sube el CSV con los comerciantes que tendrán acceso a sus tiendas.',
       icon:Users, accept:'.csv', onDownload:downloadMerchantsTemplate },
     { key:'stores' as BlockKey, label:'Tiendas',
-      description:'Crea tiendas y las vincula a comerciantes. categoryId (ID de categoría), primaryColor, secondaryColor, tertiaryColor y merchantEmail son obligatorios.',
+      description:'Sube el CSV con las tiendas y el correo del comerciante que administrará cada una.',
       icon:Store, accept:'.csv', onDownload:downloadStoresTemplate },
-    { key:'images' as BlockKey, label:'ZIP de logos',
-      description:'ZIP con 1 logo por tienda (png/jpg/webp, máx 2 MB). El nombre debe coincidir con el enlace generado desde el nombre.',
+    { key:'images' as BlockKey, label:'Logos de tiendas',
+      description:'Sube un ZIP con los logos. Acepta PNG, JPG o WEBP de hasta 2 MB por imagen.',
       icon:ImageIcon, accept:'.zip', onDownload:downloadLogosInstructions },
   ];
 
   // ── Render ────────────────────────────────────────────────────
 
   return (
-      <div className="space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+      <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-[34px] font-display font-extrabold tracking-tight text-brand-black">
-              Carga masiva
-            </h2>
-            <p className="text-[14px] font-medium text-neutral-400">
-              Sube CSV de comerciantes, tiendas y logos en una sola operación.
-              {!dataLoaded && (
-                  <span className="ml-2 text-blue-500 text-[12px]">
-                <Loader2 size={10} className="inline animate-spin mr-1" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {!dataLoaded ? (
+              <span className="inline-flex items-center gap-2 text-blue-500 text-[12px] font-bold">
+                <Loader2 size={12} className="animate-spin" />
                 Cargando datos del sistema...
               </span>
-              )}
-            </p>
-          </div>
+          ) : (
+              <span className="text-[12px] font-bold text-neutral-400">
+                Descarga las plantillas, completa los datos y sube tus archivos.
+              </span>
+          )}
           <Button
               onClick={handleExecute}
               disabled={!canExecute}
-              className="rounded-xl h-12 px-8 flex items-center gap-2 shrink-0"
+              className="rounded-xl h-12 px-8 inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap"
           >
             {executing
                 ? <><Loader2 size={16} className="animate-spin" /> Ejecutando...</>
@@ -766,10 +761,10 @@ export function CargaMasivaScreen() {
                     />
                     <button
                         onClick={() => fileRefs[block.key].current?.click()}
-                        className="w-full py-2.5 px-4 rounded-xl bg-brand-beige text-[13px] font-bold text-brand-black hover:bg-brand-camel/20 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2.5 px-4 rounded-xl border border-brand-camel/35 bg-brand-camel/20 text-[13px] font-bold text-brand-black hover:bg-brand-camel/30 hover:border-brand-camel/45 transition-colors flex items-center justify-center gap-2"
                     >
                       <FileText size={13} />
-                      {state.file ? 'Cambiar archivo' : 'Seleccionar archivo'}
+                      {state.file ? 'Cambiar archivo' : 'Subir archivo'}
                     </button>
                   </div>
                 </Card>

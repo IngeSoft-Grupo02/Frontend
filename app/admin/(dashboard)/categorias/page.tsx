@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/domains/admin/lib/api';
 import { Badge, Button, Card, Input } from '@/domains/admin/components/UI';
 import { AnimatePresence, motion } from 'motion/react';
-import { Plus, Search, Edit2, X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Edit2, X, Loader2, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 
 interface Category { id: number; storeCategoryName: string; active: boolean; }
 
 const SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+const CATEGORIES_PAGE_SIZE = 6;
 
 // ── Modal crear / editar ──────────────────────────────────────────
 function CategoryModal({ category, onClose, onSaved }: {
@@ -71,8 +72,8 @@ function CategoryModal({ category, onClose, onSaved }: {
             </div>
             <div className="flex gap-3 pt-4 border-t border-neutral-100">
               <Button variant="secondary" className="flex-1 rounded-2xl h-14" onClick={onClose}>Cancelar</Button>
-              <Button className="flex-1 rounded-2xl h-14" onClick={handleSave} disabled={saving}>
-                {saving ? <><Loader2 size={16} className="animate-spin mr-2"/>Cargando...</> : isEdit ? 'Guardar cambios' : 'Crear categoría'}
+              <Button className="flex-1 rounded-2xl h-14 inline-flex items-center justify-center gap-2 whitespace-nowrap" onClick={handleSave} disabled={saving}>
+                {saving ? <><Loader2 size={16} className="animate-spin"/>Cargando...</> : isEdit ? 'Guardar cambios' : 'Crear categoría'}
               </Button>
             </div>
           </div>
@@ -93,6 +94,7 @@ export default function CategoriasPage() {
   const [actionLoading, setActionLoading] = useState<number|null>(null);
   const [successMsg,    setSuccessMsg]    = useState<string|null>(null);
   const hasLoadedCategoriesRef = useRef(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadCategories = useCallback(async (background = false) => {
     try {
@@ -147,19 +149,21 @@ export default function CategoriasPage() {
     if (filterStatus === 'inactive') return !c.active;
     return true;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CATEGORIES_PAGE_SIZE));
+  const pageStart = (currentPage - 1) * CATEGORIES_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + CATEGORIES_PAGE_SIZE, filtered.length);
+  const paginatedCategories = filtered.slice(pageStart, pageEnd);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
 
   return (
-      <div className="space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-          <div>
-            <h2 className="text-[34px] font-display font-extrabold tracking-tight text-brand-black">Categorías</h2>
-            <p className="text-[14px] font-medium text-neutral-400">Maestro global de categorías de tiendas</p>
-          </div>
-          <Button onClick={() => { setEditTarget(null); setShowModal(true); }} className="rounded-full px-6 h-12">
-            <Plus size={16} className="mr-2"/> Nueva categoría
-          </Button>
-        </div>
-
+      <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
         <AnimatePresence>
           {successMsg && (
               <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-10 }}
@@ -186,10 +190,17 @@ export default function CategoriasPage() {
           </div>
         </div>
 
-        <Card className="px-0 py-2 overflow-hidden">
-          <div className="px-8 py-4 mb-2 flex items-center justify-between">
-            <h3 className="text-[18px] font-display font-extrabold text-brand-black">Listado de categorías</h3>
-            <span className="text-[12px] font-bold text-neutral-400">{filtered.length} categoría{filtered.length !== 1 ? 's' : ''}</span>
+        <Card className="px-0 py-0 overflow-hidden">
+          <div className="px-8 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <h3 className="text-[18px] font-display font-extrabold text-brand-black">Listado de categorías</h3>
+              <span className="inline-flex items-center rounded-full bg-brand-beige-light px-3 py-1 text-[12px] font-bold text-neutral-500">
+                {filtered.length} categoría{filtered.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <Button onClick={() => { setEditTarget(null); setShowModal(true); }} className="rounded-full px-6 inline-flex items-center justify-center gap-2 whitespace-nowrap">
+              <Plus size={16}/> Nueva categoría
+            </Button>
           </div>
           {loading ? (
               <div className="flex items-center justify-center py-20 gap-3 text-neutral-400">
@@ -200,17 +211,18 @@ export default function CategoriasPage() {
                 <AlertCircle size={20}/> {error}
               </div>
           ) : (
+              <>
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[600px]">
                   <thead className="bg-[#f1ede4]">
                   <tr className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
                     <th className="py-4 px-8">Nombre</th>
                     <th className="py-4 px-4">Estado</th>
-                    <th className="py-4 px-8 text-right">Acciones</th>
+                    <th className="py-4 px-8 text-center w-[168px]">Acciones</th>
                   </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                  {filtered.map(cat => (
+                  {paginatedCategories.map(cat => (
                       <tr key={cat.id} className="text-[13px] hover:bg-neutral-50 transition-colors">
                         <td className="py-5 px-8 font-extrabold text-neutral-900">{cat.storeCategoryName}</td>
                         <td className="py-5 px-4">
@@ -219,25 +231,35 @@ export default function CategoriasPage() {
                           </Badge>
                         </td>
                         <td className="py-5 px-8">
-                          {/* Fila de acciones alineada a la derecha con todos los items en una línea */}
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => { setEditTarget(cat); setShowModal(true); }}
-                                    className="p-2 hover:bg-brand-camel/10 rounded-lg transition-colors text-brand-camel"
-                                    title="Editar">
-                              <Edit2 size={15}/>
+                          <div className="flex items-center justify-center gap-2 min-h-10">
+                            <button type="button"
+                                    aria-label={`Editar ${cat.storeCategoryName}`}
+                                    title="Editar categoría"
+                                    onClick={() => { setEditTarget(cat); setShowModal(true); }}
+                                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:border-brand-camel hover:text-brand-camel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel disabled:opacity-50">
+                              <Edit2 size={17}/>
                             </button>
-                            <button onClick={() => handleToggleStatus(cat)}
+                            <button type="button"
+                                    aria-label={`${cat.active ? 'Desactivar' : 'Activar'} ${cat.storeCategoryName}`}
+                                    title={cat.active ? 'Desactivar categoría' : 'Activar categoría'}
+                                    onClick={() => handleToggleStatus(cat)}
                                     disabled={actionLoading === cat.id}
-                                    className="px-3 py-1.5 text-[11px] font-bold hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 disabled:opacity-50 whitespace-nowrap">
+                                    className={`w-10 h-10 inline-flex items-center justify-center rounded-xl border bg-white focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        cat.active
+                                            ? 'border-neutral-200 text-amber-700 hover:border-amber-400 hover:bg-amber-50 focus-visible:ring-amber-500'
+                                            : 'border-green-200 text-green-700 hover:border-green-400 hover:bg-green-50 focus-visible:ring-green-500'
+                                    }`}>
                               {actionLoading === cat.id
-                                  ? <Loader2 size={14} className="animate-spin"/>
-                                  : cat.active ? 'Desactivar' : 'Activar'}
+                                  ? <Loader2 size={17} className="animate-spin"/>
+                                  : cat.active ? <PauseCircle size={17}/> : <PlayCircle size={17}/>}
                             </button>
-                            <button onClick={() => handleDelete(cat)}
+                            <button type="button"
+                                    aria-label={`Eliminar ${cat.storeCategoryName}`}
+                                    title="Eliminar categoría"
+                                    onClick={() => handleDelete(cat)}
                                     disabled={actionLoading === cat.id}
-                                    className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500 disabled:opacity-50"
-                                    title="Eliminar">
-                              <X size={15}/>
+                                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                              <Trash2 size={17}/>
                             </button>
                           </div>
                         </td>
@@ -251,6 +273,39 @@ export default function CategoriasPage() {
                   </tbody>
                 </table>
               </div>
+              {filtered.length > CATEGORIES_PAGE_SIZE && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-neutral-100 px-6 py-4">
+                    <p className="text-[12px] font-bold text-neutral-400">
+                      Mostrando {pageStart + 1}-{pageEnd} de {filtered.length} categorías
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                          className="rounded-full inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={14} /> Anterior
+                      </Button>
+                      <span className="min-w-[92px] text-center text-[12px] font-black text-neutral-500">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                          className="rounded-full inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Siguiente <ChevronRight size={14} />
+                      </Button>
+                    </div>
+                  </div>
+              )}
+              </>
           )}
         </Card>
 

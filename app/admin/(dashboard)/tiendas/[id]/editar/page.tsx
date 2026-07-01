@@ -78,8 +78,8 @@ export default function EditarTiendaPage() {
           <h2 className="text-[24px] font-display font-extrabold">No se pudo abrir la tienda</h2>
           <p className="text-[14px] text-neutral-500 mt-2 max-w-lg">{loadError || 'La tienda solicitada no existe.'}</p>
         </div>
-        <Button type="button" variant="secondary" className="rounded-full px-8" onClick={() => router.push(ADMIN_ROUTES.stores)}>
-          <ArrowLeft size={16} className="mr-2" /> Volver al listado
+        <Button type="button" variant="secondary" className="rounded-full px-8 inline-flex items-center justify-center gap-2 whitespace-nowrap" onClick={() => router.push(ADMIN_ROUTES.stores)}>
+          <ArrowLeft size={16} /> Volver al listado
         </Button>
       </div>
     );

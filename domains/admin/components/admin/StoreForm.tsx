@@ -146,17 +146,20 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
   const secondaryHex = SECONDARY_COLORS.find(color => color.id === form.secondaryColor)?.code ?? '#475569';
   const tertiaryHex = TERTIARY_COLORS.find(color => color.id === form.tertiaryColor)?.code ?? '#D4AF37';
   const title = mode === 'create' ? 'Crear tienda' : 'Editar tienda';
+  const helperText = mode === 'create'
+    ? 'Completa los datos principales, asigna un comerciante y define los colores visibles para clientes.'
+    : 'Actualiza los datos, el comerciante responsable y los colores visibles para clientes.';
 
   return (
-    <div className="space-y-10 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
+    <div className="space-y-6 animate-in slide-in-from-right duration-500 max-w-[1400px] mx-auto">
       <div>
         <button type="button" onClick={() => router.push(ADMIN_ROUTES.stores)}
-                className="flex items-center gap-2 text-brand-camel font-bold text-[14px] mb-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel rounded-lg">
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-brand-black font-bold text-[13px] mb-4 shadow-sm hover:border-brand-black/25 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel">
           <ArrowLeft size={16} /> Volver al listado
         </button>
         <h2 className="text-[28px] font-display font-extrabold tracking-tight">{title}</h2>
         <p className="text-[14px] font-medium text-neutral-400">
-          {mode === 'create' ? 'Define los valores de marca y configuración.' : 'Modifica los datos actuales de la tienda.'}
+          {helperText}
         </p>
       </div>
 
@@ -167,15 +170,17 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
         </div>
       )}
 
-      <Card className="p-5 sm:p-8 lg:p-10 space-y-10">
+      <Card className="p-5 sm:p-7 lg:p-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-          <Input label="Nombre de la tienda *" placeholder="Canvas Lab" value={form.storeName} error={errors.storeName}
-                 onChange={event => {
-                   setForm(current => ({ ...current, storeName: event.target.value }));
-                   setErrors(current => ({ ...current, storeName: '' }));
-                 }} />
-          <div className="flex items-center rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-3.5 text-[13px] font-medium text-neutral-500">
-            El enlace de la tienda se generará automáticamente a partir del nombre.
+          <div>
+            <Input label="Nombre de la tienda *" placeholder="Ej: Street Kings" value={form.storeName} error={errors.storeName}
+                   onChange={event => {
+                     setForm(current => ({ ...current, storeName: event.target.value }));
+                     setErrors(current => ({ ...current, storeName: '' }));
+                   }} />
+            <p className="mt-2 ml-1 text-[12px] font-medium text-neutral-400">
+              El enlace público se genera automáticamente con este nombre.
+            </p>
           </div>
 
           <div>
@@ -186,7 +191,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
                       setErrors(current => ({ ...current, categoryId: '' }));
                     }}
                     className={`w-full px-5 py-3.5 bg-white border ${errors.categoryId ? 'border-red-400' : 'border-neutral-200'} rounded-2xl text-[14px] font-medium outline-none focus:border-brand-camel disabled:bg-neutral-50 disabled:text-neutral-400`}>
-              <option value="">{categoriesLoading ? 'Cargando categorías...' : 'Seleccionar categoría...'}</option>
+              <option value="">{categoriesLoading ? 'Cargando categorías...' : 'Selecciona una categoría'}</option>
               {categories.map(category => <option key={category.id} value={category.id}>{category.storeCategoryName}</option>)}
             </select>
             {errors.categoryId && <p className="text-[12px] text-red-500 font-bold mt-1 ml-1">{errors.categoryId}</p>}
@@ -195,13 +200,12 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
           <div>
             <label className="block text-[11px] font-bold text-neutral-500 mb-1.5 ml-1 uppercase">Descripción</label>
             <textarea className="w-full h-[110px] px-6 py-4 bg-white border border-neutral-200 rounded-[28px] text-[14px] outline-none focus:border-brand-camel resize-none"
-                      placeholder="Descripción de la tienda..." value={form.description}
+                      placeholder="Ej: Ropa urbana, prendas personalizadas y novedades de temporada." value={form.description}
                       onChange={event => setForm(current => ({ ...current, description: event.target.value }))} />
           </div>
         </div>
 
-        <div className="bg-brand-beige-light p-5 sm:p-8 rounded-[28px] border border-neutral-100">
-          <h3 className="text-[11px] font-bold text-neutral-500 mb-6 uppercase tracking-widest">Comerciante asociado (obligatorio)</h3>
+        <div className="bg-brand-beige-light p-5 sm:p-6 rounded-[24px] border border-neutral-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             {selectedMerchant ? (
               <div className="flex items-center gap-4 min-w-0">
@@ -211,24 +215,25 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
                 <div className="min-w-0">
                   <p className="text-[16px] font-extrabold text-neutral-900 truncate">{selectedMerchant.firstName} {selectedMerchant.paternalSurname}</p>
                   <p className="text-[12px] font-medium text-neutral-400 truncate">{selectedMerchant.email}</p>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">Comerciante responsable</p>
                 </div>
               </div>
-            ) : <p className="text-[14px] font-medium text-neutral-400 italic">Ningún comerciante seleccionado</p>}
-            <Button type="button" variant="secondary" className="rounded-full px-6 shrink-0" onClick={openMerchantModal}>
-              {selectedMerchant ? 'Cambiar comerciante' : 'Asociar comerciante'}
+            ) : <p className="text-[14px] font-medium text-neutral-400 italic">Selecciona quién administrará esta tienda.</p>}
+            <Button type="button" className="rounded-full px-6 shrink-0 inline-flex items-center justify-center whitespace-nowrap" onClick={openMerchantModal}>
+              {selectedMerchant ? 'Cambiar comerciante' : 'Seleccionar comerciante'}
             </Button>
           </div>
           {errors.merchant && <p className="text-[12px] text-red-500 font-bold mt-4 flex items-center gap-1"><AlertCircle size={12} /> {errors.merchant}</p>}
         </div>
 
         <div>
-          <h3 className="text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Configuración de marca</h3>
-          <p className="text-[14px] font-medium text-neutral-400 mb-8">Selecciona los colores de la identidad visual.</p>
+          <h3 className="text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Colores de la tienda</h3>
+          <p className="text-[14px] font-medium text-neutral-400 mb-8">Estos colores se usarán en la tienda que verá el cliente.</p>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10">
             {[
-              { label: 'Color principal', description: 'Botones y títulos', colors: PRIMARY_COLORS, field: 'primaryColor' as const },
-              { label: 'Color secundario', description: 'Acentos y soporte', colors: SECONDARY_COLORS, field: 'secondaryColor' as const },
-              { label: 'Color terciario', description: 'Detalles y realce', colors: TERTIARY_COLORS, field: 'tertiaryColor' as const },
+              { label: 'Color principal', description: 'Botones y títulos principales', colors: PRIMARY_COLORS, field: 'primaryColor' as const },
+              { label: 'Color secundario', description: 'Fondos, tarjetas y secciones', colors: SECONDARY_COLORS, field: 'secondaryColor' as const },
+              { label: 'Color de acento', description: 'Detalles, enlaces y llamados de atención', colors: TERTIARY_COLORS, field: 'tertiaryColor' as const },
             ].map(group => (
               <div key={group.field} className="space-y-4">
                 <h4 className="text-[13px] font-extrabold text-neutral-900 uppercase tracking-wide">{group.label}</h4>
@@ -251,7 +256,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
           </div>
 
           <div className="mt-12 lg:mt-16 pt-10 lg:pt-16 border-t border-neutral-100 flex flex-col items-center">
-            <h4 className="text-[11px] font-extrabold text-neutral-400 uppercase tracking-[0.2em] mb-8">Resultado de tu combinación</h4>
+            <h4 className="text-[11px] font-extrabold text-neutral-400 uppercase tracking-[0.2em] mb-8">Vista previa de colores</h4>
             <div className="w-full sm:w-auto bg-neutral-50/50 p-6 sm:p-10 rounded-[32px] border border-neutral-100 shadow-sm flex flex-col sm:flex-row items-center gap-8 sm:gap-12">
               <div className="flex items-center">
                 <div className="w-20 h-24 rounded-[24px] shadow-xl border-4 border-white" style={{ backgroundColor: primaryHex }} />
@@ -259,7 +264,7 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
                 <div className="w-16 h-20 rounded-[20px] shadow-lg border-4 border-white -ml-8 z-20" style={{ backgroundColor: tertiaryHex }} />
               </div>
               <div className="text-center sm:text-left">
-                <h5 className="text-[18px] font-display font-extrabold tracking-tight mb-2 uppercase">Paleta personalizada</h5>
+                <h5 className="text-[18px] font-display font-extrabold tracking-tight mb-2 uppercase">Paleta de la tienda</h5>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-3 text-[10px] font-mono font-bold text-neutral-400 uppercase">
                   <span>{primaryHex}</span><span>{secondaryHex}</span><span>{tertiaryHex}</span>
                 </div>
@@ -269,9 +274,9 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-neutral-100 pt-8">
-          <Button type="button" variant="secondary" className="rounded-full px-10" onClick={() => router.push(ADMIN_ROUTES.stores)}>Cancelar</Button>
-          <Button type="button" className="rounded-full px-10" onClick={handleSave} disabled={saving || categoriesLoading}>
-            {saving ? <><Loader2 size={16} className="animate-spin mr-2" />Cargando...</> : mode === 'create' ? 'Crear tienda' : 'Guardar cambios'}
+          <Button type="button" variant="secondary" className="rounded-full px-10 inline-flex items-center justify-center whitespace-nowrap" onClick={() => router.push(ADMIN_ROUTES.stores)}>Cancelar</Button>
+          <Button type="button" className="rounded-full px-10 inline-flex items-center justify-center gap-2 whitespace-nowrap" onClick={handleSave} disabled={saving || categoriesLoading}>
+            {saving ? <><Loader2 size={16} className="animate-spin" />Cargando...</> : mode === 'create' ? 'Crear tienda' : 'Guardar cambios'}
           </Button>
         </div>
       </Card>
@@ -283,8 +288,8 @@ export function StoreForm({ mode, initialValues, initialMerchant = null, onSubmi
             <div className="p-6 sm:p-10">
               <div className="flex justify-between items-start gap-5 mb-8">
                 <div>
-                  <h3 className="text-[24px] sm:text-[28px] font-display font-extrabold tracking-tight">Asociar comerciante</h3>
-                  <p className="text-[14px] font-medium text-neutral-400">Selecciona el responsable de esta tienda</p>
+                  <h3 className="text-[24px] sm:text-[28px] font-display font-extrabold tracking-tight">Seleccionar comerciante</h3>
+                  <p className="text-[14px] font-medium text-neutral-400">Elige quién administrará esta tienda.</p>
                 </div>
                 <button type="button" aria-label="Cerrar selector de comerciante" title="Cerrar"
                         onClick={() => setShowMerchantModal(false)} className="w-10 h-10 shrink-0 inline-flex items-center justify-center hover:bg-neutral-100 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-camel">
