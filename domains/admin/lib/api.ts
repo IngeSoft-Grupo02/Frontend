@@ -71,12 +71,28 @@ async function readErrorMessage(response: Response, endpoint: string): Promise<s
   if (text) {
     try {
       const payload = JSON.parse(text) as { message?: string; error?: string; code?: string };
+      const bulkMessage = bulkUploadErrorMessage(payload);
+      if (bulkMessage) return bulkMessage;
       return payload.message || payload.error || payload.code || text;
     } catch {
       return text;
     }
   }
   return `Error ${response.status}: ${endpoint}`;
+}
+
+function bulkUploadErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const data = payload as {
+    errorCount?: unknown;
+    incidences?: Array<{ type?: string; detail?: string; row?: number | string; block?: string }>;
+  };
+  const errorCount = typeof data.errorCount === 'number' ? data.errorCount : 0;
+  if (errorCount <= 0) return null;
+
+  const firstError = data.incidences?.find((inc) => inc.type === 'ERROR') ?? data.incidences?.[0];
+  const detail = firstError?.detail ? ` ${firstError.detail}` : '';
+  return `La carga masiva contiene ${errorCount} ${errorCount === 1 ? 'error' : 'errores'} de datos.${detail}`;
 }
 
 async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
