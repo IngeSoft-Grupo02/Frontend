@@ -15,6 +15,10 @@ import { Button } from './ui/Button';
 
 type Step = 'request' | 'sent' | 'validating' | 'reset' | 'success' | 'invalid';
 
+function buildStorePath(slug: string | undefined, page: 'iniciar-sesion' | 'registro'): string {
+  return slug ? `/${encodeURIComponent(slug)}/${page}` : `/${page}`;
+}
+
 export function PasswordRecovery({ token, storeSlug }: { token: string | null; storeSlug?: string | null }) {
   const [step, setStep] = useState<Step>(token ? 'validating' : 'request');
   const [email, setEmail] = useState('');
@@ -23,6 +27,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [canRegisterFromError, setCanRegisterFromError] = useState(false);
   const [loading, setLoading] = useState(false);
   const passwordHasMinLength = password.length >= 8;
   const passwordHasRequiredCharacters =
@@ -34,6 +39,9 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
     password.length > 0 &&
     confirmPassword.length > 0 &&
     password === confirmPassword;
+  const selectedStoreSlug = storeSlug?.trim() || getStoredCustomerStore()?.slug;
+  const loginPath = buildStorePath(selectedStoreSlug, 'iniciar-sesion');
+  const registerPath = buildStorePath(selectedStoreSlug, 'registro');
 
   useEffect(() => {
     if (!token) return;
@@ -50,12 +58,16 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
     }
     setLoading(true);
     setError('');
+    setCanRegisterFromError(false);
     try {
-      const selectedStoreSlug = storeSlug?.trim() || getStoredCustomerStore()?.slug;
       await requestPasswordReset(email, selectedStoreSlug);
       setStep('sent');
     } catch (requestError) {
       setError(messageFromError(requestError, 'No se pudo enviar el correo.'));
+      setCanRegisterFromError(
+        (requestError as { code?: unknown }).code === 'CUSTOMER_NOT_REGISTERED_IN_STORE'
+        && Boolean(selectedStoreSlug),
+      );
     } finally {
       setLoading(false);
     }
@@ -111,9 +123,16 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
             <Button type="submit" fullWidth disabled={loading}>
               {loading ? 'Enviando...' : 'Enviar enlace'}
             </Button>
-            <Button type="button" variant="outline" fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>
-              Volver al inicio de sesión
-            </Button>
+            <div className={canRegisterFromError ? 'grid gap-3 sm:grid-cols-2' : ''}>
+              <Button type="button" variant="outline" fullWidth onClick={() => window.location.assign(loginPath)}>
+                Volver al inicio de sesión
+              </Button>
+              {canRegisterFromError && (
+                <Button type="button" fullWidth onClick={() => window.location.assign(registerPath)}>
+                  Registrarme aquí
+                </Button>
+              )}
+            </div>
           </form>
         )}
 
@@ -122,7 +141,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
             <CheckCircle2 className="mx-auto text-green-600" size={48} />
             <h1 className="text-3xl font-extrabold">Revisa tu correo</h1>
             <p className="text-sm text-text-secondary">Si la cuenta está activa, enviamos un enlace. Revisa también la carpeta de spam.</p>
-            <Button fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>Volver al inicio de sesión</Button>
+            <Button fullWidth onClick={() => window.location.assign(loginPath)}>Volver al inicio de sesión</Button>
           </div>
         )}
 
@@ -194,7 +213,7 @@ export function PasswordRecovery({ token, storeSlug }: { token: string | null; s
           <div className="space-y-5 text-center">
             <CheckCircle2 className="mx-auto text-green-600" size={48} />
             <h1 className="text-3xl font-extrabold">Contraseña actualizada</h1>
-            <Button fullWidth onClick={() => window.location.assign('/iniciar-sesion')}>Iniciar sesión</Button>
+            <Button fullWidth onClick={() => window.location.assign(loginPath)}>Iniciar sesión</Button>
           </div>
         )}
 

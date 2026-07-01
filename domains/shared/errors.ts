@@ -14,6 +14,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/product not found/i, 'Producto no encontrado.'],
   [/store not found/i, 'Tienda no encontrada.'],
   [/quote not found|quotation not found/i, 'Cotización no encontrada.'],
+  [/correo.*no pertenece.*registrado.*tienda|customer_not_registered_in_store/i, 'Este correo no pertenece a ningún cliente registrado en esta tienda. Regístrate para crear una cuenta.'],
   // Unicidad por tienda (deben ir ANTES del patrón genérico de correo para no perder "en esta tienda").
   [/correo.*registrado.*tienda/i, 'El correo ya está registrado en esta tienda.'],
   [/dni.*registrado.*tienda/i, 'El DNI ya está registrado en esta tienda.'],

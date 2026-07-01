@@ -41,7 +41,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const message = body && typeof body === 'object' && 'message' in body
       ? String((body as { message: unknown }).message)
       : 'No se pudo completar la solicitud.';
-    throw new Error(translateErrorMessage(message, 'No se pudo completar la solicitud.'));
+    const error = new Error(translateErrorMessage(message, 'No se pudo completar la solicitud.')) as Error & { code?: string };
+    if (body && typeof body === 'object' && 'code' in body) {
+      error.code = String((body as { code: unknown }).code);
+    }
+    throw error;
   }
 
   return body as T;

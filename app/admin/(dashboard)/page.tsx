@@ -124,14 +124,18 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card className="flex flex-col h-fit">
+          <Card className="flex flex-col h-fit overflow-hidden">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-[18px] font-display font-extrabold">Tiendas recientes</h3>
                 <p className="text-[12px] font-medium text-neutral-400">Resumen rápido</p>
               </div>
             </div>
-            <table className="w-full text-left">
+            <table className="w-full table-fixed text-left">
+              <colgroup>
+                <col className="w-[68%]" />
+                <col className="w-[32%]" />
+              </colgroup>
               <thead>
               <tr className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
                 <th className="pb-3 px-2">Tienda</th>
@@ -141,12 +145,12 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-neutral-50">
               {recentStores.map(s => (
                   <tr key={s.id}>
-                    <td className="py-3 px-2">
-                      <p className="font-extrabold text-neutral-900 text-[13px]">{s.storeName}</p>
-                      <p className="text-[10px] text-neutral-400 font-mono">{s.slug}</p>
+                    <td className="py-3 px-2 min-w-0 align-middle">
+                      <p className="font-extrabold text-neutral-900 text-[13px] truncate" title={s.storeName}>{s.storeName}</p>
+                      <p className="text-[10px] text-neutral-400 font-mono truncate" title={s.slug}>{s.slug}</p>
                     </td>
-                    <td className="py-3 px-2 text-right">
-                      <Badge variant={getStatusVariant(s.storeStatus) as any}>{mapStatus(s.storeStatus)}</Badge>
+                    <td className="py-3 px-2 text-right align-middle">
+                      <Badge className="inline-flex max-w-full justify-center whitespace-nowrap" variant={getStatusVariant(s.storeStatus) as any}>{mapStatus(s.storeStatus)}</Badge>
                     </td>
                   </tr>
               ))}
