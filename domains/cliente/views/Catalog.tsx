@@ -7,6 +7,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Search,
   LayoutGrid,
   List as ListIcon,
@@ -34,6 +36,7 @@ interface CatalogProps {
 }
 
 type SortOption = 'recent' | 'oldest' | 'price-asc' | 'price-desc';
+const PRODUCTS_PER_PAGE = 21;
 
 function ProductVisual({ product, index, className = '' }: { product: Product; index: number; className?: string }) {
   const imageUrl = product.image || product.imageUrls?.[0];
@@ -72,6 +75,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +149,21 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
   const displayedProducts = useMemo(() => {
     return showFullCatalog ? storeProducts : storeProducts.slice(0, 3);
   }, [showFullCatalog, storeProducts]);
+  const totalPages = Math.max(1, Math.ceil(storeProducts.length / PRODUCTS_PER_PAGE));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return storeProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [currentPage, storeProducts]);
+  const pageStart = storeProducts.length === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
+  const pageEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, storeProducts.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedSizes, selectedColors, sortBy, showFullCatalog]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const clearFilters = () => {
     setSelectedSizes([]);
@@ -394,7 +413,72 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       <p className="font-bold text-red-600">{error}</p>
                     </div>
                   ) : storeProducts.length > 0 ? (
-                    renderProductCards(storeProducts)
+                    <div className="space-y-8">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <p className="text-[13px] font-bold" style={{ color: '#64748B' }}>
+                          Mostrando {pageStart}-{pageEnd} de {storeProducts.length} productos
+                        </p>
+                        {totalPages > 1 && (
+                          <p className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#94A3B8' }}>
+                            Página {currentPage} de {totalPages}
+                          </p>
+                        )}
+                      </div>
+
+                      {renderProductCards(paginatedProducts)}
+
+                      {totalPages > 1 && (
+                        <nav className="flex flex-wrap items-center justify-center gap-3 pt-2" aria-label="Paginación de productos">
+                          <button
+                            type="button"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                            className="h-11 px-4 rounded-xl border text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                          >
+                            <ChevronLeft size={16} />
+                            Anterior
+                          </button>
+
+                          {Array.from({ length: totalPages }).map((_, index) => {
+                            const page = index + 1;
+                            const isVisible = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                            const showGap = (page === currentPage - 2 && page > 1) || (page === currentPage + 2 && page < totalPages);
+
+                            if (showGap) {
+                              return <span key={`gap-${page}`} className="px-1 text-[12px] font-black text-slate-400">...</span>;
+                            }
+
+                            if (!isVisible) return null;
+
+                            return (
+                              <button
+                                key={page}
+                                type="button"
+                                onClick={() => setCurrentPage(page)}
+                                className="h-11 min-w-11 px-4 rounded-xl border text-[12px] font-black transition-all cursor-pointer"
+                                style={currentPage === page
+                                  ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', borderColor: 'var(--color-tertiary)' }
+                                  : { backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+
+                          <button
+                            type="button"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                            className="h-11 px-4 rounded-xl border text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
+                          >
+                            Siguiente
+                            <ChevronRight size={16} />
+                          </button>
+                        </nav>
+                      )}
+                    </div>
                   ) : (
                     <div className="rounded-[40px] p-20 text-center border border-dashed border-gray-200" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
                       <div className="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-6"><Search size={32} className="text-gray-400" /></div>

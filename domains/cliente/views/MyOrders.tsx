@@ -87,8 +87,8 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_ORDERS} />
 
-      <div className="max-w-7xl mx-auto px-10 py-12">
-        <header className="mb-12">
+      <div className="max-w-7xl mx-auto px-10 py-10">
+        <header className="mb-8">
           <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis pedidos</h2>
           <p className="text-[15px] font-medium opacity-75" style={{ color: '#475569' }}>
             Consulta el historial de tus compras y el progreso de tus órdenes activas.
@@ -110,13 +110,13 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
         )}
 
         {!loading && !error && orders.length === 0 && (
-          <div className="py-32 text-center" style={{ color: 'var(--text-on-primary)' }}>
-            <div className="w-20 h-20 border rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
-              <ShoppingBag size={32} />
+          <div className="py-16 text-center">
+            <div className="w-16 h-16 border rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
+              <ShoppingBag size={26} />
             </div>
-            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>Aún no tienes pedidos registrados.</h4>
-            <p className="opacity-75 text-[14px] max-w-sm mx-auto mb-10" style={{ color: 'var(--text-on-primary)' }}>
-              Cuando una cotización sea aprobada, tu pedido aparecerá aquí.
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: '#0F1011' }}>No hay pedidos activos por aquí</h4>
+            <p className="text-[14px] max-w-md mx-auto mb-7 leading-relaxed" style={{ color: '#64748B' }}>
+              Cuando la tienda apruebe una cotización y se genere un pedido, podrás ver aquí su avance y los pasos para pagarlo.
             </p>
             <Button
               variant="primary"

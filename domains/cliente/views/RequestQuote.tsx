@@ -127,7 +127,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
       });
     } catch (err: unknown) {
       const { messageFromError } = await import('../../shared/errors');
-      setAddError(messageFromError(err, 'No se pudo agregar el producto al carrito.'));
+      setAddError(messageFromError(err, 'No se pudo agregar el producto al detalle de cotización.'));
     } finally {
       setIsAddingToCart(false);
     }
@@ -187,31 +187,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8">
                 <div className="space-y-3">
                   <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Producto</label>
                   <div className="w-full px-5 py-3.5 rounded-xl font-bold text-[14px] border" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                     {product?.name || 'Selecciona un producto'}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Cantidad Total (u)</label>
-                  <div
-                    className="w-full px-5 py-3.5 rounded-xl font-black text-[18px] border transition-colors"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      borderColor: 'rgba(0,0,0,0.05)',
-                      color: quantity <= 0 ? 'var(--error-on-primary)' : 'var(--accent-on-primary)'
-                    }}
-                  >
-                    {quantity} unidades
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] font-bold">
-                    {quantity <= 0 ? (
-                      <span className="flex items-center gap-1" style={{ color: 'var(--error-on-secondary)' }}><Info size={12} /> Agrega al menos 1 unidad para continuar.</span>
-                    ) : (
-                      <span className="flex items-center gap-1 font-bold" style={{ color: 'var(--success-on-secondary)' }}><CheckCircle2 size={12} /> Cantidad válida</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -286,6 +266,27 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   ))}
                 </div>
               </div>
+
+              <div className="mt-8 space-y-3">
+                <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Total calculado</label>
+                <div
+                  className="w-full px-5 py-3.5 rounded-xl font-black text-[18px] border transition-colors"
+                  style={{
+                    backgroundColor: 'var(--color-primary)',
+                    borderColor: 'rgba(0,0,0,0.05)',
+                    color: quantity <= 0 ? 'var(--error-on-primary)' : 'var(--accent-on-primary)'
+                  }}
+                >
+                  {quantity} unidades
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-bold">
+                  {quantity <= 0 ? (
+                    <span className="flex items-center gap-1" style={{ color: 'var(--error-on-secondary)' }}><Info size={12} /> Ingresa la cantidad en la distribución por talla y color.</span>
+                  ) : (
+                    <span className="flex items-center gap-1 font-bold" style={{ color: 'var(--success-on-secondary)' }}><CheckCircle2 size={12} /> Total calculado desde las combinaciones</span>
+                  )}
+                </div>
+              </div>
             </motion.div>
 
             {/* Step 2: Design */}
@@ -299,16 +300,16 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               <div className="flex items-start gap-6 mb-10">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>2</div>
                 <div>
-                  <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Referencias de Diseño</h3>
-                  <p className="text-[14px] opacity-60">Sube tu logo, ficha técnica o fotos de referencia.</p>
+                  <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Diseño o personalización</h3>
+                  <p className="text-[14px] opacity-60">Si quieres agregar un logo, imagen, texto o ejemplo, adjúntalo aquí.</p>
                 </div>
               </div>
 
               <div className="border-2 rounded-2xl p-8 mb-10 flex items-start gap-5 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
                 <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
                 <p className="text-[15px] font-bold leading-relaxed">
-                  <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Nota de Producción</span>
-                  La inclusión de un diseño personalizado conlleva un incremento del 10% sobre el subtotal de este producto. Este incremento se aplica solo cuando adjuntas archivos de referencia para el producto.
+                  <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Importante</span>
+                  Adjuntar archivos es opcional. Si subes un logo, foto o documento para personalizar este producto, se agregará un 10% extra al precio de este producto.
                 </p>
               </div>
 
@@ -329,12 +330,12 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   <Upload size={24} style={{ color: 'var(--accent-on-secondary)' }} />
                 </div>
                 <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
-                  {uploadedFiles.length >= 5 ? 'Límite de archivos alcanzado' : 'Sube tus referencias de diseño'}
+                  {uploadedFiles.length >= 5 ? 'Ya agregaste el máximo de archivos' : 'Adjuntar archivos del diseño'}
                 </h4>
-                <p className="text-[13px] opacity-60 font-medium mb-8">Permitido: PNG, JPG, WEBP y PDF (máx. 5 archivos)</p>
+                <p className="text-[13px] opacity-60 font-medium mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
                 <div className="flex justify-center gap-3">
                   <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                    <ImageIcon size={12} /> Referencias
+                    <ImageIcon size={12} /> Logo, foto o PDF
                   </span>
                 </div>
               </div>
@@ -376,9 +377,9 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               )}
 
               <div className="mt-8 space-y-3">
-                 <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Indicaciones adicionales</label>
+                 <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Comentarios para la tienda</label>
                  <textarea
-                    placeholder="Escribe aquí detalles sobre estampados, bordados o acabados especiales..."
+                    placeholder="Ejemplo: colocar el logo en el pecho, usar letras blancas, enviar antes del viernes..."
                     className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border focus:outline-none min-h-[120px]"
                     value={specs}
                     onChange={(e) => setSpecs(e.target.value)}
@@ -407,7 +408,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   opacity: isAddingToCart ? 0.7 : 1,
                 }}
               >
-                {isAddingToCart ? <><Loader2 size={16} className="animate-spin" /> Agregando...</> : 'Añadir al carrito'}
+                {isAddingToCart ? <><Loader2 size={16} className="animate-spin" /> Agregando...</> : 'Añadir al detalle de cotización'}
               </Button>
             </div>
           </div>
@@ -431,15 +432,17 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       <div className="text-[11px] font-bold opacity-60" style={{ color: 'var(--text-on-primary)' }}>S/ {basePrice.toFixed(2)} c/u</div>
                    </div>
                 </div>
-                <div className="text-[14px] font-black" style={{ color: 'var(--text-on-primary)' }}>S/ {money(subtotal)}</div>
+                <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums" style={{ color: 'var(--text-on-primary)' }}>S/ {money(subtotal)}</div>
               </div>
 
-              <div className="flex justify-between items-center px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                <div className="flex items-center gap-2 font-bold" style={{ color: 'var(--text-on-primary)' }}>
-                  <ImageIcon size={16} />
-                  Incremento por diseño (10%)
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                <div className="min-w-0 flex-1 font-bold" style={{ color: 'var(--text-on-primary)' }}>
+                  <div className="flex items-start gap-2">
+                    <ImageIcon size={16} className="mt-0.5 shrink-0" />
+                    <span className="leading-tight">Incremento por diseño (10%)</span>
+                  </div>
                 </div>
-                <div className="text-[14px] font-black" style={{ color: 'var(--accent-on-primary)' }}>
+                <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums" style={{ color: 'var(--accent-on-primary)' }}>
                   {designFeeAmount > 0 ? `+ S/ ${money(designFeeAmount)}` : 'S/ 0.00'}
                 </div>
               </div>
@@ -450,7 +453,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     <CheckCircle2 size={16} className="text-emerald-500" />
                     {applicableDiscount ? discountRuleLabel(applicableDiscount) : 'Descuento vol.'}
                   </div>
-                  <div className="text-[14px] font-black text-emerald-500">- S/ {money(discountAmount)}</div>
+                  <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums text-emerald-500">- S/ {money(discountAmount)}</div>
                 </div>
               )}
             </div>
@@ -459,7 +462,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                <div className="flex justify-between items-end">
                   <div className="text-[14px] font-black uppercase tracking-widest opacity-60">Total</div>
                   <div className="text-right">
-                     <div className="text-[32px] font-black leading-none mb-1 tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(total)}</div>
+                     <div className="whitespace-nowrap text-[32px] font-black leading-none mb-1 tracking-tighter tabular-nums" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(total)}</div>
                      <div className="text-[10px] font-black uppercase tracking-widest opacity-50">Monto final sujeto a revisión</div>
                   </div>
                </div>

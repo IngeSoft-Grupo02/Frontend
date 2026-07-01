@@ -35,6 +35,12 @@ interface AppContextType {
   setSelectedOrder: (order: Order | null) => void;
   cartItems: any[];
   setCartItems: React.Dispatch<React.SetStateAction<any[]>>;
+  quotationDescription: string;
+  setQuotationDescription: React.Dispatch<React.SetStateAction<string>>;
+  itemDesignFiles: Record<string, File[]>;
+  setItemDesignFiles: React.Dispatch<React.SetStateAction<Record<string, File[]>>>;
+  generalDesignFiles: File[];
+  setGeneralDesignFiles: React.Dispatch<React.SetStateAction<File[]>>;
   addToCart: (item: any) => void;
   removeFromCart: (id: string) => void;
   isHydrated: boolean;
@@ -52,6 +58,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const [quotationDescription, setQuotationDescription] = useState('');
+  const [itemDesignFiles, setItemDesignFiles] = useState<Record<string, File[]>>({});
+  const [generalDesignFiles, setGeneralDesignFiles] = useState<File[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -128,6 +137,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setSelectedOrder,
         cartItems,
         setCartItems,
+        quotationDescription,
+        setQuotationDescription,
+        itemDesignFiles,
+        setItemDesignFiles,
+        generalDesignFiles,
+        setGeneralDesignFiles,
         addToCart,
         removeFromCart,
         isHydrated: hydrated,

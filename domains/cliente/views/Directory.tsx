@@ -226,11 +226,11 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                     </div>
                   </div>
                   <div className="p-6">
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant="primary"
                         fullWidth
-                        className="!py-2.5 transition-all outline-none"
+                        className="!px-3 !py-2.5 !text-[12px] whitespace-nowrap transition-all outline-none"
                         style={{
                           backgroundColor: '#0F1011',
                           color: '#FFFFFF',
@@ -243,7 +243,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                       <Button
                         variant="ghost"
                         fullWidth
-                        className="!py-2.5 border hover:bg-gray-50 transition-colors"
+                        className="!px-3 !py-2.5 !text-[12px] whitespace-nowrap border hover:bg-gray-50 transition-colors"
                         style={{
                           backgroundColor: 'transparent',
                           color: '#0F1011',
