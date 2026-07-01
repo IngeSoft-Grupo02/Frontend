@@ -177,15 +177,15 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={items.length} currentView={View.CART} />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <header className="flex items-center justify-between mb-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-10">
           <div>
-            <h1 className="text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Detalle de Cotización</h1>
+            <h1 className="text-[30px] sm:text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Detalle de Cotización</h1>
             <p className="font-medium opacity-75" style={{ color: '#475569' }}>Revisa tus productos elegidos antes de solicitar la cotización final.</p>
           </div>
           <Button
             variant="ghost"
-            className="flex items-center gap-2 border font-bold text-[13px] hover:opacity-85 shadow-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 border font-bold text-[13px] hover:opacity-85 shadow-sm"
             onClick={() => onNavigate(View.CATALOG)}
             style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
           >
@@ -217,7 +217,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             <p className="text-[14px] font-bold opacity-60">Cargando...</p>
           </div>
         ) : items.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 lg:gap-8">
             {/* List of items */}
             <div className="space-y-4">
               {pricedItems.map((item, i) => (
@@ -227,10 +227,10 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="border rounded-[12px] p-5 group"
+                  className="border rounded-[12px] p-4 sm:p-5 group"
                   style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <ProductThumbnail item={item} index={i} />
 
                     <div className="min-w-0 flex-1">
@@ -273,12 +273,14 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                       )}
                     </div>
 
-                    <div className="w-28 shrink-0 text-right">
+                    <div className="flex w-full shrink-0 items-start justify-between gap-3 text-left sm:w-28 sm:block sm:text-right">
+                      <div>
                       <div className="text-[18px] font-extrabold mb-1 whitespace-nowrap tabular-nums" style={{ color: '#0F1011' }}>
                         S/ {money(item.lineTotal)}
                       </div>
                       <div className="text-[10px] font-bold opacity-50 mb-3 whitespace-nowrap tabular-nums">
                         Base S/ {money(item.baseSubtotal)}
+                      </div>
                       </div>
                       <button
                         onClick={() => onRemoveItem(item.id)}
@@ -348,7 +350,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
 
             {/* Summary / Final Quote button */}
             <aside className="self-start lg:sticky lg:top-6">
-              <div className="border rounded-[12px] p-8 shadow-sm" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <div className="border rounded-[12px] p-5 sm:p-8 shadow-sm" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                 <h3 className="text-[18px] font-extrabold mb-6 flex items-center gap-2">
                   <FileText size={20} style={{ color: 'var(--accent-on-light)' }} /> Resumen de Solicitud
                 </h3>
@@ -487,9 +489,9 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             </aside>
           </div>
         ) : (
-          <div className="text-center py-24 rounded-[16px] border-2 border-dashed" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
-              <ShoppingCart size={40} />
+          <div className="text-center py-16 sm:py-24 px-5 rounded-[16px] border-2 border-dashed" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-6 border" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <ShoppingCart size={34} />
             </div>
             <h2 className="text-[22px] font-extrabold mb-2">Tu detalle de cotización está vacío</h2>
             <p className="max-w-sm mx-auto mb-10 font-medium opacity-65 text-[15px]">
@@ -497,7 +499,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
             </p>
             <Button
               variant="primary"
-              className="px-10 font-black cursor-pointer shadow-sm"
+              className="w-full sm:w-auto sm:px-10 font-black cursor-pointer shadow-sm"
               style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
               onClick={() => onNavigate(View.CATALOG)}
             >

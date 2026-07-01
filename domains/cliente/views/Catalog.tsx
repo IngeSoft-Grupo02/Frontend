@@ -172,20 +172,20 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
   };
 
   const renderProductCards = (items: Product[]) => (
-    <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8' : 'space-y-6'}>
+    <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8' : 'space-y-5 sm:space-y-6'}>
       {items.map((product, index) => (
         <motion.div
           key={product.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className={`group rounded-[32px] border overflow-hidden hover:shadow-xl transition-all cursor-pointer ${viewMode === 'list' ? 'flex items-center p-4 gap-8' : ''}`}
+          className={`group rounded-[24px] sm:rounded-[32px] border overflow-hidden hover:shadow-xl transition-all cursor-pointer ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center p-4 gap-5 sm:gap-8' : ''}`}
           style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
           onClick={() => onSelectProduct(product)}
         >
-          <ProductVisual product={product} index={index} className={`${viewMode === 'list' ? 'w-48 shrink-0' : 'w-full'} aspect-square`} />
+          <ProductVisual product={product} index={index} className={`${viewMode === 'list' ? 'w-full sm:w-48 shrink-0 rounded-[18px] sm:rounded-none' : 'w-full'} aspect-square`} />
 
-          <div className="p-6 flex flex-col flex-1 text-left">
+          <div className={`${viewMode === 'list' ? 'w-full p-2 sm:p-6' : 'p-5 sm:p-6'} flex flex-col flex-1 text-left`}>
             <h3 className="text-[16px] font-black mb-1 transition-colors" style={{ color: '#0F1011' }}>{product.name}</h3>
             <p className="text-[12px] font-medium line-clamp-2 mb-4" style={{ color: '#475569' }}>{product.description}</p>
             <div className="flex flex-wrap gap-2 mb-5">
@@ -196,10 +196,10 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 <span className="px-2 py-1 rounded-lg text-[10px] font-black border" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>Stock {product.stock}</span>
               )}
             </div>
-            <div className="mt-auto flex items-center justify-between">
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
               <span className="text-[18px] font-black" style={{ color: '#0F1011' }}>S/ {product.price.toFixed(2)}</span>
               <button
-                className="text-[11px] font-black px-6 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer"
+                className="text-[11px] font-black px-4 sm:px-6 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                 onClick={(event) => {
                   event.stopPropagation();
@@ -226,7 +226,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
         currentView={showFullCatalog ? View.CATALOG : View.STOREFRONT_PUBLIC}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence mode="wait">
           {!showFullCatalog ? (
             <motion.div
@@ -234,17 +234,17 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="rounded-[40px] shadow-sm overflow-hidden border min-h-[80vh] flex flex-col"
+              className="rounded-[28px] md:rounded-[40px] shadow-sm overflow-hidden border min-h-[80vh] flex flex-col"
               style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.08)', color: '#0F1011' }}
             >
               <div
-                className="relative min-h-[650px] p-20 flex flex-col items-start justify-center text-left overflow-hidden rounded-[40px] transition-all duration-300"
+                className="relative min-h-[520px] md:min-h-[650px] p-8 sm:p-12 md:p-20 flex flex-col items-start justify-center text-left overflow-hidden rounded-[28px] md:rounded-[40px] transition-all duration-300"
                 style={{ background: 'radial-gradient(circle at 100% 0%, var(--color-camel-light) 0%, transparent 60%), #FFFFFF' }}
               >
                 <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} className="relative z-10 max-w-2xl flex flex-col items-start gap-6 pl-4">
                   <StoreLogo
                     store={store}
-                    className="w-28 h-28 rounded-[32px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] border mb-8 backdrop-blur-md"
+                    className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-[24px] md:rounded-[32px] shadow-[0_20px_40px_rgba(0,0,0,0.08)] border mb-6 md:mb-8 backdrop-blur-md"
                     style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0, 0, 0, 0.08)' }}
                     fallbackClassName="font-black text-4xl"
                     fallbackStyle={{ color: 'var(--text-on-primary)' }}
@@ -256,16 +256,16 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-tertiary)' }} />
                       <span className="text-[11px] font-black tracking-[0.25em] uppercase">Bienvenidos a la fábrica</span>
                     </div>
-                    <h2 className="text-[84px] font-black leading-[0.8] tracking-tighter" style={{ color: '#0F1011' }}>{store.name}</h2>
+                    <h2 className="text-[44px] sm:text-[58px] md:text-[84px] font-black leading-[0.9] md:leading-[0.8] tracking-tight md:tracking-tighter" style={{ color: '#0F1011' }}>{store.name}</h2>
                     <div className="flex items-center gap-4">
                       <div className="h-px w-12" style={{ backgroundColor: 'var(--color-tertiary)' }} />
-                      <h3 className="text-[56px] font-black leading-[0.8] tracking-tighter" style={{ color: 'var(--accent-on-light)' }}>Socios industriales</h3>
+                      <h3 className="text-[30px] sm:text-[42px] md:text-[56px] font-black leading-[0.9] md:leading-[0.8] tracking-tight md:tracking-tighter" style={{ color: 'var(--accent-on-light)' }}>Socios industriales</h3>
                     </div>
                   </div>
 
                   <div className="pt-12">
                     <button
-                      className="group flex items-center gap-4 px-14 py-4.5 rounded-2xl font-black text-[14px] uppercase tracking-widest transition-all shadow-[0_15px_30px_rgba(0,0,0,0.08)] active:scale-95 cursor-pointer"
+                      className="group flex items-center gap-4 px-8 sm:px-10 md:px-14 py-4 rounded-2xl font-black text-[12px] sm:text-[14px] uppercase tracking-widest transition-all shadow-[0_15px_30px_rgba(0,0,0,0.08)] active:scale-95 cursor-pointer"
                       style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                       onClick={() => setShowFullCatalog(true)}
                     >
@@ -276,8 +276,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 </motion.div>
               </div>
 
-              <div className="p-12 border-t" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
-                <div className="flex justify-between items-end mb-10">
+              <div className="p-5 sm:p-8 md:p-12 border-t" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+                <div className="flex justify-between items-end mb-8 md:mb-10">
                   <div>
                     <h4 className="text-[24px] font-black tracking-tight" style={{ color: '#0F1011' }}>Productos recientes</h4>
                     <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Últimas incorporaciones al catálogo</p>
@@ -289,7 +289,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 ) : error ? (
                   <div className="py-16 flex flex-col items-center gap-3 text-red-600"><AlertTriangle /> {error}</div>
                 ) : displayedProducts.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
                     {displayedProducts.map((product, index) => (
                       <motion.div
                         key={product.id}
@@ -314,8 +314,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                   <div className="py-16 text-center text-gray-500 font-bold">Esta tienda aún no tiene productos disponibles.</div>
                 )}
 
-                <div className="mt-20 flex justify-center">
-                  <button onClick={() => onNavigate(View.DIRECTORY)} className="group flex items-center gap-3 px-10 py-4 rounded-2xl text-[13px] font-black transition-all border shadow-sm hover:shadow-md active:scale-95 cursor-pointer" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+                <div className="mt-12 md:mt-20 flex justify-center">
+                  <button onClick={() => onNavigate(View.DIRECTORY)} className="group flex items-center gap-3 px-6 sm:px-10 py-4 rounded-2xl text-[12px] sm:text-[13px] font-black transition-all border shadow-sm hover:shadow-md active:scale-95 cursor-pointer" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                     <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
                     VOLVER A TIENDAS
                   </button>
@@ -324,14 +324,14 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
             </motion.div>
           ) : (
             <motion.div key="catalog" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 p-5 sm:p-6 md:p-8 rounded-[24px] md:rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                 <div className="space-y-1">
                   <h2 className="text-[28px] font-black tracking-tight" style={{ color: '#0F1011' }}>Catálogo de productos</h2>
                   <p className="text-[14px] font-bold" style={{ color: '#475569' }}>Mostrando {storeProducts.length} artículos disponibles</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="relative">
+                <div className="flex w-full flex-wrap items-center gap-3 sm:gap-4 md:w-auto">
+                  <div className="relative w-full md:w-auto">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                       type="text"
@@ -401,14 +401,14 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                   )}
                 </aside>
 
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   {loading ? (
-                    <div className="rounded-[40px] p-20 text-center border border-dashed border-gray-200 flex flex-col items-center gap-3" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
+                    <div className="rounded-[28px] md:rounded-[40px] p-10 md:p-20 text-center border border-dashed border-gray-200 flex flex-col items-center gap-3" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
                       <Loader2 size={32} className="animate-spin text-gray-400" />
                       <p className="font-bold text-gray-500">Cargando productos...</p>
                     </div>
                   ) : error ? (
-                    <div className="rounded-[40px] p-20 text-center border border-dashed border-red-200 flex flex-col items-center gap-3" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
+                    <div className="rounded-[28px] md:rounded-[40px] p-10 md:p-20 text-center border border-dashed border-red-200 flex flex-col items-center gap-3" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
                       <AlertTriangle size={32} className="text-red-500" />
                       <p className="font-bold text-red-600">{error}</p>
                     </div>
@@ -428,12 +428,12 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       {renderProductCards(paginatedProducts)}
 
                       {totalPages > 1 && (
-                        <nav className="flex flex-wrap items-center justify-center gap-3 pt-2" aria-label="Paginación de productos">
+                        <nav className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-2" aria-label="Paginación de productos">
                           <button
                             type="button"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                            className="h-11 px-4 rounded-xl border text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl border text-[11px] sm:text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                           >
                             <ChevronLeft size={16} />
@@ -456,7 +456,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                                 key={page}
                                 type="button"
                                 onClick={() => setCurrentPage(page)}
-                                className="h-11 min-w-11 px-4 rounded-xl border text-[12px] font-black transition-all cursor-pointer"
+                                className="h-10 min-w-10 sm:h-11 sm:min-w-11 px-3 sm:px-4 rounded-xl border text-[11px] sm:text-[12px] font-black transition-all cursor-pointer"
                                 style={currentPage === page
                                   ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', borderColor: 'var(--color-tertiary)' }
                                   : { backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
@@ -470,7 +470,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                             type="button"
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                            className="h-11 px-4 rounded-xl border text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl border text-[11px] sm:text-[12px] font-black inline-flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}
                           >
                             Siguiente
@@ -480,7 +480,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-[40px] p-20 text-center border border-dashed border-gray-200" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
+                    <div className="rounded-[28px] md:rounded-[40px] p-10 md:p-20 text-center border border-dashed border-gray-200" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
                       <div className="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-6"><Search size={32} className="text-gray-400" /></div>
                       <h3 className="text-[20px] font-black mb-2">No se encontraron productos</h3>
                       <p className="opacity-75 max-w-xs mx-auto text-gray-500">Prueba ajustando tus filtros o términos de búsqueda.</p>
@@ -490,8 +490,8 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                 </div>
               </div>
 
-              <div className="pt-20 flex justify-center">
-                <button onClick={() => setShowFullCatalog(false)} className="group flex items-center gap-3 px-10 py-4 rounded-2xl text-[13px] font-black border shadow-sm hover:shadow-lg active:scale-95 cursor-pointer" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <div className="pt-12 md:pt-20 flex justify-center">
+                <button onClick={() => setShowFullCatalog(false)} className="group flex items-center gap-3 px-6 sm:px-10 py-4 rounded-2xl text-[12px] sm:text-[13px] font-black border shadow-sm hover:shadow-lg active:scale-95 cursor-pointer" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
                   <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
                   VOLVER AL INICIO
                 </button>

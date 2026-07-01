@@ -88,10 +88,10 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_QUOTES} />
 
-      <div className="max-w-7xl mx-auto px-10 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
         <header className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis cotizaciones</h2>
+            <h2 className="text-[30px] sm:text-[34px] font-extrabold leading-tight mb-2" style={{ color: '#0F1011' }}>Mis cotizaciones</h2>
             <p className="text-[15px] font-medium opacity-75" style={{ color: '#475569' }}>Administra y revisa el estado de tus solicitudes en {store.name}.</p>
           </div>
         </header>
@@ -124,8 +124,8 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
         )}
 
         {!loading && !error && filteredQuotes.length > 0 && (
-          <div className="rounded-[12px] border overflow-hidden shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-            <table className="w-full border-collapse">
+          <div className="rounded-[12px] border overflow-x-auto shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <table className="min-w-[820px] w-full border-collapse">
               <thead>
                 <tr className="text-left border-b text-[11px] font-extrabold uppercase tracking-widest" style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderColor: 'rgba(0,0,0,0.05)' }}>
                   <th className="px-10 py-6" style={{ color: 'var(--text-on-secondary)' }}>Código</th>

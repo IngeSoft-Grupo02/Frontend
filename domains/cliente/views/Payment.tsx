@@ -126,19 +126,19 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-xl w-full rounded-[40px] border p-16 text-center shadow-2xl relative overflow-hidden"
+            className="max-w-xl w-full rounded-[28px] sm:rounded-[40px] border p-8 sm:p-12 lg:p-16 text-center shadow-2xl relative overflow-hidden"
             style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
           >
             <div className="relative z-10">
-              <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-10 shadow-xl" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}>
-                <CheckCircle2 size={56} strokeWidth={2.5} />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-8 sm:mb-10 shadow-xl" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}>
+                <CheckCircle2 size={48} strokeWidth={2.5} />
               </div>
-              <h2 className="text-[42px] font-black mb-4 tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>¡Pago Registrado!</h2>
-              <div className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border mb-10" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+              <h2 className="text-[32px] sm:text-[42px] font-black mb-4 tracking-tight sm:tracking-tighter" style={{ color: 'var(--text-on-secondary)' }}>¡Pago Registrado!</h2>
+              <div className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-2xl border mb-8 sm:mb-10" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60" style={{ color: 'var(--text-on-primary)' }}>Pedido N°:</span>
                 <span className="text-[20px] font-black tracking-tight" style={{ color: 'var(--accent-on-primary)' }}>{order.id}</span>
               </div>
-              <p className="text-[18px] font-bold mb-12 max-w-sm mx-auto leading-snug opacity-80" style={{ color: 'var(--text-on-secondary)' }}>
+              <p className="text-[16px] sm:text-[18px] font-bold mb-8 sm:mb-12 max-w-sm mx-auto leading-snug opacity-80" style={{ color: 'var(--text-on-secondary)' }}>
                 Pago registrado correctamente. Tu pedido está siendo procesado.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
@@ -177,20 +177,20 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.PAYMENT} />
 
-      <div className="max-w-6xl mx-auto px-10 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
         <button
           onClick={() => onNavigate(View.MY_ORDERS)}
-          className="flex items-center gap-2 text-[13px] font-bold transition-colors mb-10 cursor-pointer"
+          className="flex items-center gap-2 text-[13px] font-bold transition-colors mb-8 sm:mb-10 cursor-pointer"
           style={{ color: '#475569' }}
         >
           <ArrowLeft size={16} /> Volver a mis pedidos
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
           {/* Formulario de pago */}
           <div className="lg:col-span-2 space-y-8">
             <header className="mb-8">
-              <h1 className="text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Pasarela de Pago</h1>
+              <h1 className="text-[30px] sm:text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Pasarela de Pago</h1>
               <p className="font-medium opacity-75" style={{ color: '#475569' }}>Conexión cifrada de extremo a extremo.</p>
             </header>
 
@@ -207,7 +207,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
 
             <form
               id="payment-form"
-              className="rounded-3xl border p-10 shadow-sm space-y-8"
+              className="rounded-3xl border p-5 sm:p-8 lg:p-10 shadow-sm space-y-8"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
               onSubmit={handlePayment}
             >
@@ -216,13 +216,13 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                 <label className="text-[11px] font-bold uppercase tracking-widest px-1 opacity-80" style={{ color: 'var(--text-on-secondary)' }}>
                   Tipo de Comprobante
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(['BOLETA', 'FACTURA'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => { setReceiptType(type); setRucError(null); setPaymentError(null); }}
-                      className="py-4 px-6 rounded-2xl border-2 transition-all font-black text-[14px] flex items-center justify-center gap-3 cursor-pointer"
+                      className="py-4 px-4 sm:px-6 rounded-2xl border-2 transition-all font-black text-[13px] sm:text-[14px] flex items-center justify-center gap-3 cursor-pointer"
                       style={{
                         borderColor: receiptType === type ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.1)',
                         backgroundColor: receiptType === type ? 'var(--color-primary)' : 'var(--color-secondary)',
@@ -270,7 +270,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
               )}
 
               {/* Separador tarjeta */}
-              <div className="flex items-center justify-between p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 sm:p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                     <CreditCard size={24} style={{ color: 'var(--accent-on-secondary)' }} />
@@ -316,7 +316,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
               </div>
 
               {/* Vencimiento y CVV */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-widest px-1 opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Vencimiento</label>
                   <input
@@ -375,7 +375,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
 
           {/* Resumen del pedido */}
           <aside>
-            <div className="rounded-3xl border p-8 sticky top-[100px] shadow-lg" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="rounded-3xl border p-5 sm:p-8 lg:sticky lg:top-[100px] shadow-lg" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
               <h3 className="text-[18px] font-extrabold mb-6 flex items-center gap-2">
                 <ShoppingBag size={20} style={{ color: 'var(--accent-on-secondary)' }} /> Resumen del pedido
               </h3>
@@ -419,7 +419,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   </div>
                   <div className="mt-4 flex justify-between items-end mb-6">
                     <span className="text-[12px] font-extrabold uppercase">Total a Pagar</span>
-                    <span className="text-[28px] font-extrabold leading-tight">S/ {total.toFixed(2)}</span>
+                  <span className="whitespace-nowrap text-[24px] sm:text-[28px] font-extrabold leading-tight">S/ {total.toFixed(2)}</span>
                   </div>
 
                   <Button

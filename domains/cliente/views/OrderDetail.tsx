@@ -46,29 +46,29 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
     <div className="min-h-screen pb-20 transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.ORDER_DETAIL} />
       
-      <div className="max-w-7xl mx-auto px-10 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
         <button 
           onClick={() => onNavigate(View.MY_ORDERS)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity mb-10 group cursor-pointer"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity mb-8 sm:mb-10 group cursor-pointer"
           style={{ color: '#475569' }}
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span className="text-[12px] font-black uppercase tracking-widest">Volver a mis pedidos</span>
         </button>
  
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-10">
             {/* Header */}
             <div 
-              className="rounded-[32px] border p-10 shadow-sm overflow-hidden relative"
+              className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 lg:p-10 shadow-sm overflow-hidden relative"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <div className="flex flex-wrap justify-between items-start gap-6 relative z-10">
                 <div>
                   <div className="flex flex-col gap-3 mb-3">
                     <div className="flex items-center gap-3">
-                      <h2 className="text-[32px] font-black tracking-tight leading-none" style={{ color: 'var(--text-on-secondary)' }}>Pedido #{order.id}</h2>
+                      <h2 className="text-[26px] sm:text-[32px] font-black tracking-tight leading-none" style={{ color: 'var(--text-on-secondary)' }}>Pedido #{order.id}</h2>
                     </div>
                     <div className="flex">
                       <Badge status={order.status} className="!py-2 !px-4 !text-[13px] font-black" />
@@ -76,10 +76,10 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                   </div>
                   <p className="font-bold opacity-70" style={{ color: 'var(--text-on-secondary)' }}>Realizado el {order.date}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex w-full gap-3 sm:w-auto">
                    <Button 
                      variant="ghost" 
-                     className="!px-6 flex items-center gap-2 text-[12px] font-black border hover:opacity-85"
+                     className="w-full sm:w-auto !px-4 sm:!px-6 flex items-center justify-center gap-2 text-[12px] font-black border hover:opacity-85"
                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
                    >
                       <Download size={16} /> Descargar Factura
@@ -91,7 +91,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
  
             {/* Tracking Timeline */}
             <div 
-              className="rounded-[32px] border p-10 shadow-sm"
+              className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 lg:p-10 shadow-sm"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-10 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
@@ -125,7 +125,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
  
             {/* Product Details */}
             <div 
-              className="rounded-[32px] border p-10 shadow-sm"
+              className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 lg:p-10 shadow-sm"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
                <h3 className="text-[14px] font-black uppercase tracking-widest mb-8 flex items-center gap-3" style={{ color: 'var(--text-on-secondary)' }}>
@@ -133,17 +133,17 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
               </h3>
               
               <div className="divide-y" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                <div className="py-6 first:pt-0 flex items-center gap-6">
+                <div className="py-6 first:pt-0 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
                   <div 
-                    className="w-24 h-24 rounded-2xl border flex items-center justify-center"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border flex items-center justify-center"
                     style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
                   >
                     <Package size={32} />
                   </div>
-                  <div className="flex-1">
+                  <div className="w-full flex-1">
                     <h4 className="text-[18px] font-black mb-1" style={{ color: 'var(--text-on-secondary)' }}>{order.productName}</h4>
                     <p className="text-[13px] font-bold mb-3 uppercase tracking-wider opacity-60" style={{ color: 'var(--text-on-secondary)' }}>SKU: PROD-{order.id}</p>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <span 
                         className="px-3 py-1 border rounded-lg text-[10px] font-black tracking-widest uppercase"
                         style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
@@ -158,7 +158,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="w-full text-left sm:w-auto sm:text-right">
                     <div className="text-[20px] font-black" style={{ color: 'var(--text-on-secondary)' }}>S/ {order.amount.toFixed(2)}</div>
                     <div className="text-[12px] font-bold line-through opacity-50" style={{ color: 'var(--text-on-secondary)' }}>S/ {(order.amount * 1.2).toFixed(2)}</div>
                   </div>
@@ -171,7 +171,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
           <div className="space-y-8">
             {/* Payment & Summary */}
             <div 
-              className="rounded-[32px] border p-8 shadow-sm"
+              className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 shadow-sm"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--text-on-secondary)' }}>Resumen de cuenta</h3>
@@ -190,7 +190,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                 </div>
                 <div className="pt-4 border-t flex justify-between items-center" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="text-[16px] font-black uppercase tracking-widest" style={{ color: 'var(--text-on-secondary)' }}>Total Pagado</span>
-                  <span className="text-[28px] font-black leading-none" style={{ color: 'var(--accent-on-secondary)' }}>S/ {order.amount.toFixed(2)}</span>
+                  <span className="whitespace-nowrap text-[24px] sm:text-[28px] font-black leading-none" style={{ color: 'var(--accent-on-secondary)' }}>S/ {order.amount.toFixed(2)}</span>
                 </div>
               </div>
  
@@ -207,7 +207,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
  
             {/* Shipping Info */}
             <div 
-              className="rounded-[32px] border p-8 shadow-sm"
+              className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 shadow-sm"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-6 flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>

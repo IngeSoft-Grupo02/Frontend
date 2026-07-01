@@ -71,19 +71,19 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
       
       {/* Hero Section - Minimal & Geometric */}
       <section 
-        className="py-20 px-10 relative overflow-hidden border-b text-center md:text-left"
+        className="relative overflow-hidden border-b px-5 py-12 text-center sm:px-8 md:px-10 md:py-20 md:text-left"
         style={{
           backgroundColor: '#0F1011',
           color: '#FFFFFF',
           borderColor: 'rgba(255,255,255,0.08)'
         }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 relative z-10">
           <div className="max-w-2xl">
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-[48px] font-extrabold leading-tight mb-6"
+              className="text-[34px] sm:text-[40px] md:text-[48px] font-extrabold leading-tight mb-5 md:mb-6"
               style={{ color: '#FFFFFF' }}
             >
               Kingstore: Tu Conexión <br /> Directa con la Moda
@@ -92,13 +92,13 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-[18px] max-w-xl mb-10 opacity-80"
+              className="text-[15px] sm:text-[16px] md:text-[18px] max-w-xl mb-4 md:mb-10 opacity-80"
               style={{ color: '#FFFFFF' }}
             >
               Nuestra visión es democratizar el acceso a productos textiles de alta calidad, conectando a fabricantes independientes directamente con los consumidores. Ofrecemos una plataforma segura y eficiente para descubrir las mejores prendas del mercado.
             </motion.p>
           </div>
-          <div className="logo-accent w-48 h-48 grid grid-cols-2 gap-2 opacity-30">
+          <div className="logo-accent hidden h-36 w-36 grid-cols-2 gap-2 opacity-30 sm:grid md:h-48 md:w-48">
              <div className="bg-olive rounded-lg" />
              <div className="bg-camel rounded-lg" />
              <div className="bg-white/20 rounded-lg" />
@@ -107,7 +107,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 mt-12 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10 items-start">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 mt-8 md:mt-12 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8 lg:gap-10 items-start">
         <aside className="h-fit self-start lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:border-r lg:border-black/10 lg:pr-8">
           <div className="flex items-end justify-between gap-3 pb-4 border-b border-black/10">
             <div>
@@ -125,14 +125,14 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
             )}
           </div>
 
-          <div className="mt-5 space-y-3 max-h-[min(520px,calc(100vh-9rem))] overflow-y-auto pr-2">
+          <div className="mt-5 flex gap-3 overflow-x-auto pb-2 pr-2 no-scrollbar lg:block lg:space-y-3 lg:max-h-[min(520px,calc(100vh-9rem))] lg:overflow-y-auto">
             {categories.map((cat) => {
               const checked = selectedCategories.includes(cat);
 
               return (
                 <label
                   key={cat}
-                  className="group flex min-h-9 cursor-pointer items-center gap-3 text-[#0F1011]"
+                  className="group flex min-h-9 min-w-max cursor-pointer items-center gap-3 rounded-xl border border-black/10 bg-white px-3 text-[#0F1011] lg:min-w-0 lg:border-0 lg:bg-transparent lg:px-0"
                 >
                   <input
                     type="checkbox"
@@ -183,7 +183,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
           )}
 
           {!loading && !error && filteredStores.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
             {filteredStores.map((store, i) => {
               const storeBgColor = store.primaryColor || store.color;
               const cardCoverText = getReadableTextColor(storeBgColor);
@@ -266,9 +266,9 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
       </div>
 
       {/* Footer Info Section */}
-      <footer className="max-w-7xl mx-auto px-10 mt-32 pb-20 text-center">
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 mt-16 md:mt-32 pb-14 md:pb-20 text-center">
         <div 
-          className="rounded-[40px] p-16 shadow-2xl relative overflow-hidden border text-white"
+          className="rounded-[28px] md:rounded-[40px] p-8 sm:p-10 md:p-16 shadow-2xl relative overflow-hidden border text-white"
           style={{
             backgroundColor: '#0F1011',
             borderColor: 'rgba(255,255,255,0.08)'
@@ -278,14 +278,14 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
           <div className="absolute top-0 right-0 w-64 h-64 bg-camel opacity-10 rounded-full -mr-32 -mt-32 blur-3xl" />
           
           <div className="relative z-10">
-            <h2 className="text-[40px] font-extrabold mb-4 tracking-tighter leading-tight text-white">Sé parte de Kingstore</h2>
-            <p className="text-[18px] mb-12 max-w-2xl mx-auto font-medium opacity-80 text-white">
+            <h2 className="text-[28px] sm:text-[34px] md:text-[40px] font-extrabold mb-4 tracking-tight md:tracking-tighter leading-tight text-white">Sé parte de Kingstore</h2>
+            <p className="text-[15px] sm:text-[16px] md:text-[18px] mb-8 md:mb-12 max-w-2xl mx-auto font-medium opacity-80 text-white">
               ¡Únete a nuestra plataforma y haz crecer tu negocio! Sé vendedor independiente de Kingstore y conecta con miles de clientes.
             </p>
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-12">
               <div 
-                className="flex items-center gap-4 px-8 py-5 rounded-2xl border hover:bg-white/10 transition-all group cursor-pointer"
+                className="flex w-full max-w-sm items-center gap-4 px-5 sm:px-8 py-5 rounded-2xl border hover:bg-white/10 transition-all group cursor-pointer md:w-auto"
                 style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.1)' }}
               >
                 <MessageCircle size={28} className="text-camel group-hover:scale-110 transition-transform" />
@@ -298,13 +298,13 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
               <div className="hidden md:block w-px h-12" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
               
               <div 
-                className="flex items-center gap-4 px-8 py-5 rounded-2xl border hover:bg-white/10 transition-all group cursor-pointer"
+                className="flex w-full max-w-sm items-center gap-4 px-5 sm:px-8 py-5 rounded-2xl border hover:bg-white/10 transition-all group cursor-pointer md:w-auto"
                 style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.1)' }}
               >
                 <Mail size={28} className="text-camel group-hover:scale-110 transition-transform" />
                 <div className="text-left">
                   <div className="text-[10px] font-black uppercase tracking-widest opacity-60 text-white">Correo Electrónico</div>
-                  <div className="text-[18px] font-extrabold tracking-tight underline decoration-camel/30 underline-offset-4 decoration-2 text-white">kingstore@gmail.com</div>
+                  <div className="break-all text-[15px] sm:text-[18px] font-extrabold tracking-tight underline decoration-camel/30 underline-offset-4 decoration-2 text-white">kingstore@gmail.com</div>
                 </div>
               </div>
             </div>
