@@ -357,6 +357,18 @@ function simulateBackend(blocks: Record<BlockKey, BlockState>): BulkResult {
   };
 }
 
+function backendBulkErrorMessage(data: any): string | null {
+  const errorCount = typeof data?.errorCount === 'number' ? data.errorCount : 0;
+  if (errorCount <= 0) return null;
+
+  const incidences = Array.isArray(data?.incidences) ? data.incidences : [];
+  const firstError = incidences.find((inc: any) => inc?.type === 'ERROR') ?? incidences[0];
+  const detail = typeof firstError?.detail === 'string' && firstError.detail.trim()
+      ? ` ${firstError.detail.trim()}`
+      : '';
+  return `La carga masiva contiene ${errorCount} ${errorCount === 1 ? 'error' : 'errores'} de datos.${detail}`;
+}
+
 
 // ── Componente ────────────────────────────────────────────────────
 
@@ -563,6 +575,13 @@ export function CargaMasivaScreen() {
           blocks.stores.file    ?? undefined,
           blocks.images.file    ?? undefined,
       );
+      const backendError = backendBulkErrorMessage(data);
+      if (backendError) {
+        setGlobalError(backendError);
+        setResult(null);
+        setExecuted(false);
+        return;
+      }
       setResult({
         merchantsCreated: data.merchantsCreated ?? 0,
         storesCreated:    data.storesCreated    ?? 0,
