@@ -1,5 +1,4 @@
 'use client';
-import { mockDiscounts, mockOrders, mockProducts, mockQuotes, mockStores } from '@/domains/comerciante/lib/mockData';
 import { merchantApi, merchantSession, isTokenExpired, MerchantUser, BulkUploadResult } from '@/domains/comerciante/lib/api';
 import { Discount, Order, Product, Quote, Store } from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
@@ -23,13 +22,7 @@ interface StoreState {
   isAuthenticated: boolean;
   isAuthInitialized: boolean;
   apiError: string | null;
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-  setQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
-  setDiscounts: React.Dispatch<React.SetStateAction<Discount[]>>;
-  setStore: React.Dispatch<React.SetStateAction<Store>>;
-  setStores: React.Dispatch<React.SetStateAction<Store[]>>;
-  setUser: React.Dispatch<React.SetStateAction<MerchantUser | null>>;
+  selectStore: (store: Store) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshData: (options?: RefreshDataOptions) => Promise<void>;
@@ -41,22 +34,35 @@ interface StoreState {
   bulkUploadProducts: (productsCsv: File, imagesZip?: File) => Promise<BulkUploadResult>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<Order | void>;
   updateQuote: (id: string, updates: Partial<Quote>) => Promise<Quote | void>;
-  addDiscount: (discount: Discount) => Promise<Discount | void>;
+  addDiscount: (discount: Omit<Discount, 'id' | 'usageCount'> & Partial<Pick<Discount, 'id' | 'usageCount'>>) => Promise<Discount | void>;
   updateDiscount: (id: string, updates: Partial<Discount>) => Promise<Discount | void>;
   deleteDiscount: (id: string) => Promise<void>;
-  addStore: (store: Omit<Store, 'id'>) => Promise<Store | void>;
-  saveStore: (store: Store) => Promise<Store | void>;
+  addStore: (store: Omit<Store, 'id'>) => Promise<Store>;
+  saveStore: (store: Store) => Promise<Store>;
+  saveStoreWithLogo: (store: Store, logo: File) => Promise<Store>;
   deleteStore: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreState | undefined>(undefined);
 
-const USER_KEY = 'mc_user';
-const STORE_KEY = 'mc_store';
-const STORE_SYNC_MODE = process.env.NEXT_PUBLIC_MERCHANT_STORE_SYNC_MODE || 'local';
+const LEGACY_STORE_KEY = 'mc_store';
+const STORE_ID_KEY = 'mc_store_id';
 const MAX_DISCOUNTS_PER_STORE = 5;
 
-const fallbackStore = mockStores[0];
+const emptyStore: Store = {
+  id: '',
+  name: '',
+  type: '',
+  status: 'Inactiva',
+  palette: '#000000',
+  description: '',
+  customizationIncrement: 10,
+  colors: {
+    primary: 'ONYX_BLACK',
+    secondary: 'SLATE',
+    tertiary: 'RAW_GOLD'
+  }
+};
 
 const localPreviewLogo = (store: Store) => {
   const value = store.logoUrl || store.logo || '';
@@ -80,34 +86,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
-  const [store, setStore] = useState<Store>(fallbackStore);
+  const [store, setStore] = useState<Store>(emptyStore);
   const [user, setUser] = useState<MerchantUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
   const hasBackendSession = Boolean(token);
   const isAuthenticated = Boolean(token);
-  const shouldUseStoreApi = STORE_SYNC_MODE === 'api';
-  const shouldSyncStoresWithBackend = hasBackendSession && shouldUseStoreApi;
 
-  const persistUser = (nextUser: MerchantUser | null) => {
-    if (nextUser) {
-      sessionStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-    } else {
-      sessionStorage.removeItem(USER_KEY);
+  const getPersistedStoreId = () => {
+    if (typeof window === 'undefined') return null;
+    const savedId = localStorage.getItem(STORE_ID_KEY);
+    if (savedId) return savedId;
+    const legacyStore = localStorage.getItem(LEGACY_STORE_KEY);
+    if (!legacyStore) return null;
+    try {
+      return JSON.parse(legacyStore)?.id ?? null;
+    } catch {
+      return null;
     }
   };
 
-  const persistStore = (nextStore: Store) => {
-    localStorage.setItem(STORE_KEY, JSON.stringify(nextStore));
+  const persistSelectedStoreId = (nextStore: Store) => {
+    if (typeof window === 'undefined') return;
+    if (nextStore.id) localStorage.setItem(STORE_ID_KEY, nextStore.id);
+    else localStorage.removeItem(STORE_ID_KEY);
+    localStorage.removeItem(LEGACY_STORE_KEY);
   };
-
-  const createLocalStore = (s: Omit<Store, 'id'>) => ({
-    ...s,
-    id: `ST-${Math.floor(Math.random() * 1000000)}`
-  });
 
   const loadScopedData = useCallback(async (storeId: string, options: RefreshDataOptions = {}) => {
     if (!merchantSession.getToken()) return;
@@ -144,34 +150,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         merchantApi.profile(),
         merchantApi.stores()
       ]);
-      const savedStore = localStorage.getItem(STORE_KEY);
-      const savedStoreId = savedStore ? JSON.parse(savedStore)?.id : null;
-      const selectedStore = backendStores.find(item => item.id === savedStoreId) || backendStores[0] || fallbackStore;
+      const savedStoreId = getPersistedStoreId();
+      const selectedStore = backendStores.find(item => item.id === savedStoreId) || backendStores[0] || emptyStore;
 
       setUser(profile);
-      persistUser(profile);
       setStores(backendStores);
-      persistStore(selectedStore);
-      await loadScopedData(selectedStore.id);
+      setStore(selectedStore);
+      persistSelectedStoreId(selectedStore);
+      if (!selectedStore.id) {
+        setProducts([]);
+        setOrders([]);
+        setQuotes([]);
+        setDiscounts([]);
+      }
     } catch (error) {
       setApiError(messageFromError(error, 'No se pudo iniciar la sesión del comerciante'));
       merchantSession.clear();
       setToken(null);
       setUser(null);
-      persistUser(null);
     } finally {
       setIsLoading(false);
     }
-  }, [loadScopedData]);
+  }, []);
 
   const clearSession = useCallback(() => {
     merchantSession.clear();
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(USER_KEY);
-      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(STORE_ID_KEY);
+      localStorage.removeItem(LEGACY_STORE_KEY);
     }
     setToken(null);
     setUser(null);
+    setProducts([]);
+    setOrders([]);
+    setQuotes([]);
+    setDiscounts([]);
+    setStores([]);
+    setStore(emptyStore);
   }, []);
 
   // Hidratación inicial: solo se considera autenticado si hay un token válido (no vencido).
@@ -184,10 +199,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
-    const savedUser = sessionStorage.getItem(USER_KEY);
-    const savedStore = localStorage.getItem(STORE_KEY);
-    if (savedUser) setUser(JSON.parse(savedUser));
-    if (savedStore) setStore(JSON.parse(savedStore));
     setToken(savedToken);
     setIsAuthInitialized(true);
   }, [clearSession]);
@@ -207,7 +218,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     if (store?.id) {
-      persistStore(store);
+      persistSelectedStoreId(store);
     }
   }, [store]);
 
@@ -244,8 +255,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const result = await merchantApi.login(email, password);
       setToken(result.token);
       setUser(result.user);
-      persistUser(result.user);
-      await initializeSession();
     } catch (error) {
       const message = messageFromError(error, 'No se pudo iniciar sesión');
       setApiError(message);
@@ -253,50 +262,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setIsLoading(false);
     }
-  }, [initializeSession]);
+  }, []);
 
   const logout = useCallback(() => {
-    merchantSession.clear();
-    setToken(null);
-    setUser(null);
-    persistUser(null);
-    setProducts(mockProducts);
-    setOrders(mockOrders);
-    setQuotes(mockQuotes);
-    setDiscounts(mockDiscounts);
-    setStores(mockStores);
-    setStore(fallbackStore);
+    clearSession();
+  }, [clearSession]);
+
+  const selectStore = useCallback((nextStore: Store) => {
+    setStore(nextStore);
+    persistSelectedStoreId(nextStore);
   }, []);
 
   const refreshData = useCallback(async (options: RefreshDataOptions = {}) => {
-    if (!hasBackendSession) return;
+    if (!hasBackendSession || !store.id) return;
     await loadScopedData(store.id, options);
   }, [hasBackendSession, loadScopedData, store.id]);
 
   const updateProfile = useCallback(async (updates: Partial<MerchantUser>) => {
-    if (!hasBackendSession) {
-      const nextUser = { ...(user || { email: '', role: 'Comerciante', name: '' }), ...updates } as MerchantUser;
-      setUser(nextUser);
-      persistUser(nextUser);
-      return nextUser;
-    }
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante.');
     const updated = await merchantApi.updateProfile(updates);
     setUser(updated);
-    persistUser(updated);
     return updated;
-  }, [hasBackendSession, user]);
+  }, [hasBackendSession]);
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string, confirmPassword: string) => {
-    if (!hasBackendSession) return;
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante.');
     await merchantApi.updatePassword(currentPassword, newPassword, confirmPassword);
   }, [hasBackendSession]);
 
   const addProduct = useCallback(async (p: Product | Omit<Product, 'id'>) => {
-    if (!hasBackendSession) {
-      const newProduct = 'id' in p ? p : { ...p, id: `PRD-${Math.floor(Math.random() * 1000000)}` };
-      setProducts(prev => [newProduct as Product, ...prev]);
-      return newProduct as Product;
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const created = await merchantApi.createProduct(p, store.id);
     setProducts(prev => [created, ...prev]);
     await loadScopedData(store.id, { background: true });
@@ -308,10 +303,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!current) return;
     const merged = { ...current, ...updates };
 
-    if (!hasBackendSession) {
-      setProducts(prev => prev.map(item => item.id === id ? merged : item));
-      return merged;
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
 
     const onlyStatus = Object.keys(updates).length === 1 && updates.status;
     const canPatchActive = onlyStatus && (updates.status === 'Activo' || updates.status === 'Inactivo');
@@ -325,17 +317,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [hasBackendSession, loadScopedData, products, store.id]);
 
   const deleteProduct = useCallback(async (id: string) => {
-    if (hasBackendSession) {
-      await merchantApi.deleteProduct(id, store.id);
-      await loadScopedData(store.id, { background: true });
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
+    await merchantApi.deleteProduct(id, store.id);
+    await loadScopedData(store.id, { background: true });
     setProducts(prev => prev.filter(item => item.id !== id));
   }, [hasBackendSession, loadScopedData, store.id]);
 
   const bulkUploadProducts = useCallback(async (productsCsv: File, imagesZip?: File) => {
-    if (!hasBackendSession) {
-      return { productsCreated: 0, variantsProcessed: 0, imagesUploaded: 0, errors: [] };
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const result = await merchantApi.bulkProducts(productsCsv, imagesZip, store.id);
     await loadScopedData(store.id, { background: true });
     return result;
@@ -345,10 +334,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const current = orders.find(order => order.id === id);
     if (!current) return;
     const merged = { ...current, ...updates };
-    if (!hasBackendSession || !updates.status) {
+    if (!updates.status) {
       setOrders(prev => prev.map(order => order.id === id ? merged : order));
       return merged;
     }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const updated = await merchantApi.updateOrderStatus(id, updates.status, store.id);
     setOrders(prev => prev.map(order => order.id === id ? updated : order));
     await loadScopedData(store.id, { background: true });
@@ -359,24 +349,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const current = quotes.find(quote => quote.id === id);
     if (!current) return;
     const merged = { ...current, ...updates };
-    if (!hasBackendSession || !updates.status) {
+    if (!updates.status) {
       setQuotes(prev => prev.map(quote => quote.id === id ? merged : quote));
       return merged;
     }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const updated = await merchantApi.updateQuoteStatus(id, updates.status, updates.observations, store.id);
     setQuotes(prev => prev.map(quote => quote.id === id ? updated : quote));
     await loadScopedData(store.id, { background: true });
     return updated;
   }, [hasBackendSession, loadScopedData, quotes, store.id]);
 
-  const addDiscount = useCallback(async (d: Discount) => {
+  const addDiscount = useCallback(async (d: Omit<Discount, 'id' | 'usageCount'> & Partial<Pick<Discount, 'id' | 'usageCount'>>) => {
     if (discounts.length >= MAX_DISCOUNTS_PER_STORE) {
       throw new Error('Solo puedes configurar hasta 5 descuentos por tienda');
     }
-    if (!hasBackendSession) {
-      setDiscounts(prev => [...prev, d]);
-      return d;
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const created = await merchantApi.createDiscount(d, store.id);
     setDiscounts(prev => [...prev, created]);
     await loadScopedData(store.id, { background: true });
@@ -386,10 +374,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateDiscount = useCallback(async (id: string, updates: Partial<Discount>) => {
     const current = discounts.find(item => item.id === id);
     const merged = { ...(current || {}), ...updates } as Discount;
-    if (!hasBackendSession) {
-      setDiscounts(prev => prev.map(disc => disc.id === id ? merged : disc));
-      return merged;
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
     const updated = await merchantApi.updateDiscount(id, merged, store.id);
     setDiscounts(prev => prev.map(disc => disc.id === id ? updated : disc));
     await loadScopedData(store.id, { background: true });
@@ -397,61 +382,53 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [discounts, hasBackendSession, loadScopedData, store.id]);
 
   const deleteDiscount = useCallback(async (id: string) => {
-    if (hasBackendSession) {
-      await merchantApi.deleteDiscount(id, store.id);
-      await loadScopedData(store.id, { background: true });
-    }
+    if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
+    await merchantApi.deleteDiscount(id, store.id);
+    await loadScopedData(store.id, { background: true });
     setDiscounts(prev => prev.filter(disc => disc.id !== id));
   }, [hasBackendSession, loadScopedData, store.id]);
 
   const addStore = useCallback(async (s: Omit<Store, 'id'>) => {
-    if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesión como comerciante para crear una tienda en la base de datos.');
-    }
-    if (!shouldSyncStoresWithBackend) {
-      const newStore: Store = createLocalStore(s);
-      setStores(prev => [...prev, newStore]);
-      return newStore;
-    }
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante para crear una tienda.');
     const created = await merchantApi.createStore(s);
     setStores(prev => [...prev, created]);
     return created;
-  }, [hasBackendSession, shouldSyncStoresWithBackend, shouldUseStoreApi]);
+  }, [hasBackendSession]);
 
   const saveStore = useCallback(async (s: Store) => {
-    if (!hasBackendSession) {
-      setStores(prev => prev.map(item => item.id === s.id ? s : item));
-      setStore(s);
-      return s;
-    }
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante para editar una tienda.');
     const updated = preserveLocalPreviewLogo(s, await merchantApi.updateStore(s));
     setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
     setStore(updated);
     return updated;
   }, [hasBackendSession]);
 
+  const saveStoreWithLogo = useCallback(async (s: Store, logo: File) => {
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante para editar una tienda.');
+    const updated = await merchantApi.updateStoreWithLogo(s, logo);
+    setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
+    setStore(updated);
+    return updated;
+  }, [hasBackendSession]);
+
   const deleteStore = useCallback(async (id: string) => {
-    if (shouldUseStoreApi && !hasBackendSession) {
-      throw new Error('Debes iniciar sesión como comerciante para eliminar una tienda en la base de datos.');
-    }
-    if (shouldSyncStoresWithBackend) {
-      await merchantApi.deleteStore(id);
-    }
+    if (!hasBackendSession) throw new Error('Debes iniciar sesión como comerciante para eliminar una tienda.');
+    await merchantApi.deleteStore(id);
     setStores(prev => prev.filter(item => item.id !== id));
     if (store.id === id) {
-      const nextStore = stores.find(item => item.id !== id) || fallbackStore;
+      const nextStore = stores.find(item => item.id !== id) || emptyStore;
       setStore(nextStore);
     }
-  }, [hasBackendSession, shouldSyncStoresWithBackend, shouldUseStoreApi, store.id, stores]);
+  }, [hasBackendSession, store.id, stores]);
 
   return (
     <StoreContext.Provider value={{
       products, orders, quotes, discounts, store, stores, user, isLoading, isAuthenticated, isAuthInitialized, apiError,
-      setProducts, setOrders, setQuotes, setDiscounts, setStore, setStores, setUser,
+      selectStore,
       login, logout, refreshData, updateProfile, updatePassword,
       addProduct, updateProduct, deleteProduct, bulkUploadProducts,
       updateOrder, updateQuote, addDiscount, updateDiscount, deleteDiscount,
-      addStore, saveStore, deleteStore
+      addStore, saveStore, saveStoreWithLogo, deleteStore
     }}>
       {children}
     </StoreContext.Provider>

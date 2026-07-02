@@ -3,7 +3,7 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
-import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
+import { merchantApi } from '@/domains/comerciante/lib/api';
 import { Product } from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
 import { LoadingSpinner } from '@/domains/shared/components/LoadingSpinner';
@@ -178,13 +178,11 @@ function ProductFormPageContent() {
     setIsSaving(true);
 
     try {
-      const uploadedImages = merchantSession.getToken()
-        ? await Promise.all(formData.images.map(async image => {
+      const uploadedImages = await Promise.all(formData.images.map(async image => {
           if (!image.file) return { name: image.name, url: image.url };
           const result = await merchantApi.uploadProductImage(image.file, store.id);
           return { name: image.name, url: result.imageUrl };
-        }))
-        : formData.images.map(image => ({ name: image.name, url: image.url }));
+        }));
 
       const payload: Omit<Product, 'id'> = {
         name: formData.name || 'Sin nombre',

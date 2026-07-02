@@ -3,7 +3,6 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
-import { merchantApi } from '@/domains/comerciante/lib/api';
 import { getColorLabel } from '@/domains/shared/colors';
 import { messageFromError } from '@/domains/shared/errors';
 import { AlertCircle, Check, ImageIcon, RotateCcw, Save, Upload, X } from 'lucide-react';
@@ -75,7 +74,7 @@ const formatFileSize = (bytes: number) => {
 };
 
 export default function SettingsPage() {
-  const { store, saveStore, setStore, setStores, isAuthenticated } = useStore();
+  const { store, saveStore, saveStoreWithLogo } = useStore();
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [storeName, setStoreName] = useState(store.name);
@@ -178,10 +177,8 @@ export default function SettingsPage() {
     };
 
     try {
-      if (logoFile && isAuthenticated) {
-        const updated = await merchantApi.updateStoreWithLogo(nextStore, logoFile);
-        setStores(prev => prev.map(item => item.id === updated.id ? updated : item));
-        setStore(updated);
+      if (logoFile) {
+        const updated = await saveStoreWithLogo(nextStore, logoFile);
         setLogoPreviewUrl(updated.logoUrl || updated.logo || '');
       } else {
         await saveStore(nextStore);
@@ -330,7 +327,7 @@ export default function SettingsPage() {
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-[13px] font-black text-brand-black uppercase tracking-widest">Logo de la tienda</h4>
-                      <p className="text-[12px] font-bold text-brand-text-muted mt-1">Subida simulada en local. JPG, PNG o WEBP hasta 2MB.</p>
+                      <p className="text-[12px] font-bold text-brand-text-muted mt-1">Se guardará en la base de datos y almacenamiento configurado. JPG, PNG o WEBP hasta 2MB.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <label className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-brand-black text-white text-[12px] font-extrabold cursor-pointer hover:bg-brand-black/90 transition-colors">

@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation';
 
 export default function StoreSelectionPage() {
   const router = useRouter();
-  const { stores, setStore, quotes } = useStore();
+  const { stores, selectStore, quotes } = useStore();
   const handleSelectStore = (store: Store) => {
-    setStore(store);
+    selectStore(store);
     router.push('/comerciante/dashboard');
   };
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);

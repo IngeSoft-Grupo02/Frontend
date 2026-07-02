@@ -705,7 +705,7 @@ export const merchantApi = {
     });
   },
   discounts: (storeId?: string) => request<JsonValue[]>(`/merchant/discounts${withStore(storeId)}`).then(list => list.map(mapDiscount)),
-  createDiscount: (discount: Discount, storeId?: string) => request<JsonValue>(`/merchant/discounts${withStore(storeId)}`, {
+  createDiscount: (discount: Partial<Discount>, storeId?: string) => request<JsonValue>(`/merchant/discounts${withStore(storeId)}`, {
     method: 'POST',
     body: JSON.stringify(discountPayload(discount))
   }).then(mapDiscount),

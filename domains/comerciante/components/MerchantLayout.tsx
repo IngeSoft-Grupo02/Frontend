@@ -93,7 +93,7 @@ const StoreLogo = ({ store, logoUrl, size }: { store: Store; logoUrl?: string; s
 const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { store, stores, setStore } = useStore();
+  const { store, stores, selectStore } = useStore();
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const storeCategoryLabel = store.categoryName || store.type || 'Sin categoría';
   const logoUrl = store.logoUrl || store.logo;
@@ -143,7 +143,7 @@ const Sidebar = () => {
               {stores.map(s => (
                 <button 
                   key={s.id} 
-                  onClick={() => { setStore(s); setShowStoreDropdown(false); }}
+                  onClick={() => { selectStore(s); setShowStoreDropdown(false); }}
                   className="w-full px-4 py-3 text-left hover:bg-brand-neutral-light flex items-center gap-3 transition-colors"
                 >
                   <StoreLogo store={s} logoUrl={s.logoUrl || s.logo} size="small" />
@@ -198,7 +198,6 @@ export const MerchantLayout = ({ children, title, subtitle, noSidebar }: { child
   }, [isAuthInitialized, isAuthenticated, router]);
 
   // No renderizar el panel mientras se verifica la sesión ni si no hay sesión válida.
-  // Evita el flicker de ver el panel (y mocks) antes de redirigir a login.
   if (!isAuthInitialized || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-brand-neutral-light flex items-center justify-center">
