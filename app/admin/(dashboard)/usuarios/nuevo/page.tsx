@@ -107,7 +107,6 @@ export default function NuevoUsuarioPage() {
       if (!val.trim()) return false;
       if (validarCampo(campo, val, form)) return false;
     }
-    if (form.role === 'MERCHANT' && selectedMerchantStores.length === 0) return false;
     if (form.role === 'CUSTOMER' && !form.storeId) return false;
     return true;
   };
@@ -148,10 +147,6 @@ export default function NuevoUsuarioPage() {
     setTouched(newTouched); setErrors(newErrors);
 
     if (Object.values(newErrors).some(e => e)) return;
-    if (form.role === 'MERCHANT' && selectedMerchantStores.length === 0) {
-      setErrors(p => ({ ...p, storeId: 'Selecciona al menos una tienda.' }));
-      return;
-    }
 
     setLoading(true); setGlobalError(null);
     try {
@@ -168,6 +163,7 @@ export default function NuevoUsuarioPage() {
         gender:          form.gender as any,
         role:            form.role as any,
         ruc:             form.role === 'MERCHANT' ? form.ruc : undefined,
+        storeIds:        form.role === 'MERCHANT' ? selectedMerchantStores.map(store => store.id) : undefined,
         storeId:         form.role === 'CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
       router.push(ADMIN_ROUTES.users);
@@ -231,7 +227,7 @@ export default function NuevoUsuarioPage() {
                 )}
                 {form.role === 'MERCHANT' && (
                     <div className="space-y-3">
-                      <Select label="Asignar tiendas (Una o muchas)" value=""
+                      <Select label="Asignar tiendas (opcional)" value=""
                               onChange={e => {
                                 const s = stores.find(st => st.id === Number(e.target.value));
                                 if (s) addStore(s.id, s.storeName);
@@ -250,8 +246,8 @@ export default function NuevoUsuarioPage() {
                             ))}
                           </div>
                       ) : (
-                          <p className="text-[10px] text-red-400 font-bold uppercase ml-1">
-                            {errors.storeId || 'Debes seleccionar al menos una tienda'}
+                          <p className="text-[10px] text-neutral-400 font-bold uppercase ml-1">
+                            Puedes asignar tiendas ahora o hacerlo luego desde el módulo de tiendas.
                           </p>
                       )}
                     </div>

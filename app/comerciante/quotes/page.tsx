@@ -62,11 +62,19 @@ const StatCard = ({ title, value, icon: Icon, onClick }: any) => (
 );
 
 export default function QuotesPage() {
-  const { quotes, updateQuote, store, refreshData } = useStore();
+  const { quotes, updateQuote, store, refreshData, products } = useStore();
   const storeQuotes = useMemo(() =>
     quotes.filter(q => q.storeId === store.id),
     [quotes, store.id]
   );
+  const productImageById = useMemo(() => {
+    const images = new Map<string, string>();
+    products.forEach(product => {
+      const imageUrl = product.image || product.images?.[0]?.url;
+      if (imageUrl) images.set(product.id, imageUrl);
+    });
+    return images;
+  }, [products]);
 
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
 
@@ -417,55 +425,69 @@ export default function QuotesPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y border-brand-neutral-border">
-                          {selectedQuote.items.map((item, idx) => (
-                            <React.Fragment key={idx}>
-                            <tr className="hover:bg-white transition-colors">
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-11 bg-brand-black rounded-xl flex items-center justify-center shrink-0">
-                                    <TrendingUp size={16} className="text-white opacity-30" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <h5 className="text-[13px] font-black text-brand-black tracking-tight">{item.product}</h5>
-                                    <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">{item.variant}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">{item.quantity} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></td>
-                              <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">
-                                {item.stock == null
-                                  ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
-                                  : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></span>}
-                              </td>
-                              <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.price.toFixed(2)}</td>
-                              <td className="px-4 py-3 text-right text-[15px] font-black tracking-tight text-brand-black whitespace-nowrap">S/ {(item.quantity * item.price).toFixed(2)}</td>
-                            </tr>
-                            {(item.customerDescription || (item.designs && item.designs.length > 0)) && (
-                              <tr>
-                                <td colSpan={5} className="px-4 pb-3 pt-0">
-                                  <div className="ml-13 pl-3 border-l-2 border-brand-neutral-border space-y-1">
-                                    {item.customerDescription && (
-                                      <p className="text-[11px] text-brand-text-muted font-bold">
-                                        <span className="uppercase tracking-wider text-[9px] opacity-60 mr-1">Indicaciones:</span>
-                                        {item.customerDescription}
-                                      </p>
-                                    )}
-                                    {item.designs && item.designs.length > 0 && (
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {item.designs.map((d, di) => (
-                                          <a key={di} href={d.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-brand-neutral-100 text-[10px] font-bold text-brand-text-muted hover:opacity-75 border border-brand-neutral-border">
-                                            <FileText size={10} />
-                                            <span className="truncate max-w-[100px]">{d.name}</span>
-                                          </a>
-                                        ))}
+                          {selectedQuote.items.map((item, idx) => {
+                            const productImageUrl = item.productImageUrl || (item.productId ? productImageById.get(item.productId) : undefined);
+                            return (
+                              <React.Fragment key={idx}>
+                                <tr className="hover:bg-white transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                      {productImageUrl ? (
+                                        <div className="w-12 h-12 bg-white rounded-xl border border-brand-neutral-border overflow-hidden flex items-center justify-center shrink-0">
+                                          <img
+                                            src={productImageUrl}
+                                            alt={item.product}
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="w-12 h-12 bg-brand-black rounded-xl flex items-center justify-center shrink-0">
+                                          <TrendingUp size={16} className="text-white opacity-30" />
+                                        </div>
+                                      )}
+                                      <div className="min-w-0">
+                                        <h5 className="text-[13px] font-black text-brand-black tracking-tight">{item.product}</h5>
+                                        <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">{item.variant}</p>
                                       </div>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                            </React.Fragment>
-                          ))}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">{item.quantity} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></td>
+                                  <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">
+                                    {item.stock == null
+                                      ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
+                                      : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></span>}
+                                  </td>
+                                  <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.price.toFixed(2)}</td>
+                                  <td className="px-4 py-3 text-right text-[15px] font-black tracking-tight text-brand-black whitespace-nowrap">S/ {(item.quantity * item.price).toFixed(2)}</td>
+                                </tr>
+                                {(item.customerDescription || (item.designs && item.designs.length > 0)) && (
+                                  <tr>
+                                    <td colSpan={5} className="px-4 pb-3 pt-0">
+                                      <div className="ml-13 pl-3 border-l-2 border-brand-neutral-border space-y-1">
+                                        {item.customerDescription && (
+                                          <p className="text-[11px] text-brand-text-muted font-bold">
+                                            <span className="uppercase tracking-wider text-[9px] opacity-60 mr-1">Indicaciones:</span>
+                                            {item.customerDescription}
+                                          </p>
+                                        )}
+                                        {item.designs && item.designs.length > 0 && (
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {item.designs.map((d, di) => (
+                                              <a key={di} href={d.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-brand-neutral-100 text-[10px] font-bold text-brand-text-muted hover:opacity-75 border border-brand-neutral-border">
+                                                <FileText size={10} />
+                                                <span className="truncate max-w-[100px]">{d.name}</span>
+                                              </a>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

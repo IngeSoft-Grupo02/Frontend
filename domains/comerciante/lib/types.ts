@@ -97,6 +97,7 @@ export interface Quote {
     price: number;
     stock?: number | null;
     productId?: string;
+    productImageUrl?: string;
     productVariantId?: string;
     size?: string;
     color?: string;

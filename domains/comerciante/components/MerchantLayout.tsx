@@ -187,7 +187,7 @@ const Sidebar = () => {
 };
 
 export const MerchantLayout = ({ children, title, subtitle, noSidebar }: { children: React.ReactNode; title: string; subtitle?: string; noSidebar?: boolean }) => {
-  const { isAuthenticated, isAuthInitialized } = useStore();
+  const { isAuthenticated, isAuthInitialized, isLoading, store } = useStore();
   const router = useRouter();
 
   // Guard central: todas las rutas que usan MerchantLayout quedan protegidas.
@@ -197,13 +197,30 @@ export const MerchantLayout = ({ children, title, subtitle, noSidebar }: { child
     }
   }, [isAuthInitialized, isAuthenticated, router]);
 
+  useEffect(() => {
+    if (isAuthInitialized && isAuthenticated && !isLoading && !noSidebar && !store.id) {
+      router.replace('/comerciante/store-selection');
+    }
+  }, [isAuthInitialized, isAuthenticated, isLoading, noSidebar, router, store.id]);
+
   // No renderizar el panel mientras se verifica la sesión ni si no hay sesión válida.
-  if (!isAuthInitialized || !isAuthenticated) {
+  if (!isAuthInitialized || !isAuthenticated || (isAuthenticated && isLoading)) {
     return (
       <div className="min-h-screen bg-brand-neutral-light flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-brand-text-muted">
           <div className="w-8 h-8 border-2 border-brand-neutral-border border-t-brand-black rounded-full animate-spin"></div>
-          <p className="text-[12px] font-bold uppercase tracking-widest">Verificando sesión…</p>
+          <p className="text-[12px] font-bold uppercase tracking-widest">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!noSidebar && !store.id) {
+    return (
+      <div className="min-h-screen bg-brand-neutral-light flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-brand-text-muted">
+          <div className="w-8 h-8 border-2 border-brand-neutral-border border-t-brand-black rounded-full animate-spin"></div>
+          <p className="text-[12px] font-bold uppercase tracking-widest">Redirigiendo a tus tiendas...</p>
         </div>
       </div>
     );

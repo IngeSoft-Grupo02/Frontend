@@ -512,6 +512,17 @@ const buildVariantLabel = (item: JsonValue): string => {
   return parts.join(' · ');
 };
 
+const quoteItemImageUrl = (item: JsonValue): string | undefined => {
+  const imageUrls = Array.isArray(item.imageUrls) ? item.imageUrls : [];
+  return uniqueImageUrls([
+    item.productImageUrl,
+    item.imageUrl,
+    item.image,
+    item.productImage,
+    imageUrls[0]
+  ])[0];
+};
+
 export const mapQuote = (raw: JsonValue): Quote => ({
   id: String(raw.id),
   storeId: String(raw.storeId || ''),
@@ -532,6 +543,7 @@ export const mapQuote = (raw: JsonValue): Quote => ({
     price: Number(item.unitPrice ?? item.price ?? 0),
     stock: mapQuoteItemStock(item),
     productId: item.productId != null ? String(item.productId) : undefined,
+    productImageUrl: quoteItemImageUrl(item),
     productVariantId: item.productVariantId != null ? String(item.productVariantId) : undefined,
     size: item.size || undefined,
     color: item.color ? getColorLabel(item.color) : undefined,

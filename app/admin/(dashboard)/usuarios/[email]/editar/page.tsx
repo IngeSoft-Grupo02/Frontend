@@ -121,7 +121,6 @@ export default function EditarUsuarioPage() {
       if (!val.trim()) return false;
       if (validarCampo(campo, val, form)) return false;
     }
-    if (form.role === 'MERCHANT' && selectedMerchantStores.length === 0) return false;
     if (form.role === 'CUSTOMER' && !form.storeId) return false;
     return true;
   };
@@ -150,9 +149,6 @@ export default function EditarUsuarioPage() {
     requeridos.forEach(f => { newTouched[f]=true; newErrors[f]=validarCampo(f,(form as any)[f]??'',form); });
     setTouched(newTouched); setErrors(newErrors);
     if (Object.values(newErrors).some(e=>e)) return;
-    if (form.role==='MERCHANT' && selectedMerchantStores.length===0) {
-      setErrors(p=>({...p,storeId:'Selecciona al menos una tienda.'})); return;
-    }
     setSaving(true); setGlobalError(null);
     try {
       await api.users.update(userId, {
@@ -167,6 +163,7 @@ export default function EditarUsuarioPage() {
         gender:          form.gender as any,
         role:            form.role as any,
         ruc:             form.role==='MERCHANT' ? form.ruc : undefined,
+        storeIds:        form.role==='MERCHANT' ? selectedMerchantStores.map(store => store.id) : undefined,
         storeId:         form.role==='CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
       router.push(ADMIN_ROUTES.users);
@@ -229,7 +226,7 @@ export default function EditarUsuarioPage() {
                 {form.role==='SYSTEM_ADMIN' && <Input label="Entorno" value="Global (Administrativo)" disabled/>}
                 {form.role==='MERCHANT' && (
                     <div className="space-y-3">
-                      <Select label="Asignar tiendas" value=""
+                      <Select label="Asignar tiendas (opcional)" value=""
                               onChange={e => {
                                 const s = stores.find(st=>st.id===Number(e.target.value));
                                 if (s && !selectedMerchantStores.find(ms=>ms.id===s.id))
@@ -250,7 +247,7 @@ export default function EditarUsuarioPage() {
                                 </Badge>
                             ))}
                           </div>
-                      ) : <p className="text-[10px] text-red-400 font-bold uppercase ml-1">Debes seleccionar al menos una tienda</p>}
+                      ) : <p className="text-[10px] text-neutral-400 font-bold uppercase ml-1">Puedes dejar al comerciante sin tiendas y asignarlas después.</p>}
                     </div>
                 )}
                 {form.role==='CUSTOMER' && (
