@@ -226,11 +226,11 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                     </div>
                   </div>
                   <div className="p-6">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div>
                       <Button
                         variant="primary"
                         fullWidth
-                        className="!px-3 !py-2.5 !text-[12px] whitespace-nowrap transition-all outline-none"
+                        className="!px-3 !py-3 !text-[12px] whitespace-nowrap transition-all outline-none"
                         style={{
                           backgroundColor: '#0F1011',
                           color: '#FFFFFF',
@@ -239,21 +239,6 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
                         onClick={() => onSelectStore(store)}
                       >
                         Ver tienda
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        fullWidth
-                        className="!px-3 !py-2.5 !text-[12px] whitespace-nowrap border hover:bg-gray-50 transition-colors"
-                        style={{
-                          backgroundColor: 'transparent',
-                          color: '#0F1011',
-                          borderColor: 'rgba(0,0,0,0.1)'
-                        }}
-                        onClick={() => {
-                            onSelectStore(store, View.AUTH_REGISTER);
-                        }}
-                      >
-                        Registrarme
                       </Button>
                     </div>
                   </div>

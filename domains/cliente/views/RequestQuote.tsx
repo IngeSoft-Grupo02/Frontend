@@ -31,7 +31,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   ]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [designOverlay, setDesignOverlay] = useState({ x: 50, y: 42, width: 24, height: 18 });
-  const [isDraggingDesign, setIsDraggingDesign] = useState(false);
+  const [overlayInteraction, setOverlayInteraction] = useState<'move' | 'resize' | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -135,7 +135,30 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   };
 
   const quantity = rows.reduce((acc, row) => acc + (row.quantity || 0), 0);
-  const productImageUrl = product?.image || product?.imageUrls?.[0] || null;
+  const productImageUrl = React.useMemo(() => {
+    if (!product) return null;
+    const rawProduct = product as Product & Record<string, unknown>;
+    const rawImages = rawProduct.images;
+    const imageFromImages = Array.isArray(rawImages)
+      ? rawImages
+          .map((entry) => {
+            if (typeof entry === 'string') return entry;
+            if (entry && typeof entry === 'object' && 'url' in entry) return String((entry as { url?: unknown }).url || '');
+            return '';
+          })
+          .find(Boolean)
+      : null;
+    const candidates = [
+      product.image,
+      product.imageUrls?.find(Boolean),
+      typeof rawProduct.imageUrl === 'string' ? rawProduct.imageUrl : null,
+      typeof rawProduct.productImageUrl === 'string' ? rawProduct.productImageUrl : null,
+      typeof rawProduct.mainImageUrl === 'string' ? rawProduct.mainImageUrl : null,
+      typeof rawProduct.thumbnailUrl === 'string' ? rawProduct.thumbnailUrl : null,
+      imageFromImages,
+    ];
+    return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0) || null;
+  }, [product]);
   const previewDesignFile = React.useMemo(
     () => uploadedFiles.find((file) => file.type.startsWith('image/')) || null,
     [uploadedFiles],
@@ -166,12 +189,48 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     }));
   };
 
-  const handleOverlayPointerDown = (event: React.PointerEvent<HTMLImageElement>) => {
+  const updateOverlaySizeFromPointer = (event: React.PointerEvent<HTMLElement>) => {
+    const rect = previewFrameRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setDesignOverlay((current) => {
+      const centerX = (current.x / 100) * rect.width;
+      const centerY = (current.y / 100) * rect.height;
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      return {
+        ...current,
+        width: clampPercent((Math.abs(pointerX - centerX) * 2 / rect.width) * 100, 8, 70),
+        height: clampPercent((Math.abs(pointerY - centerY) * 2 / rect.height) * 100, 8, 70),
+      };
+    });
+  };
+
+  const handleOverlayPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setIsDraggingDesign(true);
+    previewFrameRef.current?.setPointerCapture(event.pointerId);
+    setOverlayInteraction('move');
     updateOverlayPositionFromPointer(event);
+  };
+
+  const handleResizePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    previewFrameRef.current?.setPointerCapture(event.pointerId);
+    setOverlayInteraction('resize');
+    updateOverlaySizeFromPointer(event);
+  };
+
+  const handlePreviewPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (overlayInteraction === 'move') updateOverlayPositionFromPointer(event);
+    if (overlayInteraction === 'resize') updateOverlaySizeFromPointer(event);
+  };
+
+  const stopOverlayInteraction = (event?: React.PointerEvent<HTMLDivElement>) => {
+    if (event && previewFrameRef.current?.hasPointerCapture(event.pointerId)) {
+      previewFrameRef.current.releasePointerCapture(event.pointerId);
+    }
+    setOverlayInteraction(null);
   };
 
   const handleAddToCart = async () => {
@@ -293,7 +352,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         key={row.id}
-                        className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_1.2fr_120px_auto] sm:items-end sm:gap-5 sm:p-6 rounded-2xl border"
+                        className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_1.2fr_120px_auto] sm:items-start sm:gap-5 sm:p-6 rounded-2xl border"
                         style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
                       >
                         <div className="space-y-2">
@@ -337,7 +396,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                         <button
                           type="button"
                           onClick={() => removeRow(row.id)}
-                          className="p-3 hover:text-red-500 rounded-xl transition-all mb-0.5 cursor-pointer"
+                          className="self-start p-3 hover:text-red-500 rounded-xl transition-all cursor-pointer sm:mt-6"
                           style={{ color: 'var(--text-on-primary)', opacity: 0.5 }}
                           disabled={rows.length === 1}
                           title="Eliminar combinación"
@@ -427,30 +486,181 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     </p>
                   </div>
 
-                  <div
-                    className="border-2 border-dashed rounded-2xl p-8 sm:p-12 lg:p-16 text-center group transition-colors cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept="image/jpeg,image/png,image/webp,application/pdf"
-                      className="hidden"
-                      onChange={handleFileSelection}
-                    />
-                    <div className="w-16 h-16 rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
-                      <Upload size={24} style={{ color: 'var(--accent-on-secondary)' }} />
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(320px,1fr)]">
+                    <div
+                      className="min-h-[320px] border-2 border-dashed rounded-2xl p-8 text-center group transition-colors cursor-pointer flex flex-col items-center justify-center"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        className="hidden"
+                        onChange={handleFileSelection}
+                      />
+                      <div className="w-16 h-16 rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
+                        <Upload size={24} style={{ color: 'var(--accent-on-secondary)' }} />
+                      </div>
+                      <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
+                        {uploadedFiles.length >= 5 ? 'Ya agregaste el máximo de archivos' : 'Adjuntar archivos del diseño'}
+                      </h4>
+                      <p className="text-[13px] opacity-60 font-medium mb-6 sm:mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
+                      <div className="flex justify-center gap-3">
+                        <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                          <ImageIcon size={12} /> Logo, foto o PDF
+                        </span>
+                      </div>
                     </div>
-                    <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
-                      {uploadedFiles.length >= 5 ? 'Ya agregaste el máximo de archivos' : 'Adjuntar archivos del diseño'}
-                    </h4>
-                    <p className="text-[13px] opacity-60 font-medium mb-6 sm:mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
-                    <div className="flex justify-center gap-3">
-                      <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                        <ImageIcon size={12} /> Logo, foto o PDF
-                      </span>
+
+                    <div className="rounded-2xl border p-5 sm:p-6" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <h4 className="text-[15px] font-black flex items-center gap-2">
+                            <Move size={16} /> Vista del diseño
+                          </h4>
+                          <p className="mt-1 text-[12px] font-bold opacity-60">
+                            {designPreviewUrl ? 'Ubicación y tamaño sobre el producto.' : 'La imagen adjunta aparecerá sobre la prenda.'}
+                          </p>
+                        </div>
+                        <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider opacity-70" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+                          Referencial
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-center">
+                        <div
+                          ref={previewFrameRef}
+                          className="relative mx-auto aspect-[4/5] w-full max-w-[320px] overflow-hidden rounded-2xl border bg-white touch-none"
+                          style={{ borderColor: 'rgba(0,0,0,0.08)' }}
+                          onPointerMove={handlePreviewPointerMove}
+                          onPointerUp={stopOverlayInteraction}
+                          onPointerCancel={stopOverlayInteraction}
+                          onPointerLeave={() => setOverlayInteraction(null)}
+                        >
+                          {productImageUrl ? (
+                            <img
+                              src={productImageUrl}
+                              alt={product?.name || 'Producto'}
+                              referrerPolicy="no-referrer"
+                              className="absolute inset-0 h-full w-full object-contain"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-neutral-400">
+                              <ImageIcon size={34} />
+                              <p className="text-[12px] font-bold">Producto sin imagen disponible.</p>
+                            </div>
+                          )}
+
+                          {designPreviewUrl && productImageUrl ? (
+                            <div
+                              role="presentation"
+                              onPointerDown={handleOverlayPointerDown}
+                              className="absolute z-10 select-none rounded-md border border-white/80 shadow-lg touch-none"
+                              style={{
+                                left: `${designOverlay.x}%`,
+                                top: `${designOverlay.y}%`,
+                                width: `${designOverlay.width}%`,
+                                height: `${designOverlay.height}%`,
+                                transform: 'translate(-50%, -50%)',
+                                cursor: overlayInteraction === 'move' ? 'grabbing' : 'grab',
+                                backgroundColor: 'rgba(255,255,255,0.18)',
+                              }}
+                            >
+                              <img
+                                src={designPreviewUrl}
+                                alt="Diseño ubicado sobre el producto"
+                                draggable={false}
+                                className="h-full w-full rounded-md object-contain"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño del diseño"
+                                title="Cambiar tamaño"
+                                onPointerDown={handleResizePointerDown}
+                                className="absolute -bottom-2 -right-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
+                              />
+                            </div>
+                          ) : (
+                            <div className="absolute inset-x-6 bottom-6 rounded-xl border bg-white/90 px-4 py-3 text-center text-[12px] font-black text-neutral-500 shadow-sm">
+                              {uploadedFiles.length > 0 ? 'Usa una imagen para ver la ubicación.' : 'Sin imagen de diseño adjunta'}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-4 rounded-2xl border p-4" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
+                              <span>Horizontal</span>
+                              <span>{Math.round(designOverlay.x)}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={6}
+                              max={94}
+                              value={designOverlay.x}
+                              disabled={!designPreviewUrl || !productImageUrl}
+                              onChange={(event) => setDesignOverlay((current) => ({ ...current, x: Number(event.target.value) }))}
+                              className="w-full accent-black disabled:opacity-40"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
+                              <span>Vertical</span>
+                              <span>{Math.round(designOverlay.y)}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={6}
+                              max={94}
+                              value={designOverlay.y}
+                              disabled={!designPreviewUrl || !productImageUrl}
+                              onChange={(event) => setDesignOverlay((current) => ({ ...current, y: Number(event.target.value) }))}
+                              className="w-full accent-black disabled:opacity-40"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
+                              <span>Ancho</span>
+                              <span>{Math.round(designOverlay.width)}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={8}
+                              max={70}
+                              value={designOverlay.width}
+                              disabled={!designPreviewUrl || !productImageUrl}
+                              onChange={(event) => setDesignOverlay((current) => ({ ...current, width: Number(event.target.value) }))}
+                              className="w-full accent-black disabled:opacity-40"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
+                              <span>Alto</span>
+                              <span>{Math.round(designOverlay.height)}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={8}
+                              max={70}
+                              value={designOverlay.height}
+                              disabled={!designPreviewUrl || !productImageUrl}
+                              onChange={(event) => setDesignOverlay((current) => ({ ...current, height: Number(event.target.value) }))}
+                              className="w-full accent-black disabled:opacity-40"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 })}
+                            className="w-full rounded-xl border px-3 py-2 text-[11px] font-black uppercase tracking-wider disabled:opacity-40"
+                            disabled={!designPreviewUrl || !productImageUrl}
+                            style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
+                          >
+                            Restablecer
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -487,118 +697,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                             </button>
                           </motion.div>
                         ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {designPreviewUrl && productImageUrl && (
-                    <div className="mt-8 rounded-2xl border p-5 sm:p-6" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
-                      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <h4 className="text-[15px] font-black flex items-center gap-2">
-                            <Move size={16} /> Ubicación del diseño
-                          </h4>
-                          <p className="mt-1 text-[12px] font-bold opacity-60">
-                            Arrastra la imagen sobre la prenda para indicar dónde debe ir el diseño.
-                          </p>
-                        </div>
-                        <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider opacity-70" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
-                          Vista referencial
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
-                        <div
-                          ref={previewFrameRef}
-                          className="relative mx-auto aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-2xl border bg-white touch-none"
-                          style={{ borderColor: 'rgba(0,0,0,0.08)' }}
-                          onPointerMove={(event) => {
-                            if (isDraggingDesign) updateOverlayPositionFromPointer(event);
-                          }}
-                          onPointerUp={() => setIsDraggingDesign(false)}
-                          onPointerCancel={() => setIsDraggingDesign(false)}
-                          onPointerLeave={() => setIsDraggingDesign(false)}
-                        >
-                          <img
-                            src={productImageUrl}
-                            alt={product?.name || 'Producto'}
-                            referrerPolicy="no-referrer"
-                            className="absolute inset-0 h-full w-full object-contain"
-                          />
-                          <img
-                            src={designPreviewUrl}
-                            alt="Diseño ubicado sobre el producto"
-                            draggable={false}
-                            onPointerDown={handleOverlayPointerDown}
-                            className="absolute z-10 select-none rounded-md border border-white/80 object-contain shadow-lg touch-none"
-                            style={{
-                              left: `${designOverlay.x}%`,
-                              top: `${designOverlay.y}%`,
-                              width: `${designOverlay.width}%`,
-                              height: `${designOverlay.height}%`,
-                              transform: 'translate(-50%, -50%)',
-                              cursor: isDraggingDesign ? 'grabbing' : 'grab',
-                              backgroundColor: 'rgba(255,255,255,0.18)',
-                            }}
-                          />
-                        </div>
-
-                        <div className="space-y-4 rounded-2xl border p-4" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Horizontal</span>
-                              <span>{Math.round(designOverlay.x)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={6}
-                              max={94}
-                              value={designOverlay.x}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, x: Number(event.target.value) }))}
-                              className="w-full accent-black"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Vertical</span>
-                              <span>{Math.round(designOverlay.y)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={6}
-                              max={94}
-                              value={designOverlay.y}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, y: Number(event.target.value) }))}
-                              className="w-full accent-black"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <div className="text-[11px] font-black uppercase tracking-wider opacity-70">Ancho</div>
-                              <input
-                                type="number"
-                                min={8}
-                                max={60}
-                                value={Math.round(designOverlay.width)}
-                                onChange={(event) => setDesignOverlay((current) => ({ ...current, width: clampPercent(Number(event.target.value) || 8, 8, 60) }))}
-                                className="w-full rounded-xl border px-3 py-2 text-[12px] font-black focus:outline-none"
-                                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="text-[11px] font-black uppercase tracking-wider opacity-70">Alto</div>
-                              <input
-                                type="number"
-                                min={8}
-                                max={60}
-                                value={Math.round(designOverlay.height)}
-                                onChange={(event) => setDesignOverlay((current) => ({ ...current, height: clampPercent(Number(event.target.value) || 8, 8, 60) }))}
-                                className="w-full rounded-xl border px-3 py-2 text-[12px] font-black focus:outline-none"
-                                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
-                              />
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   )}
