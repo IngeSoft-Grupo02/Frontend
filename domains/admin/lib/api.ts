@@ -182,6 +182,40 @@ export interface AuditLogResponse {
   statusCode: number; level: string; description: string;
 }
 
+export interface ExistingBulkMerchant {
+  email: string | null;
+  firstName: string | null;
+  paternalSurname: string | null;
+  maternalSurname: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  gender: string | null;
+  ruc: string | null;
+  active: boolean | null;
+}
+
+export interface ExistingBulkStore {
+  storeName: string | null;
+  slug: string | null;
+  description: string | null;
+  categoryId: number | null;
+  merchantEmail: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  tertiaryColor: string | null;
+  storeStatus: string | null;
+  active: boolean | null;
+}
+
+export interface ExistingBulkData {
+  storeNames: string[];
+  merchantEmails: string[];
+  merchants?: ExistingBulkMerchant[];
+  stores?: ExistingBulkStore[];
+}
+
 // ── API ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -231,6 +265,6 @@ export const api = {
       return requestMultipart<any>('/admin/bulk/upload', fd);
     },
     existingEmails: () => request<string[]>('/admin/bulk/existing-emails'),
-    existingStores: () => request<{ storeNames: string[]; merchantEmails: string[] }>('/admin/bulk/existing-stores'),
+    existingStores: () => request<ExistingBulkData>('/admin/bulk/existing-stores'),
   },
 };

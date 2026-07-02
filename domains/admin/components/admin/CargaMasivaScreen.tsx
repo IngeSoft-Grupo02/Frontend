@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, DragEvent, useEffect } from 'react';
-import { api } from '@/domains/admin/lib/api';
+import { api, type ExistingBulkMerchant, type ExistingBulkStore } from '@/domains/admin/lib/api';
 import { messageFromError } from '@/domains/shared/errors';
 import { Button, Card } from '../UI';
 import {
@@ -43,9 +43,9 @@ const MERCHANT_COLUMNS = [
 ];
 const STORE_COLUMNS = ['storeName','categoryId','primaryColor','secondaryColor','tertiaryColor','description','merchantEmail','logoFileName'];
 const VALID_DOC_TYPES     = ['DNI','PASSPORT','FOREIGN_ID_CARD'];
-const VALID_PRIMARY_COLORS   = ['ONYX_BLACK','DEEP_ZINC','MIDNIGHT','CHARCOAL','ESPRESSO'];
-const VALID_SECONDARY_COLORS = ['OLIVE_DRAB','SAGE','SLATE','TERRA','DUSTY_RED'];
-const VALID_TERTIARY_COLORS  = ['RICH_CAMEL','RAW_GOLD','SILVER_MIST','COPPER','STONE'];
+const VALID_PRIMARY_COLORS   = ['ONYX_BLACK','MIDNIGHT','CHARCOAL','ESPRESSO','ALABASTER','WARM_CREAM'];
+const VALID_SECONDARY_COLORS = ['SLATE','SAGE','TERRA','DUSTY_RED','GHOST_WHITE','SOFT_TAUPE','BLUSH_PINK','FROSTED_BLUE'];
+const VALID_TERTIARY_COLORS  = ['RAW_GOLD','COPPER','COBALT_BLUE','CORAL_PUNCH','EMERALD','SUNFLOWER','HOT_MAGENTA','VIOLET_POP'];
 const VALID_GENDERS   = ['MALE','FEMALE','NOT_SPECIFIED'];
 const MAX_FILE_MB     = 50;
 
@@ -80,38 +80,112 @@ function parseCsv(text: string): { headers: string[]; rows: Record<string,string
 function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function isValidDate(d: string)  { return /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d)); }
 
+function normalizeEmail(value?: string | null) {
+  const normalized = (value ?? '').trim().toLowerCase();
+  return normalized || null;
+}
+
+function normalizeText(value?: string | null) {
+  const normalized = (value ?? '').trim();
+  return normalized || null;
+}
+
+function nullableTextEquals(left?: string | null, right?: string | null) {
+  return normalizeText(left) === normalizeText(right);
+}
+
+function baseName(path: string) {
+  return path.replace(/\\/g, '/').split('/').pop() ?? path;
+}
+
+function storeSlug(name?: string | null) {
+  const normalized = (name ?? '').trim();
+  if (!normalized) return null;
+  return normalized
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+}
+
+function merchantMatchesCsv(row: Record<string,string>, merchant: ExistingBulkMerchant) {
+  return merchant.active !== false &&
+      normalizeEmail(row.email) === normalizeEmail(merchant.email) &&
+      nullableTextEquals(row.firstName, merchant.firstName) &&
+      nullableTextEquals(row.paternalSurname, merchant.paternalSurname) &&
+      nullableTextEquals(row.maternalSurname, merchant.maternalSurname) &&
+      (row.documentType ?? '').trim().toUpperCase() === (merchant.documentType ?? '').trim().toUpperCase() &&
+      nullableTextEquals(row.documentNumber, merchant.documentNumber) &&
+      nullableTextEquals(row.birthDate, merchant.birthDate) &&
+      nullableTextEquals(row.phone, merchant.phone) &&
+      (row.gender ?? '').trim().toUpperCase() === (merchant.gender ?? '').trim().toUpperCase() &&
+      nullableTextEquals(row.ruc, merchant.ruc);
+}
+
+function storeMatchesCsv(row: Record<string,string>, store: ExistingBulkStore) {
+  return store.active !== false &&
+      (store.storeStatus ?? '').toUpperCase() === 'ACTIVE' &&
+      nullableTextEquals(row.storeName, store.storeName) &&
+      nullableTextEquals(row.description, store.description) &&
+      Number(row.categoryId) === store.categoryId &&
+      normalizeEmail(row.merchantEmail) === normalizeEmail(store.merchantEmail) &&
+      (row.primaryColor ?? '').trim().toUpperCase() === (store.primaryColor ?? '').trim().toUpperCase() &&
+      (row.secondaryColor ?? '').trim().toUpperCase() === (store.secondaryColor ?? '').trim().toUpperCase() &&
+      (row.tertiaryColor ?? '').trim().toUpperCase() === (store.tertiaryColor ?? '').trim().toUpperCase();
+}
+
+function findExistingMerchant(email: string | null, merchants: ExistingBulkMerchant[]) {
+  if (!email) return undefined;
+  return merchants.find(merchant => normalizeEmail(merchant.email) === email);
+}
+
+function findExistingStore(row: Record<string,string>, stores: ExistingBulkStore[]) {
+  const slug = storeSlug(row.storeName);
+  if (!slug) return undefined;
+  return stores.find(store => (store.slug ?? '').toLowerCase() === slug);
+}
+
 // ── Validadores ───────────────────────────────────────────────────
 
 async function validateMerchantsCsv(
     file: File,
     existingEmails: string[],
-): Promise<{ incidences: Incidence[]; rowCount: number; emailsFound: string[] }> {
+    existingMerchants: ExistingBulkMerchant[],
+): Promise<{
+  incidences: Incidence[];
+  rowCount: number;
+  validEmails: string[];
+  invalidEmails: string[];
+}> {
   const text = await file.text();
   const { headers, rows } = parseCsv(text);
   const incidences: Incidence[] = [];
-  const emailsFound: string[] = [];
+  const validEmails: string[] = [];
+  const invalidEmails: string[] = [];
+  const seenEmails: string[] = [];
 
   const missingCols = MERCHANT_COLUMNS.filter(c => !headers.includes(c));
   if (missingCols.length > 0) {
     incidences.push({ block:'Comerciantes', row:'Cabecera',
       detail:`Columnas faltantes: ${missingCols.join(', ')}`, isError:true });
-    return { incidences, rowCount: rows.length, emailsFound };
+    return { incidences, rowCount: rows.length, validEmails, invalidEmails };
   }
 
   rows.forEach((row, idx) => {
     const n = idx + 2;
+    const errorsBefore = incidences.filter(i => i.isError).length;
+    const email = normalizeEmail(row.email);
 
     // email
     if (!row.email) {
       incidences.push({ block:'Comerciantes', row:n, detail:'El campo email es obligatorio.', isError:true });
     } else if (!isValidEmail(row.email)) {
       incidences.push({ block:'Comerciantes', row:n, detail:`Formato de email inválido: "${row.email}".`, isError:true });
-    } else if (existingEmails.includes(row.email.toLowerCase())) {
-      incidences.push({ block:'Comerciantes', row:n, detail:`El email "${row.email}" ya está registrado en el sistema.`, isError:true });
-    } else if (emailsFound.includes(row.email.toLowerCase())) {
-      incidences.push({ block:'Comerciantes', row:n, detail:`El email "${row.email}" está duplicado en el archivo.`, isError:true });
+    } else if (email && seenEmails.includes(email)) {
+      incidences.push({ block:'Comerciantes', row:n, detail:`El email "${row.email}" esta duplicado en el archivo.`, isError:true });
     } else {
-      emailsFound.push(row.email.toLowerCase());
+      if (email) seenEmails.push(email);
     }
 
     if (!row.password)
@@ -138,21 +212,63 @@ async function validateMerchantsCsv(
     if (!/^\d{11}$/.test(row.ruc ?? ''))
       incidences.push({ block:'Comerciantes', row:n,
         detail:`RUC inválido: "${row.ruc}". Debe tener exactamente 11 dígitos numéricos.`, isError:true });
+    if (!row.paternalSurname)
+      incidences.push({ block:'Comerciantes', row:n, detail:'El campo paternalSurname es obligatorio.', isError:true });
+
+    if (!row.maternalSurname)
+      incidences.push({ block:'Comerciantes', row:n, detail:'El campo maternalSurname es obligatorio.', isError:true });
+
+    if (!row.birthDate)
+      incidences.push({ block:'Comerciantes', row:n, detail:'El campo birthDate es obligatorio.', isError:true });
+
+    if (!email) return;
+
+    if (incidences.filter(i => i.isError).length > errorsBefore) {
+      invalidEmails.push(email);
+      return;
+    }
+
+    const existingMerchant = findExistingMerchant(email, existingMerchants);
+    if (existingMerchant) {
+      if (merchantMatchesCsv(row, existingMerchant)) {
+        validEmails.push(email);
+        incidences.push({ block:'Comerciantes', row:n,
+          detail:`Comerciante ya existente omitido: ${email}.`, isError:false });
+      } else {
+        invalidEmails.push(email);
+        incidences.push({ block:'Comerciantes', row:n,
+          detail:`Conflicto: el comerciante "${email}" ya existe con datos distintos.`, isError:true });
+      }
+      return;
+    }
+
+    if (existingEmails.includes(email)) {
+      invalidEmails.push(email);
+      incidences.push({ block:'Comerciantes', row:n,
+        detail:`Conflicto: el email "${email}" ya existe pero no pertenece a un comerciante valido.`, isError:true });
+      return;
+    }
+
+    validEmails.push(email);
   });
 
-  return { incidences, rowCount: rows.length, emailsFound };
+  return { incidences, rowCount: rows.length, validEmails, invalidEmails };
 }
 
 async function validateStoresCsv(
     file: File,
     existingMerchantEmails: string[],
-    merchantsInFile: string[],
+    validMerchantsInFile: string[],
+    invalidMerchantsInFile: string[],
+    existingStores: ExistingBulkStore[],
     logosInZip: string[],   // nombres de archivos dentro del ZIP (vacío si no se cargó ZIP)
 ): Promise<{ incidences: Incidence[]; rowCount: number; logosReferenced: string[] }> {
   const text = await file.text();
   const { headers, rows } = parseCsv(text);
   const incidences: Incidence[] = [];
   const logosReferenced: string[] = [];
+  const seenStoreSlugs: string[] = [];
+  const logoNames = logosInZip.map(l => baseName(l).toLowerCase());
 
   const missingCols = STORE_COLUMNS.filter(c => !headers.includes(c));
   if (missingCols.length > 0) {
@@ -161,16 +277,25 @@ async function validateStoresCsv(
     return { incidences, rowCount: rows.length, logosReferenced };
   }
 
-  const allMerchants = [...existingMerchantEmails, ...merchantsInFile];
+  const allMerchants = [
+    ...existingMerchantEmails.map(email => email.toLowerCase()),
+    ...validMerchantsInFile.map(email => email.toLowerCase()),
+  ];
 
   rows.forEach((row, idx) => {
     const n = idx + 2;
+    const errorsBefore = incidences.filter(i => i.isError).length;
+    const slug = storeSlug(row.storeName);
 
     // storeName
     if (!row.storeName)
       incidences.push({ block:'Tiendas', row:n, detail:'El campo storeName es obligatorio.', isError:true });
     else if (row.storeName.length > 100)
       incidences.push({ block:'Tiendas', row:n, detail:'storeName supera 100 caracteres.', isError:true });
+    else if (slug && seenStoreSlugs.includes(slug))
+      incidences.push({ block:'Tiendas', row:n, detail:`La tienda "${row.storeName}" esta duplicada en el archivo.`, isError:true });
+    else if (slug)
+      seenStoreSlugs.push(slug);
     // categoryId — obligatorio y numérico
     if (!row.categoryId || row.categoryId.trim() === '') {
       incidences.push({ block:'Tiendas', row:n, detail:'El campo categoryId es obligatorio.', isError:true });
@@ -197,6 +322,9 @@ async function validateStoresCsv(
     if (!row.merchantEmail || row.merchantEmail.trim() === '') {
       incidences.push({ block:'Tiendas', row:n,
         detail:'El campo merchantEmail es obligatorio. Toda tienda debe tener un comerciante asignado.', isError:true });
+    } else if (invalidMerchantsInFile.includes(row.merchantEmail.toLowerCase())) {
+      incidences.push({ block:'Tiendas', row:n,
+        detail:`El comerciante "${row.merchantEmail}" existe en el CSV de comerciantes, pero esa fila tiene errores.`, isError:true });
     } else if (!allMerchants.includes(row.merchantEmail.toLowerCase())) {
       incidences.push({ block:'Tiendas', row:n,
         detail:`El comerciante "${row.merchantEmail}" no existe en el sistema ni en el archivo de comerciantes cargado.`, isError:true });
@@ -205,8 +333,9 @@ async function validateStoresCsv(
     // logoFileName — opcional, pero si viene se valida contra el ZIP
     const logo = (row.logoFileName ?? '').trim();
     if (logo) {
+      const logoBaseName = baseName(logo);
       const VALID_IMG_EXTS = ['jpg','jpeg','png','webp'];
-      const ext = logo.includes('.') ? logo.split('.').pop()!.toLowerCase() : '';
+      const ext = logoBaseName.includes('.') ? logoBaseName.split('.').pop()!.toLowerCase() : '';
 
       // Extensión válida
       if (!VALID_IMG_EXTS.includes(ext)) {
@@ -214,14 +343,34 @@ async function validateStoresCsv(
           detail:`logoFileName "${logo}" tiene extensión inválida. Permitidas: jpg, jpeg, png, webp.`, isError:true });
       }
       // Si hay ZIP cargado, el nombre debe existir dentro de él
-      else if (logosInZip.length > 0 && !logosInZip.map(l=>l.toLowerCase()).includes(logo.toLowerCase())) {
+      else if (logosInZip.length === 0) {
+        incidences.push({ block:'Tiendas', row:n,
+          detail:`logoFileName "${logo}" referencia un archivo, pero no se cargo ZIP de logos.`, isError:true });
+      }
+      else if (!logoNames.includes(logoBaseName.toLowerCase())) {
         incidences.push({ block:'Tiendas', row:n,
           detail:`El logo "${logo}" no existe en el ZIP cargado. Verifica el nombre exacto del archivo.`, isError:true });
       }
       // Registrar como referenciado (para detectar logos en ZIP sin tienda)
-      else if (logosInZip.length > 0) {
-        logosReferenced.push(logo.toLowerCase());
+      else {
+        logosReferenced.push(logoBaseName.toLowerCase());
       }
+    }
+    const existingStore = findExistingStore(row, existingStores);
+    if (existingStore) {
+      if (storeMatchesCsv(row, existingStore)) {
+        incidences.push({ block:'Tiendas', row:n,
+          detail:`Tienda ya existente omitida: ${row.storeName}.`, isError:false });
+      } else {
+        incidences.push({ block:'Tiendas', row:n,
+          detail:`Conflicto: la tienda "${row.storeName}" ya existe con datos distintos.`, isError:true });
+      }
+    }
+
+    if (incidences.filter(i => i.isError).length > errorsBefore && row.logoFileName) {
+      const normalized = baseName(row.logoFileName).toLowerCase();
+      const index = logosReferenced.indexOf(normalized);
+      if (index >= 0) logosReferenced.splice(index, 1);
     }
   });
 
@@ -311,8 +460,8 @@ function downloadMerchantsTemplate() {
   const csv = [
     'email,password,firstName,paternalSurname,maternalSurname,documentType,documentNumber,birthDate,phone,gender,ruc',
     '# INSTRUCCIONES:,min 8 chars,Obligatorio,Obligatorio,Obligatorio,DNI|PASSPORT|FOREIGN_ID_CARD,Sin puntos,yyyy-MM-dd,9 dígitos,MALE|FEMALE|NOT_SPECIFIED,11 dígitos exactos',
-    'juan.perez@ejemplo.com,Pass1234!,Juan,Perez,Garcia,DNI,12345678,1988-05-15,987654321,MALE,20100000001',
-    'maria.torres@ejemplo.com,Pass5678!,Maria,Torres,Lopez,DNI,87654321,1992-11-20,912345678,FEMALE,20200000002',
+    'test_bulk_merchant1@example.com,Pass1234!,TestBulk,MerchantUno,Demo,DNI,12345678,1988-05-15,987654321,MALE,20100000001',
+    'test_bulk_merchant2@example.com,Pass5678!,TestBulk,MerchantDos,Demo,DNI,87654321,1992-11-20,912345678,FEMALE,20200000002',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_comerciantes.csv');
 }
@@ -321,8 +470,8 @@ function downloadStoresTemplate() {
   const csv = [
     'storeName,categoryId,primaryColor,secondaryColor,tertiaryColor,description,merchantEmail,logoFileName',
     '# INSTRUCCIONES:,ID de categoría,Color principal,Color secundario,Color terciario,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
-    'Mi Tienda Urbana,1,ONYX_BLACK,OLIVE_DRAB,RICH_CAMEL,Ropa urbana para jóvenes,juan.perez@ejemplo.com,MiTiendaUrbana.png',
-    'Luxe Moda,2,MIDNIGHT,SAGE,RAW_GOLD,Alta costura accesible,maria.torres@ejemplo.com,',
+    'Mi Tienda Urbana,1,ONYX_BLACK,SLATE,RAW_GOLD,Ropa urbana y accesorios,test_bulk_merchant1@example.com,MiTiendaUrbana.jpg',
+    'Luxe Moda,1,MIDNIGHT,SAGE,COPPER,Moda premium y accesorios,test_bulk_merchant2@example.com,LuxeModa.jpg',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_tiendas.csv');
 }
@@ -333,11 +482,12 @@ function downloadLogosInstructions() {
     '==============================================',
     '',
     'El ZIP debe contener UNA imagen por tienda.',
-    'El nombre del archivo debe coincidir con el enlace generado automaticamente desde el nombre de la tienda.',
+    'El nombre del archivo debe coincidir exactamente con logoFileName en el CSV de tiendas.',
+    'Puedes colocar las imagenes en la raiz del ZIP o dentro de una carpeta como logos/.',
     '',
     'Ejemplos:',
-    '  mi-tienda-urbana.png  ->  logo de la tienda "Mi Tienda Urbana"',
-    '  luxe-moda.jpg         ->  logo de la tienda "Luxe Moda"',
+    '  logos/MiTiendaUrbana.jpg  ->  logoFileName MiTiendaUrbana.jpg',
+    '  LuxeModa.jpg              ->  logoFileName LuxeModa.jpg',
     '',
     'Formatos permitidos: .jpg  .jpeg  .png  .webp',
     'Tamaño máximo por imagen: 2 MB',
@@ -396,6 +546,8 @@ export function CargaMasivaScreen() {
   // ── Datos reales de la BD ─────────────────────────────────────
   const [existingEmails,         setExistingEmails]         = useState<string[]>([]);
   const [existingMerchantEmails, setExistingMerchantEmails] = useState<string[]>([]);
+  const [existingMerchants,      setExistingMerchants]      = useState<ExistingBulkMerchant[]>([]);
+  const [existingStores,         setExistingStores]         = useState<ExistingBulkStore[]>([]);
   const [dataLoaded,             setDataLoaded]             = useState(false);
 
   // Cargar datos del backend al montar el componente
@@ -407,6 +559,8 @@ export function CargaMasivaScreen() {
       ]);
       setExistingEmails(emails);
       setExistingMerchantEmails(storesData.merchantEmails);
+      setExistingMerchants(storesData.merchants ?? []);
+      setExistingStores(storesData.stores ?? []);
       setDataLoaded(true);
     }
     loadExistingData();
@@ -419,12 +573,13 @@ export function CargaMasivaScreen() {
 
     try {
       // Emails del CSV de comerciantes ya cargado (para validación cruzada en tiendas)
-      let merchantEmailsInFile: string[] = [];
+      let validMerchantEmailsInFile: string[] = [];
+      let invalidMerchantEmailsInFile: string[] = [];
       const mFile = key === 'merchants' ? file : currentBlocks.merchants.file;
       if (mFile) {
-        const text = await mFile.text();
-        const { rows } = parseCsv(text);
-        merchantEmailsInFile = rows.map(r => (r.email ?? '').toLowerCase()).filter(Boolean);
+        const merchantValidation = await validateMerchantsCsv(mFile, existingEmails, existingMerchants);
+        validMerchantEmailsInFile = merchantValidation.validEmails;
+        invalidMerchantEmailsInFile = merchantValidation.invalidEmails;
       }
 
       // Nombres de archivos del ZIP ya cargado
@@ -435,7 +590,7 @@ export function CargaMasivaScreen() {
       let zipFileNames: string[] = currentBlocks[key].zipFileNames;
 
       if (key === 'merchants') {
-        const res = await validateMerchantsCsv(file, existingEmails);
+        const res = await validateMerchantsCsv(file, existingEmails, existingMerchants);
         incidences = res.incidences;
         rowCount   = res.rowCount;
 
@@ -444,7 +599,9 @@ export function CargaMasivaScreen() {
           const sRes = await validateStoresCsv(
               currentBlocks.stores.file,
               existingMerchantEmails,
-              res.emailsFound,
+              res.validEmails,
+              res.invalidEmails,
+              existingStores,
               logosInZip,
           );
           setBlocks(prev => ({
@@ -455,7 +612,12 @@ export function CargaMasivaScreen() {
         }
       } else if (key === 'stores') {
         const res = await validateStoresCsv(
-            file, existingMerchantEmails, merchantEmailsInFile, logosInZip,
+            file,
+            existingMerchantEmails,
+            validMerchantEmailsInFile,
+            invalidMerchantEmailsInFile,
+            existingStores,
+            logosInZip,
         );
         incidences = res.incidences;
         rowCount   = res.rowCount;
@@ -480,7 +642,9 @@ export function CargaMasivaScreen() {
           const sRes = await validateStoresCsv(
               currentBlocks.stores.file,
               existingMerchantEmails,
-              merchantEmailsInFile,
+              validMerchantEmailsInFile,
+              invalidMerchantEmailsInFile,
+              existingStores,
               res.fileNames,
           );
           // Detectar logos en ZIP sin tienda que los referencie
@@ -655,7 +819,7 @@ export function CargaMasivaScreen() {
       description:'Sube el CSV con los comerciantes que tendrán acceso a sus tiendas.',
       icon:Users, accept:'.csv', onDownload:downloadMerchantsTemplate },
     { key:'stores' as BlockKey, label:'Tiendas',
-      description:'Sube el CSV con las tiendas y el correo del comerciante que administrará cada una.',
+      description:'Sube tiendas con colores permitidos y el correo del comerciante que administrará cada una.',
       icon:Store, accept:'.csv', onDownload:downloadStoresTemplate },
     { key:'images' as BlockKey, label:'Logos de tiendas',
       description:'Sube un ZIP con los logos. Acepta PNG, JPG o WEBP de hasta 2 MB por imagen.',
@@ -674,8 +838,10 @@ export function CargaMasivaScreen() {
                 Cargando datos del sistema...
               </span>
           ) : (
-              <span className="text-[12px] font-bold text-neutral-400">
-                Descarga las plantillas, completa los datos y sube tus archivos.
+              <span className="text-[12px] font-bold text-neutral-400 max-w-4xl leading-relaxed">
+                Descarga las plantillas, completa los datos y sube tus archivos. Colores permitidos:
+                primaryColor ({VALID_PRIMARY_COLORS.join(', ')}), secondaryColor ({VALID_SECONDARY_COLORS.join(', ')}),
+                tertiaryColor ({VALID_TERTIARY_COLORS.join(', ')}).
               </span>
           )}
           <Button
