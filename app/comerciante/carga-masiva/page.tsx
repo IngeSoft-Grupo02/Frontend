@@ -105,7 +105,7 @@ export default function BulkUploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!isCsvFile(file)) {
-      setCsvErrors(['Solo se permiten archivos .csv para productos.']);
+      setCsvErrors(['Solo se permiten archivos de la plantilla para productos.']);
       setCsvStatus('error');
       setCsvFile(null);
       if (csvInputRef.current) csvInputRef.current.value = '';
@@ -113,7 +113,7 @@ export default function BulkUploadPage() {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setCsvErrors(['El archivo CSV no debe exceder los 10MB.']);
+      setCsvErrors(['El archivo no debe exceder los 10MB.']);
       setCsvStatus('error');
       setCsvFile(null);
       if (csvInputRef.current) csvInputRef.current.value = '';
@@ -191,7 +191,7 @@ export default function BulkUploadPage() {
       }
     } catch (err) {
       console.error(err);
-      setCsvErrors(['Error al leer el archivo CSV.']);
+      setCsvErrors(['Error al leer el archivo.']);
       setCsvStatus('error');
     } finally {
       setIsProcessingCsv(false);
@@ -453,7 +453,7 @@ export default function BulkUploadPage() {
           <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest leading-none">Productos · Importación</p>
           <h1 className="text-[42px] font-extrabold tracking-tight text-brand-black leading-none">Carga masiva de productos</h1>
           <p className="text-brand-text-muted text-[14px] font-medium max-w-2xl leading-relaxed">
-            Sube tu catálogo completo desde un archivo CSV. Las imágenes son opcionales y pueden subirse en un archivo ZIP.
+            Sube tu catálogo completo desde un archivo. Las imágenes son opcionales y pueden subirse en un archivo ZIP.
           </p>
         </header>
 
@@ -471,8 +471,8 @@ export default function BulkUploadPage() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-camel"></div>
               <div>
                 <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">01 · Archivo de productos</h3>
-                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Archivo CSV (.csv)</h2>
-                <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Una fila por variante · máximo 500 productos por archivo CSV</p>
+                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Archivo </h2>
+                <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Una fila por variante · máximo 500 productos por archivo</p>
               </div>
 
               <input 
@@ -665,7 +665,7 @@ export default function BulkUploadPage() {
                   <div className="text-center space-y-2">
                     <h4 className="text-[18px] font-black tracking-tight uppercase">Esperando CSV</h4>
                     <p className="text-[13px] text-brand-text-muted font-bold max-w-[340px] leading-relaxed uppercase tracking-tighter opacity-70">
-                      Al subir el archivo CSV, el sistema auditará automáticamente la integridad de los datos de productos y variantes.
+                      Al subir el archivo, el sistema auditará automáticamente la integridad de los datos de productos y variantes.
                     </p>
                   </div>
                 </div>

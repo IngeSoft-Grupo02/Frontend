@@ -75,18 +75,18 @@ const preserveLocalPreviewLogo = (source: Store, saved: Store) => {
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [quotes, setQuotes] = useState<Quote[]>(mockQuotes);
-  const [discounts, setDiscounts] = useState<Discount[]>(mockDiscounts);
-  const [stores, setStores] = useState<Store[]>(mockStores);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [store, setStore] = useState<Store>(fallbackStore);
   const [user, setUser] = useState<MerchantUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
   const hasBackendSession = Boolean(token);
   const isAuthenticated = Boolean(token);
   const shouldUseStoreApi = STORE_SYNC_MODE === 'api';
@@ -150,8 +150,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setUser(profile);
       persistUser(profile);
-      setStores(backendStores.length > 0 ? backendStores : mockStores);
-      setStore(selectedStore);
+      setStores(backendStores);
       persistStore(selectedStore);
       await loadScopedData(selectedStore.id);
     } catch (error) {
