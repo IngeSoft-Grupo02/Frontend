@@ -3,7 +3,7 @@
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
-import { merchantApi, merchantSession } from '@/domains/comerciante/lib/api';
+import { merchantApi } from '@/domains/comerciante/lib/api';
 import { Store as StoreType, StoreCategory } from '@/domains/comerciante/lib/types';
 import { getColorLabel } from '@/domains/shared/colors';
 import { messageFromError } from '@/domains/shared/errors';
@@ -45,15 +45,8 @@ const TERTIARY_COLORS: ColorOption[] = [
   { name: 'VIOLET POP', value: 'VIOLET_POP', hex: '#8B5CF6' }
 ];
 
-const FALLBACK_CATEGORIES: StoreCategory[] = [
-  { id: 1, name: 'Moda' },
-  { id: 2, name: 'Ropa' },
-  { id: 3, name: 'Accesorios' }
-];
-
 const LOGO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const LOGO_MAX_SIZE_BYTES = 2 * 1024 * 1024;
-const STORE_LOGO_UPLOAD_MODE = process.env.NEXT_PUBLIC_STORE_LOGO_UPLOAD_MODE || 'local';
 
 const getInitials = (name: string) => {
   if (!name.trim()) return 'S';
@@ -87,7 +80,7 @@ function StoreFormPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
-  const { stores, addStore, setStore, saveStore } = useStore();
+  const { stores, addStore, selectStore, saveStore } = useStore();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -119,16 +112,8 @@ function StoreFormPageContent() {
         if (isMounted) setCategories(loaded);
       } catch (error) {
         if (!isMounted) return;
-        const message = messageFromError(error, 'No se pudieron cargar las categorías');
-        if (merchantSession.getToken()) {
-          setCategoryLoadError(message);
-          setCategories([]);
-        } else {
-          if (message.includes('403')) {
-            setCategoryLoadError('');
-          }
-          setCategories(FALLBACK_CATEGORIES);
-        }
+        setCategoryLoadError(messageFromError(error, 'No se pudieron cargar las categorías'));
+        setCategories([]);
       } finally {
         if (isMounted) setIsLoadingCategories(false);
       }
@@ -231,9 +216,7 @@ function StoreFormPageContent() {
     try {
       let logoUrl = existingLogoUrl;
       if (logoFile) {
-        logoUrl = STORE_LOGO_UPLOAD_MODE === 'api' && merchantSession.getToken()
-          ? (await merchantApi.uploadStoreLogo(logoFile)).logoUrl
-          : logoPreviewUrl;
+        logoUrl = (await merchantApi.uploadStoreLogo(logoFile)).logoUrl;
       }
 
       const payload = {
@@ -257,10 +240,10 @@ function StoreFormPageContent() {
         const currentStore = stores.find(s => s.id === editId);
         if (!currentStore) throw new Error('No se encontró la tienda a editar');
         const updatedStore = await saveStore({ ...currentStore, ...payload });
-        if (updatedStore) setStore(updatedStore);
+        if (updatedStore) selectStore(updatedStore);
       } else {
         const created = await addStore(payload as Omit<StoreType, 'id'>);
-        if (created) setStore(created);
+        if (created) selectStore(created);
       }
 
       router.push('/comerciante/store-selection');

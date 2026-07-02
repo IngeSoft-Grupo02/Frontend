@@ -30,7 +30,7 @@ export default function DashboardPage() {
     <MerchantLayout title="Panel" subtitle={`Resumen de actividad · ${store.name}`}>
       <div className="flex flex-col gap-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2"><p className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Bienvenida de vuelta</p><h1 className="text-[48px] font-black tracking-tighter leading-none text-brand-black">Hola, {user?.firstName || 'Maria'}.</h1><p className="text-brand-text-muted text-[15px] font-bold">Esto es lo que pasó en {store.name} hoy.</p></div>
+          <div className="space-y-2"><p className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Bienvenida de vuelta</p><h1 className="text-[48px] font-black tracking-tighter leading-none text-brand-black">Hola{user?.firstName ? `, ${user.firstName}` : ''}.</h1><p className="text-brand-text-muted text-[15px] font-bold">Esto es lo que pasó en {store.name} hoy.</p></div>
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <StatCard title="Pedidos Pendientes" value={stats.pendingOrders.toString().padStart(2, '0')} icon={ShoppingBag} onClick={() => router.push('/comerciante/orders')} />

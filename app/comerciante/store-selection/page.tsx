@@ -2,21 +2,40 @@
 import { Topbar } from '@/domains/comerciante/components/MerchantLayout';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Store } from '@/domains/comerciante/lib/types';
-import { FileText, LayoutGrid, Plus } from 'lucide-react';
+import { FileText, LayoutGrid, Plus, Store as StoreIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function StoreSelectionPage() {
   const router = useRouter();
-  const { stores, setStore, quotes } = useStore();
+  const { stores, selectStore, quotes, isAuthenticated, isAuthInitialized, isLoading } = useStore();
   const handleSelectStore = (store: Store) => {
-    setStore(store);
+    selectStore(store);
     router.push('/comerciante/dashboard');
   };
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  const getInitials = (name: string) => name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().substring(0, 2);
   const getPendingQuotes = (storeId: string) => quotes.filter(q => q.storeId === storeId && q.status === 'Pendiente').length;
   const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categoría';
   const getStoreColor = (store: Store) => store.palette || '#5D634B';
+  const getStoreLogo = (store: Store) => store.logoUrl || store.logo || '';
+
+  useEffect(() => {
+    if (isAuthInitialized && !isAuthenticated) {
+      router.replace('/comerciante/login');
+    }
+  }, [isAuthInitialized, isAuthenticated, router]);
+
+  if (!isAuthInitialized || !isAuthenticated || isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-brand-text-muted">
+          <div className="w-8 h-8 border-2 border-brand-neutral-border border-t-brand-black rounded-full animate-spin"></div>
+          <p className="text-[12px] font-bold uppercase tracking-widest">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] font-sans">
@@ -31,9 +50,18 @@ export default function StoreSelectionPage() {
             <motion.div key={store.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-white rounded-[24px] border border-brand-neutral-border overflow-hidden card-shadow group flex flex-col">
               <div className="h-[200px] p-8 flex flex-col justify-between relative overflow-hidden transition-all group-hover:opacity-95" style={{ backgroundColor: getStoreColor(store) }}>
                 <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 text-white"><LayoutGrid size={80} strokeWidth={1} /></div>
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg"><span className="text-[24px] font-black" style={{ color: getStoreColor(store) }}>{getInitials(store.name)}</span></div>
-                  <div className="space-y-1"><h3 className="text-[22px] font-black text-white leading-none">{store.name}</h3><p className="text-[11px] font-black text-white/70 uppercase tracking-widest">{getStoreCategory(store)}</p></div>
+                <div className="flex items-start gap-4 relative z-10 min-w-0 pr-16">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white flex items-center justify-center shadow-lg ring-1 ring-white/70">
+                    {getStoreLogo(store) ? (
+                      <img src={getStoreLogo(store)} alt={`Logo de ${store.name}`} className="h-full w-full object-contain p-2" />
+                    ) : (
+                      <span className="text-[24px] font-black leading-none" style={{ color: getStoreColor(store) }}>{getInitials(store.name)}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 space-y-1 pt-1">
+                    <h3 className="text-[22px] font-black text-white leading-tight break-all overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]" title={store.name}>{store.name}</h3>
+                    <p className="text-[11px] font-black text-white/70 uppercase tracking-widest truncate">{getStoreCategory(store)}</p>
+                  </div>
                 </div>
               </div>
               <div className="p-8 flex-1 flex flex-col space-y-6">
@@ -46,6 +74,22 @@ export default function StoreSelectionPage() {
             </motion.div>
           ))}
         </div>
+        {stores.length === 0 && (
+          <div className="bg-white rounded-[28px] border border-brand-neutral-border card-shadow p-10 flex flex-col items-center text-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-brand-neutral-light border border-brand-neutral-border flex items-center justify-center text-brand-black">
+              <StoreIcon size={24} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-[22px] font-black text-brand-black">Aún no tienes tiendas asignadas</h3>
+              <p className="text-[14px] font-bold text-brand-text-muted max-w-[460px]">
+                Puedes crear una nueva tienda o pedir a un administrador que te asigne una existente.
+              </p>
+            </div>
+            <button onClick={() => router.push('/comerciante/stores/new')} className="bg-brand-black text-white px-8 py-4 rounded-2xl text-[13px] font-black flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10">
+              <Plus size={18} /> Crear Nueva Tienda
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

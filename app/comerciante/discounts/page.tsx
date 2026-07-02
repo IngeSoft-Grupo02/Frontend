@@ -157,7 +157,6 @@ export default function DiscountsPage() {
         setEditingId(null);
       } else {
         await addDiscount({
-          id: `DESC-${Math.floor(Math.random() * 10000)}`,
           ...payload,
           status: 'Activa',
           usageCount: 0
@@ -701,6 +700,5 @@ export default function DiscountsPage() {
     </MerchantLayout>
   );
 }
-
 
 
