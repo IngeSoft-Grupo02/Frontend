@@ -9,6 +9,7 @@ import {
     Check,
     Download,
     FileText,
+    ImageIcon,
     Layers,
     Mail,
     MessageSquare,
@@ -60,6 +61,14 @@ const StatCard = ({ title, value, icon: Icon, onClick }: any) => (
     </div>
   </div>
 );
+
+type QuoteItemDesign = NonNullable<Quote['items'][number]['designs']>[number];
+
+const isImageDesignFile = (design: QuoteItemDesign) => {
+  const type = String(design.type || '').toLowerCase();
+  const name = String(design.name || design.url || '').toLowerCase();
+  return type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(name);
+};
 
 export default function QuotesPage() {
   const { quotes, updateQuote, store, refreshData, products } = useStore();
@@ -427,6 +436,12 @@ export default function QuotesPage() {
                         <tbody className="divide-y border-brand-neutral-border">
                           {selectedQuote.items.map((item, idx) => {
                             const productImageUrl = item.productImageUrl || (item.productId ? productImageById.get(item.productId) : undefined);
+                            const positionedDesign = (item.designs || []).find((design) =>
+                              productImageUrl
+                              && design.overlayX != null
+                              && design.overlayY != null
+                              && isImageDesignFile(design)
+                            );
                             return (
                               <React.Fragment key={idx}>
                                 <tr className="hover:bg-white transition-colors">
@@ -470,6 +485,41 @@ export default function QuotesPage() {
                                             <span className="uppercase tracking-wider text-[9px] opacity-60 mr-1">Indicaciones:</span>
                                             {item.customerDescription}
                                           </p>
+                                        )}
+                                        {positionedDesign && productImageUrl && (
+                                          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-brand-neutral-border bg-white p-3 sm:flex-row sm:items-center">
+                                            <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-xl border border-brand-neutral-border bg-brand-neutral-light">
+                                              <img
+                                                src={productImageUrl}
+                                                alt={item.product}
+                                                referrerPolicy="no-referrer"
+                                                className="absolute inset-0 h-full w-full object-contain"
+                                              />
+                                              <img
+                                                src={positionedDesign.url}
+                                                alt={`Diseño para ${item.product}`}
+                                                referrerPolicy="no-referrer"
+                                                className="absolute object-contain rounded-sm border border-white/70 shadow-sm"
+                                                style={{
+                                                  left: `${positionedDesign.overlayX}%`,
+                                                  top: `${positionedDesign.overlayY}%`,
+                                                  width: `${positionedDesign.overlayWidth ?? 24}%`,
+                                                  height: `${positionedDesign.overlayHeight ?? 18}%`,
+                                                  transform: 'translate(-50%, -50%)',
+                                                  backgroundColor: 'rgba(255,255,255,0.15)',
+                                                }}
+                                              />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-brand-text-muted">
+                                                <ImageIcon size={12} />
+                                                Vista solicitada por el cliente
+                                              </div>
+                                              <p className="mt-1 text-[11px] font-bold text-brand-text-muted leading-relaxed">
+                                                Esta composición es referencial y conserva la ubicación que el cliente marcó durante la cotización.
+                                              </p>
+                                            </div>
+                                          </div>
                                         )}
                                         {item.designs && item.designs.length > 0 && (
                                           <div className="flex flex-wrap gap-1.5">

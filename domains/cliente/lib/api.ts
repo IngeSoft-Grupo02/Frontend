@@ -250,6 +250,14 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     discountApplied: item.discountApplied ?? 0,
     discountRuleLabel: item.discountRuleLabel ?? null,
     hasDesignFee: item.hasDesignFee ?? false,
+    designOverlay: item.customDesign?.overlayX != null && item.customDesign?.overlayY != null
+      ? {
+          x: Number(item.customDesign.overlayX),
+          y: Number(item.customDesign.overlayY),
+          width: Number(item.customDesign.overlayWidth ?? 24),
+          height: Number(item.customDesign.overlayHeight ?? 18),
+        }
+      : null,
   }));
 }
 

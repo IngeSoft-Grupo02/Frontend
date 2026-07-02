@@ -83,12 +83,35 @@ export default function BulkUploadPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const splitCsvLine = (line: string) => {
+    const values: string[] = [];
+    let current = '';
+    let quoted = false;
+    for (const char of line) {
+      if (char === '"') {
+        quoted = !quoted;
+      } else if (char === ',' && !quoted) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  };
+
+  const normalizeImageName = (name: string) => {
+    const baseName = name.split(/[/\\]/).pop() || '';
+    return baseName.trim().toLowerCase();
+  };
+
   const parseCsv = (text: string) => {
     const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length === 0) return { headers: [], rows: [] };
-    const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
+    const headers = splitCsvLine(lines[0]).map(h => h.trim().toUpperCase());
     const rows = lines.slice(1).map(line => {
-      const values = line.split(',');
+      const values = splitCsvLine(line);
       const obj: any = {};
       headers.forEach((h, i) => {
         obj[h] = values[i] ? values[i].trim() : '';
@@ -127,7 +150,7 @@ export default function BulkUploadPage() {
       const text = await file.text();
       const { headers, rows } = parseCsv(text);
 
-      const requiredHeaders = ['NOMBRE', 'DESCRIPCION', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
+      const requiredHeaders = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
       if (missingHeaders.length > 0) {
@@ -156,8 +179,26 @@ export default function BulkUploadPage() {
           errors.push(`Fila ${rowNum}: El STOCK no puede ser negativo.`);
         }
 
+        const price = Number(row.PRECIO);
+        if (isNaN(price)) {
+          errors.push(`Fila ${rowNum}: El PRECIO debe ser un valor numérico.`);
+        } else if (price <= 0) {
+          errors.push(`Fila ${rowNum}: El PRECIO debe ser mayor a cero.`);
+        }
+
+        if (headers.includes('COSTO') && row.COSTO) {
+          const cost = Number(row.COSTO);
+          if (isNaN(cost)) {
+            errors.push(`Fila ${rowNum}: El COSTO debe ser un valor numérico.`);
+          } else if (cost < 0) {
+            errors.push(`Fila ${rowNum}: El COSTO no puede ser negativo.`);
+          } else if (!isNaN(price) && cost > price) {
+            errors.push(`Fila ${rowNum}: El COSTO no puede ser mayor que el PRECIO.`);
+          }
+        }
+
         if (row.IMAGENES) {
-          const imgs = row.IMAGENES.split(';').map((s: string) => s.trim().toLowerCase()).filter((s: string) => s !== '');
+          const imgs = row.IMAGENES.split(';').map(normalizeImageName).filter((s: string) => s !== '');
           if (imgs.length > 5) {
             errors.push(`Fila ${rowNum}: Máximo 5 imágenes permitidas.`);
           }
@@ -242,11 +283,11 @@ export default function BulkUploadPage() {
       
       const invalidExtensions = zipEntries.filter(entry => {
         const ext = entry.name.split('.').pop()?.toLowerCase();
-        return !['jpg', 'jpeg', 'png'].includes(ext || '');
+        return !['jpg', 'jpeg', 'png', 'webp'].includes(ext || '');
       }).map(entry => entry.name);
 
       if (invalidExtensions.length > 0) {
-        setZipErrors([`Formatos no permitidos encontrados en el ZIP (solo JPG, PNG): ${invalidExtensions.slice(0, 3).join(', ')}${invalidExtensions.length > 3 ? '...' : ''}`]);
+        setZipErrors([`Formatos no permitidos encontrados en el ZIP (solo JPG, JPEG, PNG o WEBP): ${invalidExtensions.slice(0, 3).join(', ')}${invalidExtensions.length > 3 ? '...' : ''}`]);
         setZipStatus('error');
         setZipFile(null);
         return;
@@ -281,10 +322,10 @@ export default function BulkUploadPage() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['NOMBRE', 'DESCRIPCION', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
-    const row1 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', 'S', 'Negro', '10', 'polo-onyx-1.png;polo-onyx-2.png'];
-    const row2 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', 'M', 'Negro', '8', 'polo-onyx-1.png;polo-onyx-2.png'];
-    const row3 = ['Polo Classic White', 'Polo clásico de corte estándar', 'S', 'Blanco', '12', 'polo-white-1.png'];
+    const headers = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
+    const row1 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', '89.00', '62.00', 'S', 'Negro', '10', 'polo-onyx-1.png;polo-onyx-2.png'];
+    const row2 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', '89.00', '62.00', 'M', 'Negro', '8', 'polo-onyx-1.png;polo-onyx-2.png'];
+    const row3 = ['Polo Classic White', 'Polo clásico de corte estándar', '49.00', '34.00', 'S', 'Blanco', '12', 'polo-white-1.webp'];
     const csvContent = [headers, row1, row2, row3].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -340,7 +381,7 @@ export default function BulkUploadPage() {
     let results: ValidationResult[] = [
       { label: 'CSV con formato correcto', status: 'success' },
       { label: `${csvFile?.items || 0} productos detectados, ${csvFile?.variants || 0} variantes`, status: 'success' },
-      { label: 'Campos obligatorios completos (Nombre, Descripción, Talla, Color, Stock)', status: 'success' },
+      { label: 'Campos obligatorios completos (Nombre, Descripción, Precio, Talla, Color, Stock)', status: 'success' },
     ];
 
     if (csvStatus === 'error') {
@@ -553,7 +594,7 @@ export default function BulkUploadPage() {
                 <div className="space-y-1">
                   <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">02 · Imágenes de productos</h3>
                   <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Archivo ZIP de imágenes</h2>
-                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Los nombres deben coincidir con los referenciados en el CSV · PNG o JPG</p>
+                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Los nombres deben coincidir con los referenciados en el CSV · PNG, JPG, JPEG o WEBP</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant="outline" className="h-6 font-black border-brand-neutral-border text-brand-text-muted !text-[9px]">OPCIONAL</Badge>
@@ -621,7 +662,7 @@ export default function BulkUploadPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[15px] font-black text-brand-black">Arrastra tu ZIP aquí o haz clic para seleccionar</p>
-                    <p className="text-[11px] uppercase font-black tracking-widest text-brand-text-muted opacity-60">ZIP hasta 50MB · imágenes PNG o JPG · máx. 2MB por imagen</p>
+                    <p className="text-[11px] uppercase font-black tracking-widest text-brand-text-muted opacity-60">ZIP hasta 50MB · imágenes PNG, JPG, JPEG o WEBP · máx. 2MB por imagen</p>
                   </div>
                   {zipStatus === 'error' && (
                     <div className="mt-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex items-start gap-3 max-w-sm text-left">
@@ -760,7 +801,7 @@ export default function BulkUploadPage() {
               <div className="mt-8 space-y-4">
                 <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-60">Estructura esperada</p>
                 <div className="flex flex-wrap gap-2">
-                  {['NOMBRE', 'DESCRIPCION', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'].map(tag => (
+                  {['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'].map(tag => (
                     <Badge key={tag} variant="outline" className="h-6 !px-3 font-black bg-brand-neutral-light !border-brand-neutral-border text-[9px]">{tag}</Badge>
                   ))}
                 </div>

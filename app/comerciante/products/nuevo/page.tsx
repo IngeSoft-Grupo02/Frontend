@@ -72,6 +72,7 @@ function ProductFormPageContent() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [saveIntent, setSaveIntent] = useState<'draft' | 'publish' | null>(null);
   const isSavingRef = useRef(false);
 
   // Cargar datos si es edición
@@ -113,6 +114,14 @@ function ProductFormPageContent() {
     }, 0);
   }, [formData.inventoryBlocks]);
 
+  const blocksWithStock = useMemo(() => {
+    return formData.inventoryBlocks.filter(block => {
+      const size = block.talla.trim();
+      const stock = Object.values(block.stock).reduce((acc, q) => acc + (Number(q) || 0), 0);
+      return size.length > 0 && stock > 0;
+    });
+  }, [formData.inventoryBlocks]);
+
   const validation = useMemo(() => {
     const hasValidSize = formData.inventoryBlocks.some(block => block.talla.trim().length > 0);
     return {
@@ -140,42 +149,69 @@ function ProductFormPageContent() {
 
   const handleSave = async (asDraft = false) => {
     if (isSavingRef.current) return;
+    const nextErrors: Record<string, string> = {};
+    const productName = formData.name.trim();
+    const description = formData.description.trim();
+    const price = Number(formData.price || 0);
+    const normalizedBlocks = formData.inventoryBlocks.map(block => {
+      const size = block.talla.trim();
+      const positiveStock = Object.fromEntries(
+        Object.entries(block.stock).filter(([, stock]) => Number(stock || 0) > 0)
+      );
+      const quantity = Object.values(positiveStock).reduce((acc, stock) => acc + Number(stock || 0), 0);
+      return { size, stock: positiveStock, quantity };
+    });
+    const namedBlocks = normalizedBlocks.filter(block => block.size.length > 0);
+    const lowerTallyNames = namedBlocks.map(block => block.size.toLowerCase());
+
+    if (!productName) {
+      nextErrors.name = asDraft
+        ? 'Ingresa un nombre para poder guardar el borrador.'
+        : 'El nombre es obligatorio.';
+    }
+
+    if (new Set(lowerTallyNames).size !== lowerTallyNames.length) {
+      nextErrors.inventory = 'No se permiten tallas duplicadas.';
+    }
+
     if (!asDraft) {
-      if (!formData.name || !formData.description || !formData.price || parseFloat(formData.price) <= 0) {
-        setErrors({
-          name: !formData.name ? 'El nombre es obligatorio' : '',
-          description: !formData.description ? 'La descripción es obligatoria' : '',
-          price: !formData.price ? 'El precio es obligatorio' : parseFloat(formData.price) <= 0 ? 'El precio debe ser mayor a 0' : ''
-        });
-        return;
+      if (!description) {
+        nextErrors.description = 'La descripción es obligatoria.';
       }
+      if (!formData.price || price <= 0) {
+        nextErrors.price = !formData.price ? 'El precio es obligatorio.' : 'El precio debe ser mayor a 0.';
+      }
+      if (totalStock <= 0) {
+        nextErrors.inventory = 'Ingresa stock en al menos una combinación de talla y color para publicar el producto.';
+      }
+      if (blocksWithStock.length !== namedBlocks.length || namedBlocks.length !== formData.inventoryBlocks.length) {
+        nextErrors.inventory = 'Cada talla agregada debe tener stock en al menos un color. Si no la usarás, elimínala.';
+      }
+    }
 
-      const tallyNames = formData.inventoryBlocks.map(b => b.talla.trim());
-      if (tallyNames.some(name => name === '')) {
-        setErrors({ inventory: 'Todas las tallas deben tener un nombre' });
-        return;
-      }
-
-      const lowerTallyNames = tallyNames.map(n => n.toLowerCase());
-      if (new Set(lowerTallyNames).size !== lowerTallyNames.length) {
-        setErrors({ inventory: 'No se permiten tallas duplicadas' });
-        return;
-      }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors({
+        ...nextErrors,
+        form: asDraft
+          ? 'Revisa el nombre del producto para guardar el borrador.'
+          : 'Completa los datos marcados para publicar el producto.'
+      });
+      return;
     }
 
     const sizeColorStock: Record<string, Record<string, number>> = {};
     const sizes: string[] = [];
 
-    formData.inventoryBlocks.forEach(block => {
-      const name = block.talla.trim();
-      if (name) {
-        sizes.push(name);
-        sizeColorStock[name] = block.stock;
+    namedBlocks.forEach(block => {
+      sizes.push(block.size);
+      if (Object.keys(block.stock).length > 0) {
+        sizeColorStock[block.size] = block.stock;
       }
     });
 
     isSavingRef.current = true;
     setIsSaving(true);
+    setSaveIntent(asDraft ? 'draft' : 'publish');
 
     try {
       const uploadedImages = await Promise.all(formData.images.map(async image => {
@@ -185,17 +221,17 @@ function ProductFormPageContent() {
         }));
 
       const payload: Omit<Product, 'id'> = {
-        name: formData.name || 'Sin nombre',
-        description: formData.description,
-        price: parseFloat(formData.price) || 0,
+        name: productName,
+        description,
+        price,
         stock: totalStock,
         sizeColorStock,
         sizeStock: Object.entries(sizeColorStock).reduce((acc, [size, colors]) => ({
           ...acc,
           [size]: Object.values(colors).reduce((s, q) => s + q, 0)
         }), {}),
-        status: asDraft ? 'Borrador' : (canBeActive ? 'Activo' : 'Borrador'),
-        variants: sizes.length * COLORS.length,
+        status: asDraft ? 'Borrador' : 'Activo',
+        variants: Object.values(sizeColorStock).reduce((acc, colors) => acc + Object.keys(colors).length, 0),
         updatedAt: new Date().toISOString(),
         updatedBy: 'Admin',
         sizes: sizes,
@@ -214,6 +250,7 @@ function ProductFormPageContent() {
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
+      setSaveIntent(null);
     }
   };
 
@@ -222,7 +259,7 @@ function ProductFormPageContent() {
     const newBlocks = [...formData.inventoryBlocks];
     newBlocks[index].talla = filteredName;
     setFormData({ ...formData, inventoryBlocks: newBlocks });
-    if (errors.inventory) setErrors({ ...errors, inventory: '' });
+    if (errors.inventory || errors.form || errors.name) setErrors({ ...errors, inventory: '', form: '', name: '' });
   };
 
   const updateColorStock = (blockIndex: number, color: string, val: string) => {
@@ -233,6 +270,7 @@ function ProductFormPageContent() {
       [color]: num
     };
     setFormData({ ...formData, inventoryBlocks: newBlocks });
+    if (errors.inventory || errors.form) setErrors({ ...errors, inventory: '', form: '' });
   };
 
   const addTallaBlock = () => {
@@ -302,36 +340,57 @@ function ProductFormPageContent() {
             <button onClick={() => router.back()} className="flex items-center gap-2 text-[11px] font-extrabold text-brand-text-muted hover:text-brand-black transition-all group uppercase tracking-[0.2em] leading-none">
               <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver
             </button>
-            <h1 className="text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">
+            <h1 className="text-[38px] sm:text-[44px] font-black tracking-tighter text-brand-black leading-none uppercase">
               {editId ? 'Editar' : 'Crear'} Producto
             </h1>
+            <p className="text-[14px] font-bold text-brand-text-muted max-w-xl">
+              Guarda un borrador con el nombre del producto o publícalo cuando tenga precio y stock por talla/color.
+            </p>
           </div>
-          <div className="flex gap-4">
-            <Button variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
-              {isSaving ? <><Loader2 size={18} className="animate-spin mr-2" /> Cargando...</> : <><Save size={18} className="mr-2" /> Guardar como borrador</>}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Button type="button" variant="ghost" className="h-12 px-8 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
+              {isSaving && saveIntent === 'draft' ? <><Loader2 size={18} className="animate-spin mr-2" /> Cargando...</> : <><Save size={18} className="mr-2" /> Guardar como borrador</>}
             </Button>
-            <Button className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-              {isSaving ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Check size={20} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
+            <Button type="button" className="gap-2 h-12 px-10 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
+              {isSaving && saveIntent === 'publish' ? <><Loader2 size={18} className="animate-spin" /> Cargando...</> : <><Check size={20} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
             </Button>
           </div>
         </header>
+
+        {errors.form && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl flex items-start gap-3 text-[13px] font-bold">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <span>{errors.form}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: 'Borrador', value: formData.name.trim() ? 'Listo para guardar' : 'Falta nombre', ok: Boolean(formData.name.trim()) },
+            { label: 'Publicación', value: canBeActive ? 'Listo para publicar' : 'Faltan datos', ok: canBeActive },
+            { label: 'Stock total', value: `${totalStock} unidades`, ok: totalStock > 0 },
+          ].map(item => (
+            <div key={item.label} className="rounded-2xl border border-brand-neutral-border bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <span className={`h-2.5 w-2.5 rounded-full ${item.ok ? 'bg-green-500' : 'bg-brand-neutral-border'}`} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">{item.label}</span>
+              </div>
+              <p className="text-[15px] font-black text-brand-black">{item.value}</p>
+            </div>
+          ))}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
             <Card title="Información Básica" subtitle="01 · IDENTIDAD" headerAction={<Badge variant={formData.status === 'Activo' ? 'success' : 'primary'}>{formData.status}</Badge>}>
               <div className="space-y-8 py-2">
-                {errors.form && (
-                  <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 text-[13px] font-bold">
-                    <AlertCircle size={18} /> {errors.form}
-                  </div>
-                )}
                 <Input
                   label="Nombre del producto *"
                   placeholder="Ej: Polo Oversized Premium Onyx"
                   value={formData.name}
                   onChange={(e) => {
                     setFormData({ ...formData, name: e.target.value });
-                    if (errors.name) setErrors({ ...errors, name: '' });
+                    if (errors.name || errors.form) setErrors({ ...errors, name: '', form: '' });
                   }}
                   error={errors.name}
                 />
@@ -343,7 +402,7 @@ function ProductFormPageContent() {
                     value={formData.description}
                     onChange={(e) => {
                       setFormData({ ...formData, description: e.target.value });
-                      if (errors.description) setErrors({ ...errors, description: '' });
+                      if (errors.description || errors.form) setErrors({ ...errors, description: '', form: '' });
                     }}
                     className={`w-full bg-white border rounded-2xl px-5 py-4 text-[14px] font-medium outline-none focus:ring-4 focus:ring-brand-black/5 focus:border-brand-black transition-all min-h-[140px] resize-none ${
                       errors.description ? 'border-red-500' : 'border-brand-neutral-border'
@@ -430,7 +489,7 @@ function ProductFormPageContent() {
                   inputMode="decimal"
                   onChange={(e) => {
                     setFormData({ ...formData, price: sanitizeMoney(e.target.value) });
-                    if (errors.price) setErrors({ ...errors, price: '' });
+                    if (errors.price || errors.form) setErrors({ ...errors, price: '', form: '' });
                   }}
                   error={errors.price}
                 />
@@ -623,11 +682,11 @@ function ProductFormPageContent() {
                   </div>
                 ))}
                 <div className="pt-4 border-t border-brand-neutral-border space-y-3">
-                  <Button variant="ghost" className="w-full h-11 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
-                    {isSaving ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : <><Save size={16} className="mr-2" /> Guardar borrador</>}
+                  <Button type="button" variant="ghost" className="w-full h-11 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
+                    {isSaving && saveIntent === 'draft' ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : <><Save size={16} className="mr-2" /> Guardar borrador</>}
                   </Button>
-                  <Button className="w-full gap-2 h-12 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-                    {isSaving ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : <><Check size={18} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
+                  <Button type="button" className="w-full gap-2 h-12 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
+                    {isSaving && saveIntent === 'publish' ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : <><Check size={18} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
                   </Button>
                 </div>
               </div>

@@ -9,13 +9,13 @@ import { useEffect } from 'react';
 
 export default function StoreSelectionPage() {
   const router = useRouter();
-  const { stores, selectStore, quotes, isAuthenticated, isAuthInitialized, isLoading } = useStore();
+  const { stores, selectStore, isAuthenticated, isAuthInitialized, isLoading } = useStore();
   const handleSelectStore = (store: Store) => {
     selectStore(store);
     router.push('/comerciante/dashboard');
   };
   const getInitials = (name: string) => name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  const getPendingQuotes = (storeId: string) => quotes.filter(q => q.storeId === storeId && q.status === 'Pendiente').length;
+  const getPendingQuotes = (store: Store) => Number(store.pendingQuotes || 0);
   const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categoría';
   const getStoreColor = (store: Store) => store.palette || '#5D634B';
   const getStoreLogo = (store: Store) => store.logoUrl || store.logo || '';
@@ -67,7 +67,7 @@ export default function StoreSelectionPage() {
               <div className="p-8 flex-1 flex flex-col space-y-6">
                 <p className="text-brand-text-muted text-[15px] font-medium leading-relaxed flex-1">{store.description || 'Sin descripción disponible para esta tienda.'}</p>
                 <div className="bg-brand-neutral-light border border-brand-neutral-border rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3"><div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-brand-camel shadow-sm"><FileText size={20} /></div><div><p className="text-[14px] font-black text-brand-black">{getPendingQuotes(store.id)} Pendientes</p><p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-wider">Cotizaciones por revisar</p></div></div>
+                  <div className="flex items-center gap-3"><div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-brand-camel shadow-sm"><FileText size={20} /></div><div><p className="text-[14px] font-black text-brand-black">{getPendingQuotes(store)} Pendientes</p><p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-wider">Cotizaciones por revisar</p></div></div>
                 </div>
                 <div className="flex gap-4"><button onClick={() => handleSelectStore(store)} className="w-full bg-brand-black text-white px-6 py-4 rounded-xl text-[13px] font-black uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-black/10">Entrar a tienda</button></div>
               </div>

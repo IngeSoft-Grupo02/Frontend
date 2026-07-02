@@ -2,7 +2,11 @@ import { Discount, Order, Product, Quote, Store, StoreCategory } from './types';
 import { getColorLabel } from '@/domains/shared/colors';
 import { translateErrorMessage } from '@/domains/shared/errors';
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8080'
+).replace(/\/$/, '');
 const TOKEN_KEY = 'mc_token';
 
 type JsonValue = Record<string, any>;
@@ -294,6 +298,7 @@ export const mapStore = (raw: JsonValue): Store => {
     contactPhone: raw.contactPhone || '',
     address: raw.address || '',
     website: raw.website || '',
+    pendingQuotes: Number(raw.pendingQuotes || 0),
     colors: {
       primary: String(primaryColor),
       secondary: String(secondaryColor),
@@ -342,11 +347,13 @@ export const mapProduct = (raw: JsonValue): Product => {
 
 export const productPayload = (product: Product | Omit<Product, 'id'>) => {
   const variants = Object.entries(product.sizeColorStock || {}).flatMap(([size, colors]) =>
-    Object.entries(colors).map(([color, stock]) => ({
-      size,
-      color: colorToBackend(color),
-      stock: Number(stock || 0)
-    }))
+    Object.entries(colors)
+      .map(([color, stock]) => ({
+        size,
+        color: colorToBackend(color),
+        stock: Number(stock || 0)
+      }))
+      .filter(variant => variant.stock > 0)
   );
   const imageUrls = uniqueImageUrls([
     ...(product.images?.map(image => image.url) || []),
@@ -554,7 +561,11 @@ export const mapQuote = (raw: JsonValue): Quote => ({
       name: d.fileName || d.name || '',
       type: d.contentType || d.type || '',
       url: d.url || '',
-      quotationItemId: d.quotationItemId ?? null
+      quotationItemId: d.quotationItemId ?? null,
+      overlayX: d.overlayX != null ? Number(d.overlayX) : null,
+      overlayY: d.overlayY != null ? Number(d.overlayY) : null,
+      overlayWidth: d.overlayWidth != null ? Number(d.overlayWidth) : null,
+      overlayHeight: d.overlayHeight != null ? Number(d.overlayHeight) : null
     }))
   })),
   // "Requerimiento del cliente" usa solo description real (no observations ni texto técnico de seeds).

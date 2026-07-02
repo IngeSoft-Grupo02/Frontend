@@ -50,6 +50,14 @@ export interface CartItem {
   discountRuleLabel?: string | null;
   hasDesignFee?: boolean;
   localDesignFiles?: File[];
+  designOverlay?: DesignOverlay | null;
+}
+
+export interface DesignOverlay {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface Store {
@@ -239,16 +247,25 @@ export interface CartCustomDesignResponseDTO {
   description: string | null;
   observations: string | null;
   sentAt: string | null;
+  overlayX?: number | null;
+  overlayY?: number | null;
+  overlayWidth?: number | null;
+  overlayHeight?: number | null;
 }
 
 export interface CartItemRequestDTO {
   productVariantId?: number;
   quantity: number;
+  separateItem?: boolean;
 }
 
 export interface CustomDesignRequestDTO {
   imageUrl?: string | null;
   description?: string | null;
+  overlayX?: number | null;
+  overlayY?: number | null;
+  overlayWidth?: number | null;
+  overlayHeight?: number | null;
 }
 
 export interface QuotationResponseDTO {
@@ -283,6 +300,10 @@ export interface QuotationDesignDTO {
   contentType: string;
   sizeBytes: number;
   quotationItemId?: number | null;
+  overlayX?: number | null;
+  overlayY?: number | null;
+  overlayWidth?: number | null;
+  overlayHeight?: number | null;
 }
 
 export interface QuotationItemResponseDTO {
@@ -365,7 +386,13 @@ export interface PaymentPayload {
 export interface QuotationCreatePayload {
   description?: string | null;
   designs?: File[];
-  designAssociations?: ({ productVariantId: number } | null)[];
+  designAssociations?: ({
+    productVariantId: number;
+    overlayX?: number | null;
+    overlayY?: number | null;
+    overlayWidth?: number | null;
+    overlayHeight?: number | null;
+  } | null)[];
 }
 
 export interface PaymentResponseDTO {

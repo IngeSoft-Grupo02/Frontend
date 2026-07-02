@@ -306,6 +306,7 @@ export default function App() {
       latestCart = await addCartItem(selectedStore.slug, customerToken, {
         productVariantId: variant.id,
         quantity: Number(row.quantity),
+        separateItem: Boolean(customerDescription || hasDesignFiles),
       });
 
       const addedItem = newestItemForVariant(latestCart, variant.id);
@@ -314,6 +315,10 @@ export default function App() {
           latestCart = await addCartDesign(selectedStore.slug, customerToken, addedItem.id, {
             description: customerDescription || null,
             imageUrl: hasDesignFiles ? pendingDesignImageMarker : null,
+            overlayX: item.designOverlay?.x ?? null,
+            overlayY: item.designOverlay?.y ?? null,
+            overlayWidth: item.designOverlay?.width ?? null,
+            overlayHeight: item.designOverlay?.height ?? null,
           });
         }
         if (hasDesignFiles) {
@@ -424,6 +429,10 @@ export default function App() {
       const cart = await addCartDesign(selectedStore.slug, customerToken, itemId, {
         description: trimmed,
         imageUrl: shouldPreserveDesignFee ? pendingDesignImageMarker : null,
+        overlayX: targetItem?.designOverlay?.x ?? null,
+        overlayY: targetItem?.designOverlay?.y ?? null,
+        overlayWidth: targetItem?.designOverlay?.width ?? null,
+        overlayHeight: targetItem?.designOverlay?.height ?? null,
       });
       setCartItems(toCartItems(cart));
       setCartError(null);
@@ -445,7 +454,13 @@ export default function App() {
     setCartAlreadySubmitted(false);
     try {
       const allDesigns: File[] = [];
-      const associations: ({ productVariantId: number } | null)[] = [];
+      const associations: ({
+        productVariantId: number;
+        overlayX?: number | null;
+        overlayY?: number | null;
+        overlayWidth?: number | null;
+        overlayHeight?: number | null;
+      } | null)[] = [];
 
       for (const [itemId, files] of Object.entries(itemDesignFiles)) {
         const cartItem = cartItems.find((item) => item.id === itemId);
@@ -454,6 +469,10 @@ export default function App() {
           allDesigns.push(file);
           associations.push({
             productVariantId: Number(cartItem.productVariantId),
+            overlayX: cartItem.designOverlay?.x ?? null,
+            overlayY: cartItem.designOverlay?.y ?? null,
+            overlayWidth: cartItem.designOverlay?.width ?? null,
+            overlayHeight: cartItem.designOverlay?.height ?? null,
           });
         }
       }

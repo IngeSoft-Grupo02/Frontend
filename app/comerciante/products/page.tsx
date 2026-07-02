@@ -115,6 +115,17 @@ export default function ProductsPage() {
     return `Hace ${diffInDays} d`;
   };
 
+  const stockBreakdown = (product: Product) => Object.entries(product.sizeColorStock || {})
+    .flatMap(([size, colors]) => Object.entries(colors || {}).map(([color, stock]) => ({
+      size,
+      color,
+      stock: Number(stock || 0),
+    })));
+
+  const stockWithUnits = (product: Product) => stockBreakdown(product)
+    .filter(item => item.stock > 0)
+    .sort((a, b) => a.size.localeCompare(b.size) || a.color.localeCompare(b.color));
+
   return (
     <MerchantLayout title="Gestor de Productos" subtitle="Gestión de catálogo y stock en tiempo real">
       <div className="space-y-8">
@@ -228,6 +239,8 @@ export default function ProductsPage() {
                     {filteredAndSortedProducts.map((product, index) => {
                       if (!product) return null;
                       const productKey = product.id || `product-${index}`;
+                      const variantStock = stockWithUnits(product);
+                      const visibleVariantStock = variantStock.slice(0, 3);
                       return (
                         <tr
                           key={productKey}
@@ -259,15 +272,31 @@ export default function ProductsPage() {
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <div className="space-y-1">
+                            <div className="space-y-2 max-w-[280px]">
                               <div className="flex items-center gap-2">
                                 <p className={`text-[15px] font-black ${product.stock === 0 ? 'text-red-500' : product.stock <= 5 ? 'text-orange-500' : ''}`}>
-                                  {product.stock}
+                                  {product.stock} uds
                                 </p>
                                 {product.stock <= 5 && product.stock > 0 && (
                                   <Badge variant="danger" className="py-0 px-1 text-[8px]">Crítico</Badge>
                                 )}
                               </div>
+                              {visibleVariantStock.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {visibleVariantStock.map(item => (
+                                    <span key={`${item.size}-${item.color}`} className="px-2 py-1 rounded-lg bg-brand-neutral-light border border-brand-neutral-border text-[10px] font-black text-brand-text-muted">
+                                      {item.size} · {item.color}: <span className="text-brand-black">{item.stock}</span>
+                                    </span>
+                                  ))}
+                                  {variantStock.length > visibleVariantStock.length && (
+                                    <span className="px-2 py-1 rounded-lg bg-white border border-brand-neutral-border text-[10px] font-black text-brand-text-muted">
+                                      +{variantStock.length - visibleVariantStock.length}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-[11px] font-bold text-brand-text-muted">Sin variantes con stock</p>
+                              )}
                             </div>
                           </td>
                           <td className="px-8 py-6">
@@ -337,7 +366,7 @@ export default function ProductsPage() {
       {selectedProduct && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="w-full max-w-2xl bg-white rounded-[40px] shadow-2xl overflow-hidden border-4 border-white animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col md:flex-row h-[500px]">
+            <div className="flex flex-col md:flex-row max-h-[85vh]">
               <div className="w-full md:w-2/5 bg-brand-neutral-mid relative">
                 {selectedProduct.image || (selectedProduct.images && selectedProduct.images.length > 0) ? (
                   <img src={selectedProduct.image || selectedProduct.images?.[0]?.url} alt={selectedProduct.name} className="w-full h-full object-cover" />
@@ -355,7 +384,7 @@ export default function ProductsPage() {
                   </Badge>
                 </div>
               </div>
-              <div className="w-full md:w-3/5 p-10 flex flex-col justify-between">
+              <div className="w-full md:w-3/5 p-10 flex flex-col justify-between overflow-y-auto">
                 <div className="space-y-6">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -386,6 +415,23 @@ export default function ProductsPage() {
                       <p className="text-[14px] font-medium text-brand-text-muted leading-relaxed line-clamp-3">
                         {selectedProduct.description || 'Este producto aún no cuenta con una descripción detallada en el sistema.'}
                       </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Stock por talla y color</p>
+                      {stockWithUnits(selectedProduct).length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {stockWithUnits(selectedProduct).map(item => (
+                            <div key={`${item.size}-${item.color}`} className="flex items-center justify-between rounded-xl border border-brand-neutral-border bg-brand-neutral-light px-3 py-2">
+                              <span className="text-[12px] font-black text-brand-black">{item.size} · {item.color}</span>
+                              <span className={`text-[12px] font-black ${item.stock <= 5 ? 'text-orange-500' : 'text-brand-black'}`}>{item.stock} uds</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600">
+                          Sin combinaciones disponibles
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

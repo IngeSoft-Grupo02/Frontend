@@ -23,6 +23,7 @@ export interface Store {
   contactPhone?: string;
   address?: string;
   website?: string;
+  pendingQuotes?: number;
   colors?: {
     primary?: string;
     secondary?: string;
@@ -104,7 +105,16 @@ export interface Quote {
     unitPrice?: number;
     subTotal?: number;
     customerDescription?: string | null;
-    designs?: { name: string; type: string; url: string; quotationItemId?: number | null }[];
+    designs?: {
+      name: string;
+      type: string;
+      url: string;
+      quotationItemId?: number | null;
+      overlayX?: number | null;
+      overlayY?: number | null;
+      overlayWidth?: number | null;
+      overlayHeight?: number | null;
+    }[];
   }[];
   message?: string;
   observations?: string;
