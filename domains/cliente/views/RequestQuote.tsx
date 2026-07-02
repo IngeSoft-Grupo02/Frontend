@@ -22,6 +22,9 @@ interface RequestQuoteProps {
   cartCount: number;
 }
 
+type OverlayResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+type OverlayInteraction = { type: 'move' } | { type: 'resize'; handle: OverlayResizeHandle } | null;
+
 export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product, onNavigate, onLogout, onAddToCart, cartCount }) => {
   const [step, setStep] = useState(1);
   const [designMode, setDesignMode] = useState<'none' | 'custom'>('none');
@@ -31,7 +34,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   ]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [designOverlay, setDesignOverlay] = useState({ x: 50, y: 42, width: 24, height: 18 });
-  const [overlayInteraction, setOverlayInteraction] = useState<'move' | 'resize' | null>(null);
+  const [overlayInteraction, setOverlayInteraction] = useState<OverlayInteraction>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -184,23 +187,50 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     setDesignOverlay((current) => ({
       ...current,
-      x: clampPercent(x, 6, 94),
-      y: clampPercent(y, 6, 94),
+      x: clampPercent(x, current.width / 2, 100 - current.width / 2),
+      y: clampPercent(y, current.height / 2, 100 - current.height / 2),
     }));
   };
 
-  const updateOverlaySizeFromPointer = (event: React.PointerEvent<HTMLElement>) => {
+  const updateOverlaySizeFromPointer = (event: React.PointerEvent<HTMLElement>, handle: OverlayResizeHandle) => {
     const rect = previewFrameRef.current?.getBoundingClientRect();
     if (!rect) return;
+    const pointerX = clampPercent(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const pointerY = clampPercent(((event.clientY - rect.top) / rect.height) * 100, 0, 100);
+
     setDesignOverlay((current) => {
-      const centerX = (current.x / 100) * rect.width;
-      const centerY = (current.y / 100) * rect.height;
-      const pointerX = event.clientX - rect.left;
-      const pointerY = event.clientY - rect.top;
+      const minSize = 8;
+      const maxSize = 88;
+      let left = current.x - current.width / 2;
+      let right = current.x + current.width / 2;
+      let top = current.y - current.height / 2;
+      let bottom = current.y + current.height / 2;
+
+      if (handle.includes('e')) right = clampPercent(pointerX, left + minSize, 100);
+      if (handle.includes('w')) left = clampPercent(pointerX, 0, right - minSize);
+      if (handle.includes('s')) bottom = clampPercent(pointerY, top + minSize, 100);
+      if (handle.includes('n')) top = clampPercent(pointerY, 0, bottom - minSize);
+
+      let width = right - left;
+      let height = bottom - top;
+
+      if (width > maxSize) {
+        if (handle.includes('w')) left = right - maxSize;
+        else right = left + maxSize;
+        width = maxSize;
+      }
+
+      if (height > maxSize) {
+        if (handle.includes('n')) top = bottom - maxSize;
+        else bottom = top + maxSize;
+        height = maxSize;
+      }
+
       return {
-        ...current,
-        width: clampPercent((Math.abs(pointerX - centerX) * 2 / rect.width) * 100, 8, 70),
-        height: clampPercent((Math.abs(pointerY - centerY) * 2 / rect.height) * 100, 8, 70),
+        x: (left + right) / 2,
+        y: (top + bottom) / 2,
+        width,
+        height,
       };
     });
   };
@@ -209,21 +239,21 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     event.preventDefault();
     event.stopPropagation();
     previewFrameRef.current?.setPointerCapture(event.pointerId);
-    setOverlayInteraction('move');
+    setOverlayInteraction({ type: 'move' });
     updateOverlayPositionFromPointer(event);
   };
 
-  const handleResizePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleResizePointerDown = (event: React.PointerEvent<HTMLButtonElement>, handle: OverlayResizeHandle) => {
     event.preventDefault();
     event.stopPropagation();
     previewFrameRef.current?.setPointerCapture(event.pointerId);
-    setOverlayInteraction('resize');
-    updateOverlaySizeFromPointer(event);
+    setOverlayInteraction({ type: 'resize', handle });
+    updateOverlaySizeFromPointer(event, handle);
   };
 
   const handlePreviewPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (overlayInteraction === 'move') updateOverlayPositionFromPointer(event);
-    if (overlayInteraction === 'resize') updateOverlaySizeFromPointer(event);
+    if (overlayInteraction?.type === 'move') updateOverlayPositionFromPointer(event);
+    if (overlayInteraction?.type === 'resize') updateOverlaySizeFromPointer(event, overlayInteraction.handle);
   };
 
   const stopOverlayInteraction = (event?: React.PointerEvent<HTMLDivElement>) => {
@@ -486,9 +516,9 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(320px,1fr)]">
+                  <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(220px,0.58fr)_minmax(520px,1.42fr)]">
                     <div
-                      className="min-h-[320px] border-2 border-dashed rounded-2xl p-8 text-center group transition-colors cursor-pointer flex flex-col items-center justify-center"
+                      className="min-h-[260px] border-2 border-dashed rounded-2xl p-6 text-center group transition-colors cursor-pointer flex flex-col items-center justify-center"
                       onClick={() => fileInputRef.current?.click()}
                       style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
                     >
@@ -518,10 +548,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <h4 className="text-[15px] font-black flex items-center gap-2">
-                            <Move size={16} /> Vista del diseño
+                            <Move size={16} /> Vista previa del producto
                           </h4>
                           <p className="mt-1 text-[12px] font-bold opacity-60">
-                            {designPreviewUrl ? 'Ubicación y tamaño sobre el producto.' : 'La imagen adjunta aparecerá sobre la prenda.'}
+                            {designPreviewUrl ? 'Arrastra el diseño y toma sus bordes para cambiar el tamaño.' : 'Adjunta una imagen para ubicarla sobre la prenda.'}
                           </p>
                         </div>
                         <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider opacity-70" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
@@ -529,10 +559,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-center">
+                      <div className="space-y-4">
                         <div
                           ref={previewFrameRef}
-                          className="relative mx-auto aspect-[4/5] w-full max-w-[320px] overflow-hidden rounded-2xl border bg-white touch-none"
+                          className="relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-2xl border bg-white touch-none"
                           style={{ borderColor: 'rgba(0,0,0,0.08)' }}
                           onPointerMove={handlePreviewPointerMove}
                           onPointerUp={stopOverlayInteraction}
@@ -557,15 +587,15 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                             <div
                               role="presentation"
                               onPointerDown={handleOverlayPointerDown}
-                              className="absolute z-10 select-none rounded-md border border-white/80 shadow-lg touch-none"
+                              className="absolute z-10 select-none rounded-md border-2 border-black/80 shadow-xl touch-none"
                               style={{
                                 left: `${designOverlay.x}%`,
                                 top: `${designOverlay.y}%`,
                                 width: `${designOverlay.width}%`,
                                 height: `${designOverlay.height}%`,
                                 transform: 'translate(-50%, -50%)',
-                                cursor: overlayInteraction === 'move' ? 'grabbing' : 'grab',
-                                backgroundColor: 'rgba(255,255,255,0.18)',
+                                cursor: overlayInteraction?.type === 'move' ? 'grabbing' : 'grab',
+                                backgroundColor: 'rgba(255,255,255,0.16)',
                               }}
                             >
                               <img
@@ -576,84 +606,78 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                               />
                               <button
                                 type="button"
-                                aria-label="Cambiar tamaño del diseño"
+                                aria-label="Cambiar tamaño desde arriba"
                                 title="Cambiar tamaño"
-                                onPointerDown={handleResizePointerDown}
+                                onPointerDown={(event) => handleResizePointerDown(event, 'n')}
+                                className="absolute -top-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde abajo"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 's')}
+                                className="absolute -bottom-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la izquierda"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'w')}
+                                className="absolute -left-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la derecha"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'e')}
+                                className="absolute -right-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la esquina superior izquierda"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'nw')}
+                                className="absolute -left-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la esquina superior derecha"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'ne')}
+                                className="absolute -right-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la esquina inferior izquierda"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'sw')}
+                                className="absolute -bottom-2 -left-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Cambiar tamaño desde la esquina inferior derecha"
+                                title="Cambiar tamaño"
+                                onPointerDown={(event) => handleResizePointerDown(event, 'se')}
                                 className="absolute -bottom-2 -right-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
                               />
                             </div>
                           ) : (
-                            <div className="absolute inset-x-6 bottom-6 rounded-xl border bg-white/90 px-4 py-3 text-center text-[12px] font-black text-neutral-500 shadow-sm">
-                              {uploadedFiles.length > 0 ? 'Usa una imagen para ver la ubicación.' : 'Sin imagen de diseño adjunta'}
+                            <div className="absolute inset-x-6 bottom-6 rounded-xl border bg-white/95 px-4 py-3 text-center text-[12px] font-black text-neutral-500 shadow-sm">
+                              {uploadedFiles.length > 0 ? 'Adjuntaste archivos. Usa una imagen para ubicarla sobre el producto.' : 'Adjunta una imagen y aparecerá aquí sobre la prenda.'}
                             </div>
                           )}
                         </div>
 
-                        <div className="space-y-4 rounded-2xl border p-4" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Horizontal</span>
-                              <span>{Math.round(designOverlay.x)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={6}
-                              max={94}
-                              value={designOverlay.x}
-                              disabled={!designPreviewUrl || !productImageUrl}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, x: Number(event.target.value) }))}
-                              className="w-full accent-black disabled:opacity-40"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Vertical</span>
-                              <span>{Math.round(designOverlay.y)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={6}
-                              max={94}
-                              value={designOverlay.y}
-                              disabled={!designPreviewUrl || !productImageUrl}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, y: Number(event.target.value) }))}
-                              className="w-full accent-black disabled:opacity-40"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Ancho</span>
-                              <span>{Math.round(designOverlay.width)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={8}
-                              max={70}
-                              value={designOverlay.width}
-                              disabled={!designPreviewUrl || !productImageUrl}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, width: Number(event.target.value) }))}
-                              className="w-full accent-black disabled:opacity-40"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider opacity-70">
-                              <span>Alto</span>
-                              <span>{Math.round(designOverlay.height)}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={8}
-                              max={70}
-                              value={designOverlay.height}
-                              disabled={!designPreviewUrl || !productImageUrl}
-                              onChange={(event) => setDesignOverlay((current) => ({ ...current, height: Number(event.target.value) }))}
-                              className="w-full accent-black disabled:opacity-40"
-                            />
-                          </div>
+                        <div className="flex flex-col gap-3 rounded-2xl border p-4 text-[12px] font-bold opacity-80 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                          <span>
+                            {designPreviewUrl && productImageUrl
+                              ? 'Mueve el diseño arrastrándolo. Agrándalo o achícalo tomando cualquier borde o esquina.'
+                              : 'La vista se activará cuando adjuntes una imagen de diseño.'}
+                          </span>
                           <button
                             type="button"
                             onClick={() => setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 })}
-                            className="w-full rounded-xl border px-3 py-2 text-[11px] font-black uppercase tracking-wider disabled:opacity-40"
+                            className="shrink-0 rounded-xl border px-4 py-2 text-[11px] font-black uppercase tracking-wider disabled:opacity-40"
                             disabled={!designPreviewUrl || !productImageUrl}
                             style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
                           >
