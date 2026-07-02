@@ -516,12 +516,8 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(220px,0.58fr)_minmax(520px,1.42fr)]">
-                    <div
-                      className="min-h-[260px] border-2 border-dashed rounded-2xl p-6 text-center group transition-colors cursor-pointer flex flex-col items-center justify-center"
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
-                    >
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border p-4 sm:p-5" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -530,17 +526,69 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                         className="hidden"
                         onChange={handleFileSelection}
                       />
-                      <div className="w-16 h-16 rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)' }}>
-                        <Upload size={24} style={{ color: 'var(--accent-on-secondary)' }} />
-                      </div>
-                      <h4 className="text-[16px] font-extrabold mb-2" style={{ color: 'var(--text-on-primary)' }}>
-                        {uploadedFiles.length >= 5 ? 'Ya agregaste el máximo de archivos' : 'Adjuntar archivos del diseño'}
-                      </h4>
-                      <p className="text-[13px] opacity-60 font-medium mb-6 sm:mb-8">Formatos permitidos: PNG, JPG, JPEG, WEBP y PDF. Máximo 5 archivos.</p>
-                      <div className="flex justify-center gap-3">
-                        <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                          <ImageIcon size={12} /> Logo, foto o PDF
-                        </span>
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                        <div className="w-full lg:w-[230px] lg:shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadedFiles.length >= 5}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-4 text-[12px] font-black uppercase tracking-wider transition-opacity enabled:cursor-pointer enabled:hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-45"
+                            style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
+                          >
+                            <Upload size={16} style={{ color: 'var(--accent-on-secondary)' }} />
+                            {uploadedFiles.length >= 5 ? 'Límite alcanzado' : 'Adjuntar diseño'}
+                          </button>
+                          <p className="mt-2 text-center text-[10px] font-bold leading-relaxed opacity-60 lg:text-left">
+                            PNG, JPG, JPEG, WEBP o PDF. Máximo 5 archivos.
+                          </p>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <label className="text-[11px] font-black uppercase tracking-wider opacity-80">Adjuntos ({uploadedFiles.length}/5)</label>
+                            {uploadedFiles.length > 0 && (
+                              <span className="text-[10px] font-bold opacity-55">
+                                La primera imagen se usa para la vista previa.
+                              </span>
+                            )}
+                          </div>
+                          {uploadedFiles.length > 0 ? (
+                            <div className="grid max-h-[168px] grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                              {uploadedFiles.map((file, idx) => (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.97 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  key={`${file.name}-${idx}`}
+                                  className="flex items-center justify-between gap-3 rounded-xl border p-3"
+                                  style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
+                                >
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border bg-white/70" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+                                      <FileText size={15} style={{ color: 'var(--accent-on-secondary)' }} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="truncate text-[12px] font-black">{file.name}</div>
+                                      <div className="text-[10px] font-bold opacity-60">{fileSizeLabel(file)}</div>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(idx)}
+                                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors hover:text-red-500"
+                                    style={{ borderColor: 'rgba(0,0,0,0.08)' }}
+                                    title="Quitar archivo"
+                                  >
+                                    <X size={15} />
+                                  </button>
+                                </motion.div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-dashed px-4 py-5 text-center text-[12px] font-bold opacity-65" style={{ borderColor: 'rgba(0,0,0,0.12)' }}>
+                              Aún no hay archivos adjuntos.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -687,43 +735,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                       </div>
                     </div>
                   </div>
-
-                  {uploadedFiles.length > 0 && (
-                    <div className="mt-8 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[12px] font-black uppercase tracking-wider opacity-85" style={{ color: 'var(--text-on-secondary)' }}>Archivos adjuntos ({uploadedFiles.length}/5)</label>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {uploadedFiles.map((file, idx) => (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            key={idx}
-                            className="flex items-center justify-between p-4 rounded-xl border group"
-                            style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
-                          >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                                <FileText size={16} style={{ color: 'var(--accent-on-secondary)' }} />
-                              </div>
-                              <div className="overflow-hidden">
-                                <div className="text-[12px] font-black truncate" style={{ color: 'var(--text-on-primary)' }}>{file.name}</div>
-                                <div className="text-[10px] opacity-60 font-bold">{fileSizeLabel(file)}</div>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                              className="p-2 hover:text-red-500 transition-colors cursor-pointer"
-                              style={{ color: 'var(--muted-on-primary)' }}
-                            >
-                              <X size={16} />
-                            </button>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {uploadedFiles.length > 0 && !designPreviewUrl && (
                     <div className="mt-8 rounded-2xl border p-4 text-[12px] font-bold opacity-75" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
