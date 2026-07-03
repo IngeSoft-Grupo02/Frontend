@@ -248,7 +248,15 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                       </h3>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-medium opacity-75">
                         <span>Cantidad: <strong style={{ color: '#0F1011' }}>{item.quantity}</strong></span>
-                        <span>Diseño: <strong style={{ color: 'var(--color-tertiary-text)' }}>{item.hasDesign ? 'Adjunto' : 'Pendiente'}</strong></span>
+                        {item.hasDesign ? (
+                          item.designFeeAmount > 0 || item.localDesignFiles.length > 0 ? (
+                            <span>Diseño: <strong style={{ color: 'var(--color-tertiary-text)' }}>Adjunto</strong></span>
+                          ) : (
+                            <span>Comentarios: <strong style={{ color: 'var(--color-tertiary-text)' }}>Agregados</strong></span>
+                          )
+                        ) : (
+                          <span>Diseño: <strong style={{ color: 'var(--color-tertiary-text)' }}>Pendiente</strong></span>
+                        )}
                       </div>
                       {item.specs && (
                         <p className="text-[11px] mt-2 truncate max-w-full italic opacity-60">"{item.specs}"</p>

@@ -123,6 +123,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   };
 
   const selectDesignMode = (mode: 'none' | 'custom') => {
+    if (mode === 'custom' && product?.customizable === false) return;
     setDesignMode(mode);
     if (mode === 'none') {
       setUploadedFiles([]);
@@ -162,6 +163,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     ];
     return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0) || null;
   }, [product]);
+  const productAllowsCustomization = product?.customizable !== false;
   const previewDesignFile = React.useMemo(
     () => uploadedFiles.find((file) => file.type.startsWith('image/')) || null,
     [uploadedFiles],
@@ -177,6 +179,14 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     setDesignPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [previewDesignFile]);
+
+  React.useEffect(() => {
+    if (!productAllowsCustomization) {
+      setDesignMode('none');
+      setUploadedFiles([]);
+      setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 });
+    }
+  }, [productAllowsCustomization, product?.id]);
 
   const clampPercent = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
@@ -265,8 +275,8 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const handleAddToCart = async () => {
     if (!product || isAddingToCart) return;
-    const activeFiles = designMode === 'custom' ? uploadedFiles : [];
-    const activeSpecs = designMode === 'custom' ? specs.trim() : '';
+    const activeFiles = productAllowsCustomization && designMode === 'custom' ? uploadedFiles : [];
+    const activeSpecs = specs.trim();
     const invalidRows = rows.filter((row) => row.quantity > 0 && !variantForRow(row));
     if (invalidRows.length > 0) {
       setAddError('Selecciona combinaciones de talla y color disponibles para este producto.');
@@ -282,7 +292,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
         quantity,
         specs: activeSpecs,
         rows,
-        hasDesign: activeFiles.length > 0 || activeSpecs.length > 0,
+        hasDesign: productAllowsCustomization && (activeFiles.length > 0 || activeSpecs.length > 0),
         files: activeFiles,
         designOverlay: hasVisualOverlay ? designOverlay : null,
         price: product.price
@@ -298,7 +308,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   const basePrice = product?.price || 28;
   const subtotal = basePrice * quantity;
 
-  const activeDesignFiles = designMode === 'custom' ? uploadedFiles : [];
+  const activeDesignFiles = productAllowsCustomization && designMode === 'custom' ? uploadedFiles : [];
   const designFeeAmount = activeDesignFiles.length > 0 ? subtotal * DESIGN_FEE_RATE : 0;
   const applicableDiscount = bestDiscount(product?.discounts || [], quantity);
   const discountRate = Number(applicableDiscount?.discountPercentage || 0) / 100;
@@ -326,7 +336,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-[12px] font-bold uppercase tracking-widest mb-5 sm:mb-6 opacity-60">
               <span style={step >= 1 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Configuración</span>
               <ChevronRight size={14} />
-              <span style={step >= 2 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Diseño</span>
+              <span style={step >= 2 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">{productAllowsCustomization ? 'Diseño' : 'Comentarios'}</span>
               <ChevronRight size={14} />
               <span style={step >= 3 ? { color: 'var(--accent-on-light)' } : {}} className="font-extrabold">Resumen</span>
             </div>
@@ -472,11 +482,17 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
               <div className="flex items-start gap-4 sm:gap-6 mb-8 sm:mb-10">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[18px]" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--accent-on-primary)', border: '1px solid var(--border-on-primary)' }}>2</div>
                 <div>
-                  <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>Diseño o personalización</h3>
-                  <p className="text-[14px] opacity-60">Si quieres agregar un logo, imagen, texto o ejemplo, adjúntalo aquí.</p>
+                  <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{productAllowsCustomization ? 'Diseño o personalización' : 'Comentarios para la tienda'}</h3>
+                  <p className="text-[14px] opacity-60">
+                    {productAllowsCustomization
+                      ? 'Si quieres agregar un logo, imagen, texto o ejemplo, adjúntalo aquí.'
+                      : 'Este producto no recibe archivos de diseño; deja solo indicaciones si las necesitas.'}
+                  </p>
                 </div>
               </div>
 
+              {productAllowsCustomization ? (
+                <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 {[
                   { mode: 'none' as const, title: 'Sin diseño personalizado', description: 'Solo cotizar la prenda seleccionada.' },
@@ -736,22 +752,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     </div>
                   </div>
 
-                  {uploadedFiles.length > 0 && !designPreviewUrl && (
-                    <div className="mt-8 rounded-2xl border p-4 text-[12px] font-bold opacity-75" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
-                      Adjuntaste referencias, pero no hay una imagen para ubicar sobre el producto. Los PDF se enviarán como archivo de referencia.
-                    </div>
-                  )}
-
-                  <div className="mt-8 space-y-3">
-                     <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Comentarios para la tienda</label>
-                     <textarea
-                        placeholder="Ejemplo: colocar el logo en el pecho, usar letras blancas, enviar antes del viernes..."
-                        className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border focus:outline-none min-h-[120px]"
-                        value={specs}
-                        onChange={(e) => setSpecs(e.target.value)}
-                        style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
-                     />
-                  </div>
                 </>
               ) : (
                 <div className="rounded-2xl border p-5 sm:p-6 flex items-start gap-4" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
@@ -764,6 +764,31 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   </div>
                 </div>
               )}
+                </>
+              ) : (
+                <>
+                  <div className="rounded-2xl border p-5 sm:p-6 flex items-start gap-4" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                    <CheckCircle2 size={22} className="shrink-0 mt-0.5" style={{ color: 'var(--accent-on-primary)' }} />
+                    <div>
+                      <h4 className="text-[15px] font-black mb-1">Este producto no admite archivos de personalización</h4>
+                      <p className="text-[13px] font-bold opacity-65 leading-relaxed">
+                        Solo se solicitará la prenda con la talla, color y cantidad elegidas. Puedes dejar un comentario para la tienda si necesitas indicar una fecha, empaque o alguna observación.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-8 space-y-3">
+                <label className="text-[12px] font-bold uppercase tracking-wider opacity-80" style={{ color: 'var(--text-on-secondary)' }}>Comentarios para la tienda</label>
+                <textarea
+                  placeholder={productAllowsCustomization ? 'Ejemplo: colocar el logo en el pecho, usar letras blancas, entregar antes del viernes...' : 'Ejemplo: entregar antes del viernes, confirmar disponibilidad, considerar empaque individual...'}
+                  className="w-full px-5 py-4 rounded-xl font-medium text-[14px] border focus:outline-none min-h-[120px]"
+                  value={specs}
+                  onChange={(e) => setSpecs(e.target.value)}
+                  style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}
+                />
+              </div>
             </motion.div>
 
             {addError && (
@@ -813,19 +838,21 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums" style={{ color: 'var(--text-on-primary)' }}>S/ {money(subtotal)}</div>
               </div>
 
-              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                <div className="min-w-0 flex-1 font-bold" style={{ color: 'var(--text-on-primary)' }}>
-                  <div className="flex items-start gap-2">
-                    <ImageIcon size={16} className="mt-0.5 shrink-0" />
-                    <span className="leading-tight">
-                      {designMode === 'custom' ? 'Incremento por diseño (10%)' : 'Sin diseño personalizado'}
-                    </span>
+              {productAllowsCustomization && (
+                <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                  <div className="min-w-0 flex-1 font-bold" style={{ color: 'var(--text-on-primary)' }}>
+                    <div className="flex items-start gap-2">
+                      <ImageIcon size={16} className="mt-0.5 shrink-0" />
+                      <span className="leading-tight">
+                        {designMode === 'custom' ? 'Incremento por diseño (10%)' : 'Sin diseño personalizado'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums" style={{ color: 'var(--accent-on-primary)' }}>
+                    {designFeeAmount > 0 ? `+ S/ ${money(designFeeAmount)}` : 'S/ 0.00'}
                   </div>
                 </div>
-                <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums" style={{ color: 'var(--accent-on-primary)' }}>
-                  {designFeeAmount > 0 ? `+ S/ ${money(designFeeAmount)}` : 'S/ 0.00'}
-                </div>
-              </div>
+              )}
 
               {discountRate > 0 && (
                 <div className="flex justify-between items-center px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)', color: 'var(--text-on-secondary)' }}>

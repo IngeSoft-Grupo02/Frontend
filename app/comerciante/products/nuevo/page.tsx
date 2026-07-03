@@ -51,6 +51,7 @@ function ProductFormPageContent() {
     description: string;
     price: string;
     status: Product['status'];
+    customizable: boolean;
     inventoryBlocks: Array<{
       talla: string;
       stock: Record<string, number>;
@@ -61,6 +62,7 @@ function ProductFormPageContent() {
     description: '',
     price: '',
     status: 'Borrador',
+    customizable: false,
     inventoryBlocks: [
       {
         talla: '',
@@ -95,6 +97,7 @@ function ProductFormPageContent() {
           description: product.description,
           price: (product.price || 0).toString(),
           status: product.status,
+          customizable: product.customizable ?? true,
           inventoryBlocks: inventoryBlocks.length > 0 ? inventoryBlocks : [
             { talla: '', stock: { 'Blanco': 0, 'Negro': 0, 'Rojo': 0, 'Azul': 0, 'Verde': 0 } }
           ],
@@ -237,6 +240,7 @@ function ProductFormPageContent() {
         sizes: sizes,
         image: uploadedImages[0]?.url || '',
         images: uploadedImages,
+        customizable: formData.customizable,
       };
 
       if (editId) {
@@ -410,6 +414,33 @@ function ProductFormPageContent() {
                   />
                   {errors.description && <p className="text-[11px] font-bold text-red-500">{errors.description}</p>}
                 </div>
+
+                <label className="flex cursor-pointer items-start gap-4 rounded-2xl border border-brand-neutral-border bg-white p-5 transition-colors hover:border-brand-black">
+                  <input
+                    type="checkbox"
+                    checked={formData.customizable}
+                    onChange={(e) => setFormData({ ...formData, customizable: e.target.checked })}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 transition-colors ${
+                      formData.customizable
+                        ? 'border-brand-black bg-brand-black text-white'
+                        : 'border-brand-neutral-border bg-brand-neutral-light text-transparent'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <Check size={14} strokeWidth={4} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-black uppercase tracking-widest text-brand-black">
+                      Producto personalizable
+                    </span>
+                    <span className="mt-1 block text-[12px] font-bold leading-relaxed text-brand-text-muted">
+                      Actívalo solo si el cliente puede adjuntar logos, imágenes o referencias sobre este producto. Si está desactivado, el cliente solo podrá dejar comentarios.
+                    </span>
+                  </span>
+                </label>
               </div>
             </Card>
 
@@ -643,6 +674,9 @@ function ProductFormPageContent() {
                       </div>
 
                       <div className="space-y-2">
+                        <Badge variant={formData.customizable ? 'black' : 'outline'} className="h-6 w-fit !px-3 !text-[9px] font-black">
+                          {formData.customizable ? 'PERSONALIZABLE' : 'SIN PERSONALIZACIÓN'}
+                        </Badge>
                         <div className="flex flex-wrap gap-2">
                           {previewSizes.length > 0 ? (
                             previewSizes.map(s => (

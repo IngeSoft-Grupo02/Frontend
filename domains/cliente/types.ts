@@ -107,6 +107,7 @@ export interface Product {
   variants?: ProductVariant[];
   discounts?: DiscountPublic[];
   stock?: number;
+  customizable?: boolean;
 }
 
 export interface ProductVariant {
@@ -132,6 +133,7 @@ export interface ProductPublicDTO {
   description: string | null;
   basePrice: number;
   imageUrls: string[] | null;
+  customizable?: boolean | null;
   variants: ProductVariant[] | null;
   discounts: DiscountPublic[] | null;
 }

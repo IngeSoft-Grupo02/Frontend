@@ -341,7 +341,8 @@ export const mapProduct = (raw: JsonValue): Product => {
     updatedBy: 'Backend',
     sizes,
     image: images[0]?.url,
-    images
+    images,
+    customizable: raw.customizable ?? true
   };
 };
 
@@ -366,6 +367,7 @@ export const productPayload = (product: Product | Omit<Product, 'id'>) => {
     price: Number(product.price || 0),
     costPrice: Math.max(Number(product.price || 0) * 0.7, 0),
     imageUrls,
+    customizable: Boolean(product.customizable),
     variants,
     active: activeFromStatus(product.status),
     status: productStatusToBackend(product.status)

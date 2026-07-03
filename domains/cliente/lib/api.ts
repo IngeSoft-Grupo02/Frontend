@@ -227,6 +227,7 @@ export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
     storeId: storeSlug,
     createdAt: Number(dto.id),
     stock: variants.reduce((sum, variant) => sum + (variant.stock || 0), 0),
+    customizable: dto.customizable ?? true,
   };
 }
 

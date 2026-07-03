@@ -147,6 +147,7 @@ export interface Product {
   sizes?: string[];
   image?: string;
   images?: { name: string; url: string }[];
+  customizable?: boolean;
 }
 
 export interface Discount {
