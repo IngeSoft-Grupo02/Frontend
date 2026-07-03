@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - development
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy frontend to EC2
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
     environment: production
     env:
