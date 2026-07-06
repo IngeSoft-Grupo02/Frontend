@@ -7,6 +7,7 @@ import App from './App';
 import { useApp } from './context/AppContext';
 import { ApiError, fetchOrder, fetchPublicProduct, fetchPublicStore, fetchQuotation, toOrder, toProduct, toQuote, toStore } from './lib/api';
 import { parseClientePath, viewToClientePath } from './lib/navigation';
+import { hasConfiguredDesignFeePercentage } from './lib/pricing';
 import { View } from './types';
 
 interface ClienteRouteViewProps {
@@ -54,7 +55,7 @@ export function ClienteRouteView({ view, slug, path }: ClienteRouteViewProps) {
       setRouteError(null);
       try {
         let store = storeRef.current;
-        if (!store || store.slug !== slug) {
+        if (!store || store.slug !== slug || !hasConfiguredDesignFeePercentage(store)) {
           store = toStore(await fetchPublicStore(slug));
           if (!active) return;
           setSelectedStore(store);

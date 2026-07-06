@@ -1,13 +1,26 @@
 import { DiscountPublic, Store } from '../types';
 
+const DEFAULT_DESIGN_FEE_PERCENTAGE = 10;
+const ALLOWED_DESIGN_FEE_PERCENTAGES = new Set([5, 10, 15]);
+
+export function configuredDesignFeePercentage(store: Pick<Store, 'designFeePercentage'> | null | undefined): number {
+  const percentage = Number(store?.designFeePercentage);
+  return Number.isFinite(percentage) && ALLOWED_DESIGN_FEE_PERCENTAGES.has(percentage)
+    ? percentage
+    : DEFAULT_DESIGN_FEE_PERCENTAGE;
+}
+
+export function hasConfiguredDesignFeePercentage(store: Pick<Store, 'designFeePercentage'> | null | undefined): boolean {
+  const percentage = Number(store?.designFeePercentage);
+  return Number.isFinite(percentage) && ALLOWED_DESIGN_FEE_PERCENTAGES.has(percentage);
+}
+
 export function designFeeRate(store: Pick<Store, 'designFeePercentage'>): number {
-  const percentage = Number(store.designFeePercentage);
-  return Number.isFinite(percentage) && percentage > 0 ? percentage / 100 : 0;
+  return configuredDesignFeePercentage(store) / 100;
 }
 
 export function designFeePercentageLabel(store: Pick<Store, 'designFeePercentage'>): number {
-  const percentage = Number(store.designFeePercentage);
-  return Number.isFinite(percentage) && percentage > 0 ? percentage : 0;
+  return configuredDesignFeePercentage(store);
 }
 
 export function discountAppliesToQuantity(discount: DiscountPublic, quantity: number): boolean {
