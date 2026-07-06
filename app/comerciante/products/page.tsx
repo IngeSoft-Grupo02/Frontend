@@ -457,7 +457,7 @@ export default function ProductsPage() {
                     onClick={() => { setDeleteId(selectedProduct.id); setShowDetailId(null); }}
                     className="h-12 !rounded-xl font-bold text-red-500 hover:bg-red-50"
                   >
-                    <Trash2 size={18} className="mr-2" /> Eliminar permanentemente
+                    <Trash2 size={18} className="mr-2" /> Archivar producto
                   </Button>
                 </div>
               </div>
@@ -478,7 +478,7 @@ export default function ProductsPage() {
               <div className="space-y-4">
                 <h3 className="text-[28px] font-black text-brand-black leading-tight tracking-tighter">¿Eliminar producto?</h3>
                 <p className="text-[15px] font-medium text-brand-text-muted leading-relaxed">
-                  Esta acción es irreversible y eliminará el producto del catálogo y todos sus reportes históricos.
+                  El producto saldrá del catálogo activo, pero se conservará para cotizaciones, pedidos y reportes históricos.
                 </p>
               </div>
               <div className="flex flex-col gap-3">
@@ -487,7 +487,7 @@ export default function ProductsPage() {
                   disabled={isDeleting}
                   className="h-14 font-extrabold !bg-red-600 hover:!bg-red-700 !text-white rounded-2xl w-full text-[15px] shadow-xl shadow-red-200"
                 >
-                  {isDeleting ? 'Eliminando...' : 'Si, eliminar definitivamente'}
+                  {isDeleting ? 'Archivando...' : 'Si, archivar producto'}
                 </Button>
                 <Button
                   variant="ghost"

@@ -14,6 +14,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/cart must have at least one item/i, 'El detalle de cotización debe tener al menos un producto para cotizar.'],
   [/cart already has a (pending )?quotation/i, 'Este detalle de cotización ya fue enviado. Se ha creado uno nuevo para tus próximas solicitudes.'],
   [/product not found/i, 'Producto no encontrado.'],
+  [/product cannot be deleted because it is referenced/i, 'El producto está asociado a registros existentes. Se conservará el historial y se archivará del catálogo activo.'],
   [/store not found/i, 'Tienda no encontrada.'],
   [/quote not found|quotation not found/i, 'Cotización no encontrada.'],
   [/category already exists|categor[ií]a.*ya existe/i, 'Ya existe una categoría con ese nombre.'],

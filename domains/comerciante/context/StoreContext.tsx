@@ -312,7 +312,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       && canPatchActive
       ? await merchantApi.updateProductActive(id, activeFromProductStatus(updates.status), store.id)
       : await merchantApi.updateProduct(merged, store.id);
-    setProducts(prev => prev.map(item => item.id === id ? updated : item));
+    setProducts(prev => [updated, ...prev.filter(item => item.id !== id && item.id !== updated.id)]);
     await loadScopedData(store.id, { background: true });
     return updated;
   }, [hasBackendSession, loadScopedData, products, store.id]);
