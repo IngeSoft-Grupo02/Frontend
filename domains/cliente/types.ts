@@ -68,7 +68,7 @@ export interface Store {
   color: string;
   logo: string;
   whatsapp: string;
-  designFeePercentage?: string;
+  designFeePercentage?: number;
   primaryColor?: string;
   secondaryColor?: string;
   tertiaryColor?: string;
@@ -88,6 +88,7 @@ export interface StorePublicDTO {
   contactPhone?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
+  designFeePercentage?: number | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   tertiaryColor: string | null;
@@ -207,6 +208,7 @@ export interface Quote {
   productSubtotal?: number;
   discountTotal?: number;
   designFeeTotal?: number;
+  designFeePercentage?: number;
   description?: string | null;
   observations?: string | null;
   items?: QuotationItemResponseDTO[];
@@ -241,6 +243,7 @@ export interface CartItemResponseDTO {
   baseSubtotal?: number;
   discountAmount?: number;
   designFeeAmount?: number;
+  designFeePercentage?: number;
   lineTotal?: number;
   discountRuleLabel?: string | null;
   hasDesignFee?: boolean;
@@ -285,6 +288,7 @@ export interface QuotationResponseDTO {
   productSubtotal?: number;
   discountTotal?: number;
   designFeeTotal?: number;
+  designFeePercentage?: number;
   requestedAt: string | null;
   responseAt: string | null;
   description: string | null;
@@ -327,6 +331,7 @@ export interface QuotationItemResponseDTO {
   baseSubtotal?: number;
   discountAmount?: number;
   designFeeAmount?: number;
+  designFeePercentage?: number;
   lineTotal?: number;
   discountRuleLabel?: string | null;
   hasDesignFee?: boolean;
@@ -347,6 +352,12 @@ export interface OrderItemResponseDTO {
   quantity: number;
   unitPrice: number;
   subTotal: number;
+  baseUnitPrice?: number;
+  baseSubtotal?: number;
+  designFeeAmount?: number;
+  designFeePercentage?: number;
+  lineTotal?: number;
+  hasDesignFee?: boolean;
 }
 
 export interface OrderShippingResponseDTO {
@@ -376,6 +387,9 @@ export interface OrderResponseDTO {
   partialTotal: number | null;
   totalDiscount: number | null;
   finalTotal: number | null;
+  productSubtotal?: number | null;
+  designFeeTotal?: number | null;
+  designFeePercentage?: number | null;
   observations: string | null;
 }
 
@@ -422,6 +436,9 @@ export interface Order {
   finalTotal?: number;
   partialTotal?: number;
   totalDiscount?: number;
+  productSubtotal?: number;
+  designFeeTotal?: number;
+  designFeePercentage?: number;
 }
 
 export enum PrimaryColor {

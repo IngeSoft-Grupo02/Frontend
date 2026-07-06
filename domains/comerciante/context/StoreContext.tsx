@@ -56,6 +56,7 @@ const emptyStore: Store = {
   status: 'Inactiva',
   palette: '#000000',
   description: '',
+  designFeePercentage: 10,
   customizationIncrement: 10,
   colors: {
     primary: 'ONYX_BLACK',

@@ -265,6 +265,11 @@ const logoUrlPayload = (store: Store | Omit<Store, 'id'>) => {
   return value;
 };
 
+const normalizeDesignFeePercentage = (value: unknown): 5 | 10 | 15 => {
+  const numeric = Number(value);
+  return numeric === 5 || numeric === 10 || numeric === 15 ? numeric : 10;
+};
+
 const storePayload = (store: Store | Omit<Store, 'id'>) => ({
   name: store.name,
   description: store.description,
@@ -273,7 +278,8 @@ const storePayload = (store: Store | Omit<Store, 'id'>) => ({
   secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
   tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
   logoUrl: logoUrlPayload(store),
-  status: store.status
+  status: store.status,
+  designFeePercentage: normalizeDesignFeePercentage(store.designFeePercentage ?? store.customizationIncrement)
 });
 
 export const mapStore = (raw: JsonValue): Store => {
@@ -281,6 +287,7 @@ export const mapStore = (raw: JsonValue): Store => {
   const secondaryColor = raw.secondaryColor || raw.colors?.secondary || 'SLATE';
   const tertiaryColor = raw.tertiaryColor || raw.colors?.tertiary || 'RAW_GOLD';
   const categoryName = raw.categoryName || raw.category?.storeCategoryName || raw.type || '';
+  const designFeePercentage = normalizeDesignFeePercentage(raw.designFeePercentage ?? raw.customizationIncrement);
 
   return {
     id: String(raw.id),
@@ -293,7 +300,8 @@ export const mapStore = (raw: JsonValue): Store => {
     logoUrl: raw.logoUrl,
     palette: colorHex(primaryColor, PRIMARY_COLOR_HEX, raw.palette || '#000000'),
     description: raw.description || '',
-    customizationIncrement: [5, 10, 15].includes(raw.customizationIncrement) ? raw.customizationIncrement : 10,
+    designFeePercentage,
+    customizationIncrement: designFeePercentage,
     contactEmail: raw.contactEmail || '',
     contactPhone: raw.contactPhone || '',
     address: raw.address || '',
@@ -446,7 +454,13 @@ const mapOrderItemDetail = (item: JsonValue) => ({
   stock: (item.stockAvailable ?? item.stock ?? null) as number | null,
   quantity: Number(item.quantity || 0),
   unitPrice: Number(item.unitPrice ?? item.price ?? 0),
-  subTotal: Number(item.subTotal ?? 0)
+  subTotal: Number(item.subTotal ?? 0),
+  baseUnitPrice: item.baseUnitPrice != null ? Number(item.baseUnitPrice) : undefined,
+  baseSubtotal: item.baseSubtotal != null ? Number(item.baseSubtotal) : undefined,
+  designFeeAmount: item.designFeeAmount != null ? Number(item.designFeeAmount) : undefined,
+  designFeePercentage: item.designFeePercentage != null ? Number(item.designFeePercentage) : undefined,
+  lineTotal: item.lineTotal != null ? Number(item.lineTotal) : undefined,
+  hasDesignFee: item.hasDesignFee === true
 });
 
 const mapShippingDetail = (raw: JsonValue): Order['shippingDetail'] => {
@@ -481,6 +495,10 @@ export const mapOrder = (raw: JsonValue): Order => {
     partialTotal: raw.partialTotal != null ? Number(raw.partialTotal) : undefined,
     totalDiscount: raw.totalDiscount != null ? Number(raw.totalDiscount) : undefined,
     finalTotal: raw.finalTotal != null ? Number(raw.finalTotal) : undefined,
+    productSubtotal: raw.productSubtotal != null ? Number(raw.productSubtotal) : undefined,
+    designFeeTotal: raw.designFeeTotal != null ? Number(raw.designFeeTotal) : undefined,
+    designFeePercentage: raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
+    hasCustomization: Number(raw.designFeeTotal ?? 0) > 0 || itemsDetail?.some(item => item.hasDesignFee) || undefined,
     observations: cleanCustomerDescription(raw.observations) || undefined
   };
 };
@@ -563,6 +581,12 @@ export const mapQuote = (raw: JsonValue): Quote => ({
     color: item.color ? getColorLabel(item.color) : undefined,
     unitPrice: item.unitPrice != null ? Number(item.unitPrice) : undefined,
     subTotal: item.subTotal != null ? Number(item.subTotal) : undefined,
+    baseUnitPrice: item.baseUnitPrice != null ? Number(item.baseUnitPrice) : undefined,
+    baseSubtotal: item.baseSubtotal != null ? Number(item.baseSubtotal) : undefined,
+    designFeeAmount: item.designFeeAmount != null ? Number(item.designFeeAmount) : undefined,
+    designFeePercentage: item.designFeePercentage != null ? Number(item.designFeePercentage) : undefined,
+    lineTotal: item.lineTotal != null ? Number(item.lineTotal) : undefined,
+    hasDesignFee: item.hasDesignFee === true,
     customerDescription: item.customerDescription || undefined,
     designs: (item.designs || []).map((d: JsonValue) => ({
       name: d.fileName || d.name || '',
@@ -579,6 +603,9 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   message: cleanCustomerDescription(raw.description),
   observations: raw.observations || undefined,
   hasCustomization: raw.hasCustomization === true || undefined,
+  productSubtotal: raw.productSubtotal != null ? Number(raw.productSubtotal) : undefined,
+  designFeeTotal: raw.designFeeTotal != null ? Number(raw.designFeeTotal) : undefined,
+  designFeePercentage: raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
   files: mapQuoteFiles(raw),
   customerEmail: raw.customerEmail || undefined,
   customerPhone: raw.customerPhone || undefined,
@@ -678,29 +705,11 @@ export const merchantApi = {
   stores: () => request<JsonValue[]>('/merchant/stores').then(list => list.map(mapStore)),
   createStore: (store: Omit<Store, 'id'>) => request<JsonValue>('/merchant/stores', {
     method: 'POST',
-    body: JSON.stringify({
-      name: store.name,
-      description: store.description,
-      categoryId: store.categoryId,
-      primaryColor: colorEnum(store.colors?.primary || store.palette, PRIMARY_COLOR_HEX, 'ONYX_BLACK'),
-      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
-      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
-      logoUrl: logoUrlPayload(store),
-      status: store.status
-    })
+    body: JSON.stringify(storePayload(store))
   }).then(mapStore),
   updateStore: (store: Store) => request<JsonValue>(`/merchant/stores/${store.id}`, {
     method: 'PUT',
-    body: JSON.stringify({
-      name: store.name,
-      description: store.description,
-      categoryId: store.categoryId,
-      primaryColor: colorEnum(store.colors?.primary || store.palette, PRIMARY_COLOR_HEX, 'ONYX_BLACK'),
-      secondaryColor: colorEnum(store.colors?.secondary, SECONDARY_COLOR_HEX, 'SLATE'),
-      tertiaryColor: colorEnum(store.colors?.tertiary, TERTIARY_COLOR_HEX, 'RAW_GOLD'),
-      logoUrl: logoUrlPayload(store),
-      status: store.status
-    })
+    body: JSON.stringify(storePayload(store))
   }).then(mapStore),
   updateStoreWithLogo: (store: Store, file: File) => {
     const data = new FormData();

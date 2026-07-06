@@ -10,7 +10,7 @@ import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
-import { DESIGN_FEE_RATE, money } from '../lib/pricing';
+import { designFeePercentageLabel, designFeeRate, money } from '../lib/pricing';
 import { resolveStoreLogoUrl } from '../lib/storeLogo';
 
 interface RequestQuoteProps {
@@ -333,9 +333,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const basePrice = product?.price || 28;
   const subtotal = basePrice * quantity;
+  const currentDesignFeeRate = designFeeRate(store);
+  const currentDesignFeePercentage = designFeePercentageLabel(store);
 
   const activeDesignFiles = productAllowsCustomization && designMode === 'custom' ? uploadedFiles : [];
-  const designFeeAmount = activeDesignFiles.length > 0 ? subtotal * DESIGN_FEE_RATE : 0;
+  const designFeeAmount = activeDesignFiles.length > 0 ? subtotal * currentDesignFeeRate : 0;
   const total = subtotal + designFeeAmount;
   const renderProductPreview = () => (
     <div className="rounded-2xl border p-4 sm:p-5" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
@@ -694,7 +696,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
                     <p className="text-[13px] font-bold leading-relaxed">
                       <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Importante</span>
-                      El incremento de 10% se aplica solo si adjuntas una imagen de diseño para este producto.
+                      El incremento de {currentDesignFeePercentage}% se aplica solo si adjuntas una imagen de diseño para este producto.
                     </p>
                   </div>
 
@@ -855,7 +857,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     <div className="flex items-start gap-2">
                       <ImageIcon size={16} className="mt-0.5 shrink-0" />
                       <span className="leading-tight">
-                        {activeDesignFiles.length > 0 ? 'Incremento por diseño (10%)' : 'Logo predeterminado'}
+                        {activeDesignFiles.length > 0 ? `Incremento por diseño (${currentDesignFeePercentage}%)` : 'Logo predeterminado'}
                       </span>
                     </div>
                   </div>

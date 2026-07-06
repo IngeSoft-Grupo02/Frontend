@@ -79,7 +79,8 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [storeName, setStoreName] = useState(store.name);
   const [storeDescription, setStoreDescription] = useState(store.description || '');
-  const [customizationIncrement, setCustomizationIncrement] = useState<5 | 10 | 15>(store.customizationIncrement || 10);
+  const currentDesignFeePercentage = store.designFeePercentage || store.customizationIncrement || 10;
+  const [customizationIncrement, setCustomizationIncrement] = useState<5 | 10 | 15>(currentDesignFeePercentage);
   const [primaryColor, setPrimaryColor] = useState(colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK'));
   const [secondaryColor, setSecondaryColor] = useState(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
   const [tertiaryColor, setTertiaryColor] = useState(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
@@ -95,17 +96,17 @@ export default function SettingsPage() {
   const hasChanges = useMemo(() => {
     return storeName !== store.name
       || storeDescription !== (store.description || '')
-      || customizationIncrement !== (store.customizationIncrement || 10)
+      || customizationIncrement !== currentDesignFeePercentage
       || primaryColor !== colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK')
       || secondaryColor !== colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE')
       || tertiaryColor !== colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD')
       || logoPreviewUrl !== (store.logoUrl || store.logo || '');
-  }, [customizationIncrement, logoPreviewUrl, primaryColor, secondaryColor, store, storeDescription, storeName, tertiaryColor]);
+  }, [customizationIncrement, currentDesignFeePercentage, logoPreviewUrl, primaryColor, secondaryColor, store, storeDescription, storeName, tertiaryColor]);
 
   useEffect(() => {
     setStoreName(store.name);
     setStoreDescription(store.description || '');
-    setCustomizationIncrement(store.customizationIncrement || 10);
+    setCustomizationIncrement(currentDesignFeePercentage);
     setPrimaryColor(colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK'));
     setSecondaryColor(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
     setTertiaryColor(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
@@ -139,7 +140,7 @@ export default function SettingsPage() {
   const resetChanges = () => {
     setStoreName(store.name);
     setStoreDescription(store.description || '');
-    setCustomizationIncrement(store.customizationIncrement || 10);
+    setCustomizationIncrement(currentDesignFeePercentage);
     setPrimaryColor(colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK'));
     setSecondaryColor(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));
     setTertiaryColor(colorValue(store.colors?.tertiary, TERTIARY_COLORS, 'RAW_GOLD'));
@@ -165,6 +166,7 @@ export default function SettingsPage() {
       categoryId: store.categoryId,
       categoryName: store.categoryName,
       description: storeDescription.trim(),
+      designFeePercentage: customizationIncrement,
       customizationIncrement,
       palette: selectedPrimaryHex,
       logo: logoPreviewUrl || undefined,

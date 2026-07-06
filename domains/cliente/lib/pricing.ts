@@ -1,6 +1,14 @@
-import { DiscountPublic } from '../types';
+import { DiscountPublic, Store } from '../types';
 
-export const DESIGN_FEE_RATE = 0.10;
+export function designFeeRate(store: Pick<Store, 'designFeePercentage'>): number {
+  const percentage = Number(store.designFeePercentage);
+  return Number.isFinite(percentage) && percentage > 0 ? percentage / 100 : 0;
+}
+
+export function designFeePercentageLabel(store: Pick<Store, 'designFeePercentage'>): number {
+  const percentage = Number(store.designFeePercentage);
+  return Number.isFinite(percentage) && percentage > 0 ? percentage : 0;
+}
 
 export function discountAppliesToQuantity(discount: DiscountPublic, quantity: number): boolean {
   const min = Number(discount.minQuantity || 0);
