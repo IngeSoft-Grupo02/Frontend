@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout';
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
-import { Discount, Product } from '@/domains/comerciante/lib/types';
+import { Discount, Product} from '@/domains/comerciante/lib/types';
 import { messageFromError } from '@/domains/shared/errors';
 import {
     ArrowUpRight,
