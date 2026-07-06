@@ -583,6 +583,33 @@ function backendErrorCount(payload: BackendBulkPayload, incidences: Incidence[])
       : incidences.filter(incidence => incidence.isError).length;
 }
 
+function normalizeIncidenceDetail(detail: string) {
+  return detail
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .replace(/\.+$/g, '');
+}
+
+function incidenceKey(incidence: Incidence) {
+  return [
+    incidence.block,
+    String(incidence.row).trim(),
+    incidence.isError ? 'error' : 'warning',
+    normalizeIncidenceDetail(incidence.detail),
+  ].join('|');
+}
+
+function deduplicateIncidences(incidences: Incidence[]) {
+  const seen = new Set<string>();
+  return incidences.filter((incidence) => {
+    const key = incidenceKey(incidence);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 
 // ── Componente ────────────────────────────────────────────────────
 
@@ -871,10 +898,11 @@ export function CargaMasivaScreen() {
     ...blocks.stores.incidences,
     ...blocks.images.incidences,
   ];
-  const allIncidences = [
-    ...localIncidences,
-    ...backendIncidences,
-  ];
+  const allIncidences = deduplicateIncidences(
+      backendIncidences.length > 0
+          ? [...backendIncidences, ...localIncidences]
+          : localIncidences,
+  );
   const incidenceErrorCount = allIncidences.filter(i => i.isError).length;
   const errorCount = Math.max(incidenceErrorCount, backendErrors);
   const hasBlockingErrors = errorCount > 0;
@@ -990,8 +1018,7 @@ export function CargaMasivaScreen() {
             const state = blocks[block.key];
             const Icon  = block.icon;
             const isDrag = dragOver === block.key;
-            const blockErrors = state.incidences.filter(i => i.isError).length
-                + backendIncidences.filter(i => i.isError && blockKeyFromLabel(i.block) === block.key).length;
+            const blockErrors = allIncidences.filter(i => i.isError && blockKeyFromLabel(i.block) === block.key).length;
 
             return (
                 <Card
