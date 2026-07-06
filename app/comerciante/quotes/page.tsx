@@ -21,6 +21,25 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+const COLOR_ES = {
+  'BLACK': 'negro',
+  'WHITE': 'blanco',
+  'RED': 'rojo',
+  'BLUE': 'azul',
+  'GREEN': 'verde'
+};
+
+const translateVariant = (variant: string) => {
+  if (!variant) return '';
+  let translated = variant;
+  Object.entries(COLOR_ES).forEach(([eng, esp]) => {
+    // Busca la palabra exacta en inglés (ignorando mayúsculas/minúsculas) y la reemplaza
+    const regex = new RegExp(`\\b${eng}\\b`, 'gi');
+    translated = translated.replace(regex, esp);
+  });
+  return translated;
+};
+
 const formatRequestDate = (value?: string) => {
   if (!value) return '';
   const parts = value.slice(0, 10).split('-');
@@ -546,7 +565,10 @@ export default function QuotesPage() {
                                           )}
                                           <div className="min-w-0">
                                             <h5 className="text-[13px] font-black text-brand-black tracking-tight">{item.product}</h5>
-                                            <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">{item.variant}</p>
+                                            {/* AQUÍ APLICAMOS LA TRADUCCIÓN A ITEM.VARIANT */}
+                                            <p className="text-[11px] text-brand-text-muted font-bold uppercase tracking-tight">
+                                              {translateVariant(item.variant)}
+                                            </p>
                                           </div>
                                         </div>
                                       </td>
