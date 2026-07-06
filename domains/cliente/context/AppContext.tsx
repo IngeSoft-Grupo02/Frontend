@@ -19,7 +19,7 @@ interface AppContextType {
   currentView: View;
   setCurrentView: (view: View) => void;
   selectedStore: Store | null;
-  setSelectedStore: (store: Store | null) => void;
+  setSelectedStore: React.Dispatch<React.SetStateAction<Store | null>>;
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   customerToken: string | null;

@@ -182,7 +182,7 @@ const drawItemsTable = (doc: jsPDF, startY: number, items: OrderItemDetail[]) =>
 export const generateDispatchGuide = async (
   order: Order,
   store: Store,
-  increment: number
+  increment?: number | null
 ): Promise<DocumentResult> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const logo = await loadStoreLogo(store.logoUrl || store.logo);
@@ -251,7 +251,7 @@ const shippingText = (order: Order): string => {
 export const generatePaymentReceipt = async (
   order: Order,
   store: Store,
-  increment: number
+  increment?: number | null
 ): Promise<DocumentResult> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const logo = await loadStoreLogo(store.logoUrl || store.logo);

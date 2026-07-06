@@ -11,6 +11,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 type ColorOption = { name: string; value: string; hex: string };
 
 const INCREMENT_VALUES = [5, 10, 15] as const;
+const DEFAULT_INCREMENT_VALUE = INCREMENT_VALUES[1];
 const LOGO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const LOGO_MAX_SIZE_BYTES = 2 * 1024 * 1024;
 
@@ -79,7 +80,7 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [storeName, setStoreName] = useState(store.name);
   const [storeDescription, setStoreDescription] = useState(store.description || '');
-  const currentDesignFeePercentage = store.designFeePercentage || store.customizationIncrement || 10;
+  const currentDesignFeePercentage = store.designFeePercentage || store.customizationIncrement || DEFAULT_INCREMENT_VALUE;
   const [customizationIncrement, setCustomizationIncrement] = useState<5 | 10 | 15>(currentDesignFeePercentage);
   const [primaryColor, setPrimaryColor] = useState(colorValue(store.colors?.primary || store.palette, PRIMARY_COLORS, 'ONYX_BLACK'));
   const [secondaryColor, setSecondaryColor] = useState(colorValue(store.colors?.secondary, SECONDARY_COLORS, 'SLATE'));

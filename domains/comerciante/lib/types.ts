@@ -84,6 +84,7 @@ export interface Order {
   productSubtotal?: number;
   designFeeTotal?: number;
   designFeePercentage?: number;
+  designFeePercentageApplied?: number;
   observations?: string;
 }
 
@@ -142,6 +143,7 @@ export interface Quote {
   productSubtotal?: number;
   designFeeTotal?: number;
   designFeePercentage?: number;
+  designFeePercentageApplied?: number;
   files?: {
     name: string;
     type: string;

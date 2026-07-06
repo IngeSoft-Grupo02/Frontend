@@ -99,10 +99,13 @@ const quoteAppliedDiscount = (quote: Quote) =>
 const quoteFinalAmount = (quote: Quote) =>
     Math.max(0, quotationAmount(quote) - quoteAppliedDiscount(quote));
 
-const quoteDesignFeePercentage = (quote: Quote) =>
-    Number(quote.designFeePercentage
-        ?? quote.items.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
-        ?? 0);
+const quoteDesignFeePercentage = (quote: Quote) => {
+    const percentage = quote.designFeePercentageApplied
+        ?? quote.designFeePercentage
+        ?? quote.items.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage;
+    const value = Number(percentage);
+    return Number.isFinite(value) ? value : null;
+};
 
 export default function QuotesPage() {
   const { quotes, updateQuote, store, refreshData, products, discounts = [] } = useStore();
@@ -226,7 +229,7 @@ export default function QuotesPage() {
 
   // NUEVA LÓGICA DE PRECIOS CENTRALIZADA
   const pricing = useMemo(() => {
-    if (!selectedQuote) return { base: 0, customization: 0, subtotal: 0, discountAmount: 0, finalSubtotal: 0, total: 0, customPercentage: 0 };
+    if (!selectedQuote) return { base: 0, customization: 0, subtotal: 0, discountAmount: 0, finalSubtotal: 0, total: 0, customPercentage: null as number | null };
 
     // 1. Recalculamos la base sumando la cantidad real de los artículos cotizados
     const base = Number(selectedQuote.productSubtotal ?? selectedQuote.items.reduce(
@@ -240,12 +243,11 @@ export default function QuotesPage() {
       0
     ));
     const customPercentage = customization > 0
-      ? Number(selectedQuote.designFeePercentage
-        ?? selectedQuote.items.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
+      ? quoteDesignFeePercentage(selectedQuote)
         ?? store.designFeePercentage
         ?? store.customizationIncrement
-        ?? 0)
-      : 0;
+        ?? null
+      : null;
 
     // 3. Subtotal antes de descuentos
     const subtotal = Number(selectedQuote.subtotal ?? base + customization);
@@ -449,7 +451,7 @@ export default function QuotesPage() {
                         <div className="flex justify-between items-center bg-white/60 p-3 rounded-2xl border border-dotted border-brand-neutral-border">
                           <div className="flex flex-col">
                             <span className="text-[10px] font-black text-brand-text-muted uppercase">Total</span>
-                            {(quote.hasCustomization || (quote.files && quote.files.length > 0)) && (
+                            {(quote.hasCustomization || (quote.files && quote.files.length > 0)) && quoteDesignFeePercentage(quote) != null && (
                                 <div className="flex items-center gap-1 text-[9px] font-bold text-brand-camel uppercase">
                                   <Layers size={10} /> +{quoteDesignFeePercentage(quote)}%
                                 </div>
@@ -674,7 +676,7 @@ export default function QuotesPage() {
                                 <div className="flex justify-between items-center text-[12px] font-bold text-brand-camel uppercase tracking-wider whitespace-nowrap gap-3">
                                   <div className="flex items-center gap-2">
                                     <Layers size={13} />
-                                    <span>Personalización ({pricing.customPercentage}%)</span>
+                                    <span>Personalización{pricing.customPercentage != null ? ` (${pricing.customPercentage}%)` : ''}</span>
                                   </div>
                                   <span>+ S/ {pricing.customization.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                 </div>

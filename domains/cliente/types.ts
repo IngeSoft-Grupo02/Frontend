@@ -45,6 +45,7 @@ export interface CartItem {
   baseSubtotal?: number;
   discountAmount?: number;
   designFeeAmount?: number;
+  designFeePercentage?: number;
   lineTotal?: number;
   discountApplied?: number;
   discountRuleLabel?: string | null;
@@ -209,6 +210,7 @@ export interface Quote {
   discountTotal?: number;
   designFeeTotal?: number;
   designFeePercentage?: number;
+  designFeePercentageApplied?: number;
   description?: string | null;
   observations?: string | null;
   items?: QuotationItemResponseDTO[];
@@ -224,6 +226,7 @@ export interface CartResponseDTO {
   productSubtotal?: number;
   discountTotal?: number;
   designFeeTotal?: number;
+  designFeePercentage?: number;
 }
 
 export interface CartItemResponseDTO {
@@ -289,6 +292,7 @@ export interface QuotationResponseDTO {
   discountTotal?: number;
   designFeeTotal?: number;
   designFeePercentage?: number;
+  designFeePercentageApplied?: number;
   requestedAt: string | null;
   responseAt: string | null;
   description: string | null;
@@ -390,6 +394,7 @@ export interface OrderResponseDTO {
   productSubtotal?: number | null;
   designFeeTotal?: number | null;
   designFeePercentage?: number | null;
+  designFeePercentageApplied?: number | null;
   observations: string | null;
 }
 
@@ -439,6 +444,7 @@ export interface Order {
   productSubtotal?: number;
   designFeeTotal?: number;
   designFeePercentage?: number;
+  designFeePercentageApplied?: number;
 }
 
 export enum PrimaryColor {
