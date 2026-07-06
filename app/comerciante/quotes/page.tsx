@@ -8,12 +8,10 @@ import { messageFromError } from '@/domains/shared/errors';
 import {
   AlertTriangle,
   Check,
-  Download,
   FileText,
   ImageIcon,
   Layers,
   Mail,
-  MessageSquare,
   Phone,
   Search,
   TrendingUp,
@@ -159,7 +157,10 @@ export default function QuotesPage() {
   const insufficientStockItems = useMemo(() => {
     if (!selectedQuote) return [];
     return selectedQuote.items.filter(
-        (item) => item.stock != null && item.stock < item.quantity
+        (item) => {
+          const shortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
+          return shortage > 0;
+        }
     );
   }, [selectedQuote]);
 
@@ -556,6 +557,8 @@ export default function QuotesPage() {
                             <tbody className="divide-y border-brand-neutral-border">
                             {selectedQuote.items.map((item, idx) => {
                               const productImageUrl = item.productImageUrl || (item.productId ? productImageById.get(item.productId) : undefined);
+                              const stockShortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
+                              const hasStockShortage = stockShortage > 0;
                               const positionedDesign = (item.designs || []).find((design) =>
                                   productImageUrl
                                   && design.overlayX != null
@@ -594,7 +597,23 @@ export default function QuotesPage() {
                                       <td className="px-4 py-3 text-center text-[13px] font-black whitespace-nowrap">
                                         {item.stock == null
                                             ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
-                                            : <span className={item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>{item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span></span>}
+                                            : (
+                                                <div className="flex flex-col items-center gap-1">
+                                                  <span className={hasStockShortage ? 'text-red-600' : item.stock <= 5 ? 'text-orange-500' : ''}>
+                                                    {item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span>
+                                                  </span>
+                                                  {hasStockShortage && (
+                                                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-600 border border-red-100">
+                                                        Faltan {stockShortage}
+                                                      </span>
+                                                  )}
+                                                  {!hasStockShortage && Number(item.reservedStock || 0) > 0 && (
+                                                      <span className="text-[9px] font-bold text-brand-text-muted normal-case">
+                                                        {item.reservedStock} reservadas
+                                                      </span>
+                                                  )}
+                                                </div>
+                                            )}
                                       </td>
                                       <td className="px-4 py-3 text-right text-[13px] font-bold text-brand-text-muted whitespace-nowrap">S/ {item.price.toFixed(2)}</td>
                                       <td className="px-4 py-3 text-right text-[15px] font-black tracking-tight text-brand-black whitespace-nowrap">S/ {(item.quantity * item.price).toFixed(2)}</td>
@@ -697,62 +716,6 @@ export default function QuotesPage() {
                         </div>
                       </section>
 
-                      {/* Graphics & Message Side by Side */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <section className="space-y-4">
-                          <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Diseño</h4>
-                          <div className="flex flex-col gap-4">
-                            {selectedQuote.files?.map((file, idx) => {
-                              const hasRealUrl = Boolean(file.url) && file.url !== '#' && !file.url.startsWith('blob:');
-                              const isImage = /\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name) || file.type === 'image';
-                              return (
-                                  <div key={idx} className="bg-white border-2 border-brand-neutral-border rounded-[24px] p-6 flex items-center gap-5 hover:border-brand-black/20 transition-all group">
-                                    {hasRealUrl && isImage ? (
-                                        <img src={file.url} alt={file.name} className="w-14 h-14 rounded-2xl object-cover border border-brand-neutral-border" />
-                                    ) : (
-                                        <div className="w-12 h-12 bg-brand-neutral-light border border-brand-neutral-border rounded-2xl flex items-center justify-center text-brand-black group-hover:bg-brand-black group-hover:text-white transition-all shadow-sm">
-                                          {file.type === 'svg' ? <Layers size={24} /> : <FileText size={24} />}
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <h5 className="text-[14px] font-black text-brand-black truncate tracking-tight">{file.name}</h5>
-                                      <p className="text-[11px] font-black text-brand-text-muted uppercase opacity-60">{hasRealUrl ? 'Archivo adjunto' : 'Vista previa no disponible'}</p>
-                                    </div>
-                                    {hasRealUrl && (
-                                        <a
-                                            href={file.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="w-11 h-11 flex items-center justify-center bg-brand-neutral-light rounded-xl border border-brand-neutral-border hover:bg-brand-black hover:text-white transition-all"
-                                            title="Ver o descargar"
-                                        >
-                                          <Download size={20} />
-                                        </a>
-                                    )}
-                                  </div>
-                              );
-                            })}
-                            {(!selectedQuote.files || selectedQuote.files.length === 0) && (
-                                <div className="py-10 text-center border-2 border-dashed border-brand-neutral-border rounded-3xl">
-                                  <p className="text-[12px] font-black text-brand-text-muted uppercase tracking-widest opacity-40">No se adjuntaron archivos</p>
-                                </div>
-                            )}
-                          </div>
-                        </section>
-
-                        <section className="space-y-4">
-                          <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Requerimiento del cliente</h4>
-                          <div className="bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[20px] p-5 relative min-h-[100px] flex items-center shadow-inner">
-                            <MessageSquare size={20} className="absolute left-[-10px] top-1/2 -translate-y-1/2 bg-brand-neutral-light text-brand-neutral-border p-1 border-2 border-brand-neutral-border rounded-full" />
-                            {selectedQuote.message ? (
-                                <p className="text-[13px] text-brand-black font-bold leading-relaxed pl-3">{selectedQuote.message}</p>
-                            ) : (
-                                <p className="text-[13px] text-brand-text-muted font-bold leading-relaxed pl-3">El cliente no dejó una descripción para esta cotización.</p>
-                            )}
-                          </div>
-                        </section>
-                      </div>
-
                       {/* Pricing Model Summary */}
                       <div className="bg-brand-black rounded-[24px] p-6 flex flex-col md:flex-row items-center justify-between gap-5 text-white shadow-xl shadow-brand-black/30 border border-white/10">
                         <div className="space-y-1 w-full md:w-auto">
@@ -772,9 +735,21 @@ export default function QuotesPage() {
                         {selectedQuote.status === 'Pendiente' ? (
                             <div className="flex flex-col gap-4 w-full md:w-auto md:items-end">
                               {hasInsufficientStock && (
-                                  <div className="flex items-center gap-2 bg-red-500/10 border border-red-400/40 text-red-200 px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide max-w-sm text-right">
+                                  <div className="flex items-start gap-2 bg-red-500/10 border border-red-400/40 text-red-100 px-4 py-2.5 rounded-xl text-[11px] font-bold max-w-sm">
                                     <AlertTriangle size={16} className="shrink-0" />
-                                    Stock insuficiente para {insufficientStockItems.length === 1 ? 'un artículo' : `${insufficientStockItems.length} artículos`}. No puedes aceptar esta cotización.
+                                    <div className="space-y-1">
+                                      <p className="uppercase tracking-wide">
+                                        Stock insuficiente. Aumenta el stock antes de aceptar esta cotización.
+                                      </p>
+                                      {insufficientStockItems.slice(0, 3).map((item) => {
+                                        const shortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
+                                        return (
+                                            <p key={`${item.productVariantId || item.product}-${item.variant}`} className="text-red-200 normal-case tracking-normal">
+                                              {item.product}: faltan {shortage} unidades.
+                                            </p>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                               )}
 

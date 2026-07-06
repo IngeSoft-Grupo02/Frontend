@@ -115,12 +115,17 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                         const itemUnitPrice = item.baseUnitPrice || item.unitPrice || item.price || 0;
                         const itemBaseSubtotal = item.baseSubtotal ?? (itemUnitPrice > 0 ? itemUnitPrice * item.quantity : item.subTotal);
                         const itemDesignFee = item.designFeeAmount || 0;
+                        const stockShortage = item.stockShortage ?? (item.stockAvailable == null ? 0 : Math.max(0, item.quantity - item.stockAvailable));
+                        const hasStockShortage = stockShortage > 0;
                         return (
                         <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <div className="font-black text-[13px]">{item.productName || item.product}</div>
-                              <div className="text-[11px] font-bold opacity-70">{item.size} / {getColorLabel(item.color)} · Stock al solicitar: {item.stockAvailable}</div>
+                              <div className={`text-[11px] font-bold ${hasStockShortage ? 'text-red-500 opacity-100' : 'opacity-70'}`}>
+                                {item.size} / {getColorLabel(item.color)} · Disponible: {item.stockAvailable ?? 'No registrado'}
+                                {hasStockShortage ? ` · Faltan ${stockShortage}` : ''}
+                              </div>
                             </div>
                             <div className="text-right">
                               <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.baseUnitPrice || item.unitPrice || item.price || 0).toFixed(2)}</div>

@@ -5,9 +5,17 @@ import { Clock } from 'lucide-react';
 
 const PAYMENT_WINDOW_MS = 5 * 60 * 1000;
 
+const parseBackendTimestamp = (value: string) => {
+  const trimmed = value.trim();
+  const normalizedPrecision = trimmed.replace(/\.(\d{3})\d+/, '.$1');
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalizedPrecision);
+  const looksLikeDateTime = /^\d{4}-\d{2}-\d{2}T/.test(normalizedPrecision);
+  return Date.parse(looksLikeDateTime && !hasTimezone ? `${normalizedPrecision}Z` : normalizedPrecision);
+};
+
 const paymentDeadline = (createdAt?: string) => {
   if (!createdAt) return null;
-  const timestamp = Date.parse(createdAt);
+  const timestamp = parseBackendTimestamp(createdAt);
   return Number.isNaN(timestamp) ? null : timestamp + PAYMENT_WINDOW_MS;
 };
 

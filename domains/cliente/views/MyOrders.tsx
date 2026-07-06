@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag, Truck, PackageCheck, Clock, ArrowRight, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CreditCard } from 'lucide-react';
+import { ShoppingBag, Truck, Clock, ArrowRight, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CreditCard, CalendarDays } from 'lucide-react';
 import { Store, User, View, Order } from '../types';
 import { fetchOrders, toOrder } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
@@ -26,6 +26,29 @@ interface MyOrdersProps {
   cartCount: number;
 }
 
+const orderStatusFilters = ['Todos', 'Pago pendiente', 'Pagado', 'En proceso', 'En camino', 'Entregado', 'Cancelado'] as const;
+type OrderStatusFilter = typeof orderStatusFilters[number];
+
+const dateTime = (value?: string | null): number => {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const isWithinDateRange = (value: string | null | undefined, from: string, to: string): boolean => {
+  const time = dateTime(value);
+  if (!time) return false;
+  if (from) {
+    const fromTime = new Date(`${from}T00:00:00`).getTime();
+    if (time < fromTime) return false;
+  }
+  if (to) {
+    const toTime = new Date(`${to}T23:59:59.999`).getTime();
+    if (time > toTime) return false;
+  }
+  return true;
+};
+
 export const MyOrders: React.FC<MyOrdersProps> = ({
   store,
   user,
@@ -37,6 +60,9 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
   cartCount,
 }) => {
   const [orders, setOrders] = React.useState<Order[]>([]);
+  const [selectedStatus, setSelectedStatus] = React.useState<OrderStatusFilter>('Todos');
+  const [dateFrom, setDateFrom] = React.useState('');
+  const [dateTo, setDateTo] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [, forceTimerRefresh] = React.useState(0);
@@ -89,6 +115,15 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
     forceTimerRefresh((value) => value + 1);
   }, []);
 
+  const filteredOrders = React.useMemo(() => {
+    return orders
+      .filter((order) => selectedStatus === 'Todos' || order.status === selectedStatus)
+      .filter((order) => (!dateFrom && !dateTo) || isWithinDateRange(order.createdAt, dateFrom, dateTo))
+      .sort((a, b) => dateTime(b.createdAt) - dateTime(a.createdAt));
+  }, [orders, selectedStatus, dateFrom, dateTo]);
+
+  const hasActiveFilters = selectedStatus !== 'Todos' || Boolean(dateFrom || dateTo);
+
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
       <TopBar store={store} user={user} onNavigate={onNavigate} onLogout={onLogout} cartCount={cartCount} currentView={View.MY_ORDERS} />
@@ -100,6 +135,35 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
             Consulta el historial de tus compras y el progreso de tus órdenes activas.
           </p>
         </header>
+
+        {!loading && !error && orders.length > 0 && (
+          <div className="rounded-2xl mb-6 border shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+            <div className="p-3 flex gap-3 overflow-x-auto no-scrollbar">
+              {orderStatusFilters.map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className="px-6 py-2.5 rounded-xl font-bold text-[12px] whitespace-nowrap transition-all cursor-pointer shadow-sm active:scale-95"
+                  style={selectedStatus === status ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' } : { backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', border: '1px solid rgba(0,0,0,0.1)' }}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t p-3" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+              <label className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                <CalendarDays size={16} className="shrink-0 opacity-60" />
+                <span className="text-[11px] font-black uppercase tracking-wider opacity-60">Desde</span>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none" />
+              </label>
+              <label className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                <CalendarDays size={16} className="shrink-0 opacity-60" />
+                <span className="text-[11px] font-black uppercase tracking-wider opacity-60">Hasta</span>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none" />
+              </label>
+            </div>
+          </div>
+        )}
 
         {loading && (
           <div className="py-24 flex flex-col items-center gap-3 text-gray-500">
@@ -134,9 +198,34 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
           </div>
         )}
 
-        {!loading && !error && orders.length > 0 && (
+        {!loading && !error && orders.length > 0 && filteredOrders.length === 0 && (
+          <div className="py-16 text-center">
+            <div className="w-16 h-16 border rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)', color: 'var(--text-on-secondary)' }}>
+              <ShoppingBag size={26} />
+            </div>
+            <h4 className="text-[20px] font-extrabold mb-2" style={{ color: '#0F1011' }}>No hay pedidos con estos filtros</h4>
+            <p className="text-[14px] max-w-md mx-auto mb-7 leading-relaxed" style={{ color: '#64748B' }}>
+              Ajusta el estado o el rango de fechas para revisar otros pedidos.
+            </p>
+            {hasActiveFilters && (
+              <Button
+                variant="primary"
+                style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                onClick={() => {
+                  setSelectedStatus('Todos');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+              >
+                Ver todos
+              </Button>
+            )}
+          </div>
+        )}
+
+        {!loading && !error && filteredOrders.length > 0 && (
           <div className="space-y-6">
-            {orders.map((order, i) => {
+            {filteredOrders.map((order, i) => {
               const step = statusStep(order.status);
               const canPay = order.rawStatus === 'PENDING_PAYMENT' || order.status === 'Pago pendiente';
               const paymentExpired = canPay && isPaymentWindowExpired(order.createdAt);

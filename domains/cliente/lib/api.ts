@@ -296,6 +296,8 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     productName: firstItem?.productName || firstItem?.product || `Cotización ${dto.id}`,
     quantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
     date: formatDate(dto.requestedAt),
+    requestedAt: dto.requestedAt,
+    responseAt: dto.responseAt,
     amount: dto.totalAmount ?? 0,
     status: toQuoteStatus(dto),
     hasDesign: Boolean(dto.description || dto.observations || dto.designs?.length || items.some((item) => item.customerDescription || item.designs?.length)),

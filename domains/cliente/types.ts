@@ -201,6 +201,8 @@ export interface Quote {
   productName: string;
   quantity: number;
   date: string;
+  requestedAt?: string | null;
+  responseAt?: string | null;
   amount: number;
   status: 'Pendientes' | 'En revisión' | 'En revision' | 'Propuesta enviada' | 'Aprobadas' | 'Rechazadas';
   hasDesign: boolean;
@@ -329,6 +331,9 @@ export interface QuotationItemResponseDTO {
   size: string;
   color: string;
   stockAvailable: number;
+  physicalStock?: number | null;
+  reservedStock?: number | null;
+  stockShortage?: number | null;
   quantity: number;
   unitPrice: number;
   subTotal: number;
@@ -354,6 +359,9 @@ export interface OrderItemResponseDTO {
   size: string | null;
   color: string | null;
   stockAvailable: number | null;
+  physicalStock?: number | null;
+  reservedStock?: number | null;
+  stockShortage?: number | null;
   quantity: number;
   unitPrice: number;
   subTotal: number;

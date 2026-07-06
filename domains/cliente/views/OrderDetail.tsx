@@ -24,6 +24,7 @@ import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { PaymentCountdown } from '../components/PaymentCountdown';
+import { generateCustomerInvoice } from '../lib/orderDocuments';
 
 interface OrderDetailProps {
   store: Store;
@@ -54,6 +55,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
   const partialTotal = order.partialTotal ?? Math.max(0, order.amount / 1.18);
   const productSubtotal = order.productSubtotal ?? Math.max(0, partialTotal - designFeeTotal);
   const igvTotal = Math.max(0, order.amount - partialTotal);
+  const handleDownloadInvoice = () => {
+    generateCustomerInvoice(order, store, user);
+  };
 
   return (
     <div className="min-h-screen pb-20 transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -95,6 +99,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                 <div className="flex w-full gap-3 sm:w-auto">
                    <Button 
                      variant="ghost" 
+                     onClick={handleDownloadInvoice}
                      className="w-full sm:w-auto !px-4 sm:!px-6 flex items-center justify-center gap-2 text-[12px] font-black border hover:opacity-85"
                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
                    >

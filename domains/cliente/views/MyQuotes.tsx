@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { FileSearch, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { FileSearch, ArrowRight, Loader2, AlertTriangle, CalendarDays } from 'lucide-react';
 import { Store, User, Quote, View } from '../types';
 import { fetchQuotations, toQuote } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
@@ -25,8 +25,33 @@ interface MyQuotesProps {
   cartCount: number;
 }
 
+const quoteStatusFilters = ['Todas', 'Pendientes', 'Aprobadas', 'Rechazadas'] as const;
+type QuoteStatusFilter = typeof quoteStatusFilters[number];
+
+const dateTime = (value?: string | null): number => {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const isWithinDateRange = (value: string | null | undefined, from: string, to: string): boolean => {
+  const time = dateTime(value);
+  if (!time) return false;
+  if (from) {
+    const fromTime = new Date(`${from}T00:00:00`).getTime();
+    if (time < fromTime) return false;
+  }
+  if (to) {
+    const toTime = new Date(`${to}T23:59:59.999`).getTime();
+    if (time > toTime) return false;
+  }
+  return true;
+};
+
 export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, onNavigate, onLogout, onSelectQuote, cartCount }) => {
-  const [selectedStatus, setSelectedStatus] = React.useState('Todas');
+  const [selectedStatus, setSelectedStatus] = React.useState<QuoteStatusFilter>('Todas');
+  const [dateFrom, setDateFrom] = React.useState('');
+  const [dateTo, setDateTo] = React.useState('');
   const [quotes, setQuotes] = React.useState<Quote[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -69,21 +94,25 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
     onRefresh: () => loadQuotes(true),
   });
 
-  const filteredQuotes = selectedStatus === 'Todas'
-    ? quotes
-    : quotes.filter((quote) => {
+  const filteredQuotes = React.useMemo(() => {
+    return quotes
+      .filter((quote) => {
         if (selectedStatus === 'Pendientes') return quote.status === 'Pendientes' || quote.status === 'En revision' || quote.status === 'En revisión' || quote.status === 'Propuesta enviada';
         if (selectedStatus === 'Aprobadas') return quote.status === 'Aprobadas';
         if (selectedStatus === 'Rechazadas') return quote.status === 'Rechazadas';
         return true;
-      });
+      })
+      .filter((quote) => (!dateFrom && !dateTo) || isWithinDateRange(quote.requestedAt, dateFrom, dateTo))
+      .sort((a, b) => dateTime(b.requestedAt) - dateTime(a.requestedAt));
+  }, [quotes, selectedStatus, dateFrom, dateTo]);
+  const hasActiveFilters = selectedStatus !== 'Todas' || Boolean(dateFrom || dateTo);
   const emptyTitle = quotes.length === 0
     ? 'No hay cotizaciones por aquí'
-    : `No hay cotizaciones ${selectedStatus.toLowerCase()} por ahora`;
+    : 'No hay cotizaciones con estos filtros';
   const emptyMessage = quotes.length === 0
     ? 'Cuando solicites una cotización desde el catálogo, podrás revisar aquí su estado y respuesta de la tienda.'
-    : 'No hay nada nuevo en esta lista. Cuando una cotización cambie a este estado, aparecerá aquí.';
-  const emptyActionLabel = quotes.length === 0 ? 'Ver catálogo' : 'Ver todas';
+    : 'Ajusta el estado o el rango de fechas para revisar otras solicitudes.';
+  const emptyActionLabel = quotes.length === 0 ? 'Ver catálogo' : 'Limpiar filtros';
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -97,17 +126,31 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
           </div>
         </header>
 
-        <div className="p-3 rounded-2xl mb-6 flex gap-3 overflow-x-auto no-scrollbar border shadow-sm" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-          {['Todas', 'Pendientes', 'Aprobadas', 'Rechazadas'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setSelectedStatus(status)}
-              className="px-8 py-2.5 rounded-xl font-bold text-[12px] whitespace-nowrap transition-all cursor-pointer shadow-sm active:scale-95"
-              style={selectedStatus === status ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' } : { backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', border: '1px solid rgba(0,0,0,0.1)' }}
-            >
-              {status}
-            </button>
-          ))}
+        <div className="rounded-2xl mb-6 border shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+          <div className="p-3 flex gap-3 overflow-x-auto no-scrollbar">
+            {quoteStatusFilters.map((status) => (
+              <button
+                key={status}
+                onClick={() => setSelectedStatus(status)}
+                className="px-8 py-2.5 rounded-xl font-bold text-[12px] whitespace-nowrap transition-all cursor-pointer shadow-sm active:scale-95"
+                style={selectedStatus === status ? { backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' } : { backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', border: '1px solid rgba(0,0,0,0.1)' }}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t p-3" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+            <label className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <CalendarDays size={16} className="shrink-0 opacity-60" />
+              <span className="text-[11px] font-black uppercase tracking-wider opacity-60">Desde</span>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none" />
+            </label>
+            <label className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <CalendarDays size={16} className="shrink-0 opacity-60" />
+              <span className="text-[11px] font-black uppercase tracking-wider opacity-60">Hasta</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none" />
+            </label>
+          </div>
         </div>
 
         {loading && (
@@ -175,9 +218,23 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
             </div>
             <h4 className="text-[20px] font-extrabold mb-2" style={{ color: '#0F1011' }}>{emptyTitle}</h4>
             <p className="text-[14px] max-w-md mx-auto mb-7 leading-relaxed" style={{ color: '#64748B' }}>{emptyMessage}</p>
-            <Button variant="primary" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }} onClick={() => quotes.length === 0 ? onNavigate(View.CATALOG) : setSelectedStatus('Todas')}>
-              {emptyActionLabel}
-            </Button>
+            {(quotes.length === 0 || hasActiveFilters) && (
+              <Button
+                variant="primary"
+                style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                onClick={() => {
+                  if (quotes.length === 0) {
+                    onNavigate(View.CATALOG);
+                    return;
+                  }
+                  setSelectedStatus('Todas');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+              >
+                {emptyActionLabel}
+              </Button>
+            )}
           </div>
         )}
       </div>

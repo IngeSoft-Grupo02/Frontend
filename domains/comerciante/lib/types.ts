@@ -41,6 +41,9 @@ export interface OrderItemDetail {
   size?: string;
   color?: string;
   stock?: number | null;
+  physicalStock?: number | null;
+  reservedStock?: number | null;
+  stockShortage?: number | null;
   quantity: number;
   unitPrice: number;
   subTotal: number;
@@ -114,6 +117,9 @@ export interface Quote {
     quantity: number;
     price: number;
     stock?: number | null;
+    physicalStock?: number | null;
+    reservedStock?: number | null;
+    stockShortage?: number | null;
     productId?: string;
     productImageUrl?: string;
     productVariantId?: string;
