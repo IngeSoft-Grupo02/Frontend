@@ -153,16 +153,20 @@ function ProductFormPageContent() {
   const handleSave = async (asDraft = false) => {
     if (isSavingRef.current) return;
     const nextErrors: Record<string, string> = {};
+    const currentProduct = editId ? products.find(product => product.id === editId) : undefined;
     const productName = formData.name.trim();
     const description = formData.description.trim();
     const price = Number(formData.price || 0);
     const normalizedBlocks = formData.inventoryBlocks.map(block => {
       const size = block.talla.trim();
-      const positiveStock = Object.fromEntries(
-        Object.entries(block.stock).filter(([, stock]) => Number(stock || 0) > 0)
+      const existingColors = new Set(Object.keys(currentProduct?.sizeColorStock?.[size] || {}));
+      const relevantStock = Object.fromEntries(
+        Object.entries(block.stock)
+          .map(([color, stock]) => [color, Number(stock || 0)] as const)
+          .filter(([color, stock]) => stock > 0 || existingColors.has(color))
       );
-      const quantity = Object.values(positiveStock).reduce((acc, stock) => acc + Number(stock || 0), 0);
-      return { size, stock: positiveStock, quantity };
+      const quantity = Object.values(relevantStock).reduce((acc, stock) => acc + Number(stock || 0), 0);
+      return { size, stock: relevantStock, quantity };
     });
     const namedBlocks = normalizedBlocks.filter(block => block.size.length > 0);
     const lowerTallyNames = namedBlocks.map(block => block.size.toLowerCase());
@@ -227,6 +231,7 @@ function ProductFormPageContent() {
         name: productName,
         description,
         price,
+        costPrice: currentProduct?.costPrice,
         stock: totalStock,
         sizeColorStock,
         sizeStock: Object.entries(sizeColorStock).reduce((acc, [size, colors]) => ({

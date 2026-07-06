@@ -335,6 +335,7 @@ export const mapProduct = (raw: JsonValue): Product => {
     name: raw.name || 'Producto',
     description: raw.description || '',
     price: Number(raw.price || 0),
+    costPrice: Number(raw.costPrice ?? Math.max(Number(raw.price || 0) * 0.7, 0)),
     stock: Number(raw.stock || 0),
     sizeColorStock,
     sizeStock: Object.fromEntries(
@@ -362,7 +363,6 @@ export const productPayload = (product: Product | Omit<Product, 'id'>) => {
         color: colorToBackend(color),
         stock: Number(stock || 0)
       }))
-      .filter(variant => variant.stock > 0)
   );
   const imageUrls = uniqueImageUrls([
     ...(product.images?.map(image => image.url) || []),
@@ -373,7 +373,7 @@ export const productPayload = (product: Product | Omit<Product, 'id'>) => {
     name: product.name,
     description: product.description || '',
     price: Number(product.price || 0),
-    costPrice: Math.max(Number(product.price || 0) * 0.7, 0),
+    costPrice: Number(product.costPrice ?? Math.max(Number(product.price || 0) * 0.7, 0)),
     imageUrls,
     customizable: Boolean(product.customizable),
     variants,
