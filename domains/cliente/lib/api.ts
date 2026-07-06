@@ -399,6 +399,13 @@ export function fetchQuotation(slug: string, token: string, quoteId: string | nu
   });
 }
 
+export function ensureOrderFromQuotation(slug: string, token: string, quoteId: string | number): Promise<OrderResponseDTO> {
+  return request<OrderResponseDTO>(`/stores/${encodeURIComponent(slug)}/quotations/${encodeURIComponent(String(quoteId))}/order`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+}
+
 function orderStatusLabel(rawStatus: string): Order['status'] {
   const map: Record<string, Order['status']> = {
     PENDING_PAYMENT: 'Pago pendiente',

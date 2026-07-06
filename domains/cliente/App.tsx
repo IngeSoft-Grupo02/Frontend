@@ -27,6 +27,7 @@ import {
   addCartItem,
   ApiError,
   createQuotation,
+  ensureOrderFromQuotation,
   fetchCart,
   fetchCustomerMe,
   fetchOrder,
@@ -194,6 +195,16 @@ export default function App() {
     setSelectedOrder(order);
     moveToView(View.PAYMENT, { orderId: order.realId ?? order.id });
   };
+
+  const handleGoToApprovedQuoteOrder = React.useCallback(async (quote: Quote) => {
+    if (!selectedStore?.slug || !customerToken) {
+      throw new Error('Debes iniciar sesion para ver el pedido.');
+    }
+    const order = await ensureOrderFromQuotation(selectedStore.slug, customerToken, quote.id);
+    const mappedOrder = toOrder(order);
+    setSelectedOrder(mappedOrder);
+    moveToView(View.MY_ORDERS, { orderId: mappedOrder.realId ?? mappedOrder.id });
+  }, [customerToken, moveToView, selectedStore?.slug, setSelectedOrder]);
 
   const loadCart = async (slug: string, token: string, options: { showLoading?: boolean } = {}) => {
     if (options.showLoading) setIsCartLoading(true);
@@ -681,7 +692,7 @@ export default function App() {
 
       case View.QUOTE_DETAIL:
         if (!selectedStore || !selectedQuote) return <MyQuotes store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectQuote={handleSelectQuote} cartCount={cartItems.length} />;
-        return <QuoteDetail store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
+        return <QuoteDetail store={selectedStore} user={currentUser} quote={selectedQuote} onNavigate={navigate} onGoToApprovedQuoteOrder={handleGoToApprovedQuoteOrder} onLogout={handleLogout} cartCount={cartItems.length} />;
 
       case View.PAYMENT:
         if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
