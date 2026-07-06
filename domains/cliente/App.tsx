@@ -14,6 +14,7 @@ import { QuoteDetail } from './views/QuoteDetail';
 import { Payment } from './views/Payment';
 import { MyOrders } from './views/MyOrders';
 import { OrderDetail } from './views/OrderDetail';
+import { ShippingAddress } from './views/ShippingAddress';
 import { Auth } from './views/Auth';
 import { ProductDetail } from './views/ProductDetail';
 import { Cart } from './views/Cart';
@@ -196,6 +197,15 @@ export default function App() {
     moveToView(View.PAYMENT, { orderId: order.realId ?? order.id });
   };
 
+  const handleGoToShipping = (order: Order) => {
+    setSelectedOrder(order);
+    moveToView(View.SHIPPING_ADDRESS, { orderId: order.realId ?? order.id });
+  };
+
+  const handleShippingCompleted = (updatedOrder: Order) => {
+    setSelectedOrder(updatedOrder);
+  };
+
   const handleGoToApprovedQuoteOrder = React.useCallback(async (quote: Quote) => {
     if (!selectedStore?.slug || !customerToken) {
       throw new Error('Debes iniciar sesion para ver el pedido.');
@@ -284,7 +294,7 @@ export default function App() {
   });
 
   useAutoRefresh({
-    enabled: (currentView === View.ORDER_DETAIL || currentView === View.PAYMENT) && Boolean(selectedStore?.slug && customerToken && selectedOrder?.realId),
+    enabled: (currentView === View.ORDER_DETAIL || currentView === View.PAYMENT || currentView === View.SHIPPING_ADDRESS) && Boolean(selectedStore?.slug && customerToken && selectedOrder?.realId),
     intervalMs: 7000,
     onRefresh: refreshSelectedOrder,
   });
@@ -702,7 +712,11 @@ export default function App() {
 
       case View.PAYMENT:
         if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
-        return <Payment store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onPaymentCompleted={refreshSelectedOrder} />;
+        return <Payment store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onPaymentCompleted={refreshSelectedOrder} onGoToShipping={handleGoToShipping} />;
+
+      case View.SHIPPING_ADDRESS:
+        if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
+        return <ShippingAddress store={selectedStore} user={currentUser} order={selectedOrder} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onShippingCompleted={handleShippingCompleted} />;
 
       case View.MY_ORDERS:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
@@ -711,7 +725,7 @@ export default function App() {
 
       case View.ORDER_DETAIL:
         if (!selectedStore || !selectedOrder) return <MyOrders store={selectedStore!} user={currentUser} customerToken={customerToken} onNavigate={navigate} onLogout={handleLogout} onSelectOrder={handleSelectOrder} onPayOrder={handlePayOrder} cartCount={cartItems.length} />;
-        return <OrderDetail store={selectedStore} user={currentUser} order={selectedOrder} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} />;
+        return <OrderDetail store={selectedStore} user={currentUser} order={selectedOrder} onNavigate={navigate} onLogout={handleLogout} cartCount={cartItems.length} onGoToShipping={handleGoToShipping} />;
 
       case View.PROFILE:
         if (!selectedStore || !currentUser) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

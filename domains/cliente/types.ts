@@ -27,6 +27,7 @@ export enum View {
   ORDER_DETAIL = 'ORDER_DETAIL',
   CART = 'CART',
   PAYMENT = 'PAYMENT',
+  SHIPPING_ADDRESS = 'SHIPPING_ADDRESS',
   PROFILE = 'PROFILE'
 }
 
@@ -368,6 +369,8 @@ export interface OrderShippingResponseDTO {
   address: string | null;
   district: string | null;
   reference: string | null;
+  recipientName: string | null;
+  phone: string | null;
   estimatedDeliveryDate: string | null;
   actualDeliveryDate: string | null;
 }
@@ -445,6 +448,13 @@ export interface Order {
   designFeeTotal?: number;
   designFeePercentage?: number;
   designFeePercentageApplied?: number;
+  shippingDetail?: {
+    address: string | null;
+    district: string | null;
+    reference: string | null;
+    recipientName: string | null;
+    phone: string | null;
+  } | null;
 }
 
 export enum PrimaryColor {

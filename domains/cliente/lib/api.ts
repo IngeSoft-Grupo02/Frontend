@@ -441,6 +441,13 @@ export function toOrder(dto: OrderResponseDTO): Order {
     designFeeTotal: dto.designFeeTotal ?? undefined,
     designFeePercentage: dto.designFeePercentageApplied ?? dto.designFeePercentage ?? undefined,
     designFeePercentageApplied: dto.designFeePercentageApplied ?? dto.designFeePercentage ?? undefined,
+    shippingDetail: dto.shippingDetail ? {
+      address: dto.shippingDetail.address,
+      district: dto.shippingDetail.district,
+      reference: dto.shippingDetail.reference,
+      recipientName: dto.shippingDetail.recipientName,
+      phone: dto.shippingDetail.phone,
+    } : null,
   };
 }
 
@@ -459,6 +466,22 @@ export function fetchOrder(slug: string, token: string, orderId: number): Promis
 export function payOrder(slug: string, token: string, orderId: number, payload: PaymentPayload): Promise<PaymentResponseDTO> {
   return request<PaymentResponseDTO>(`/stores/${encodeURIComponent(slug)}/orders/${orderId}/payment`, {
     method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface ShippingAddressPayload {
+  address: string;
+  district: string;
+  reference?: string;
+  recipientName?: string;
+  phone?: string;
+}
+
+export function setShippingAddress(slug: string, token: string, orderId: number, payload: ShippingAddressPayload): Promise<OrderResponseDTO> {
+  return request<OrderResponseDTO>(`/stores/${encodeURIComponent(slug)}/orders/${orderId}/shipping-address`, {
+    method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(payload),
   });

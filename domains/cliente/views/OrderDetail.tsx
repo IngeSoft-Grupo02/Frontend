@@ -32,9 +32,10 @@ interface OrderDetailProps {
   onNavigate: (view: View) => void;
   onLogout: () => void;
   cartCount: number;
+  onGoToShipping?: (order: Order) => void;
 }
 
-export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, onNavigate, onLogout, cartCount }) => {
+export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, onNavigate, onLogout, cartCount, onGoToShipping }) => {
   const statusOrder: Order['status'][] = ['Pago pendiente', 'Pagado', 'En proceso', 'En camino', 'Entregado'];
   const currentStep = Math.max(0, statusOrder.indexOf(order.status));
   const steps = [
@@ -221,20 +222,54 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
             </div>
  
             {/* Shipping Info */}
-            <div 
+            <div
               className="rounded-[24px] sm:rounded-[32px] border p-5 sm:p-8 shadow-sm"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}
             >
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-6 flex items-center gap-2" style={{ color: 'var(--text-on-secondary)' }}>
                 <MapPin size={18} style={{ color: 'var(--accent-on-secondary)' }} /> Dirección de envío
               </h3>
-              <div className="flex gap-4">
+              {order.shippingDetail?.address ? (
                 <div className="space-y-1">
-                  <p className="text-[14px] font-black" style={{ color: 'var(--text-on-secondary)' }}>Calle Los Olivos 456, Int. 203</p>
-                  <p className="text-[13px] font-bold tracking-tight opacity-75" style={{ color: 'var(--text-on-secondary)' }}>Miraflores, Lima, Perú</p>
-                  <p className="text-[12px] font-bold opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Referencia: Frente al parque central.</p>
+                  <p className="text-[14px] font-black" style={{ color: 'var(--text-on-secondary)' }}>{order.shippingDetail.address}</p>
+                  {order.shippingDetail.district && (
+                    <p className="text-[13px] font-bold tracking-tight opacity-75" style={{ color: 'var(--text-on-secondary)' }}>
+                      {order.shippingDetail.district.replace(/_/g, ' ')}, Lima, Perú
+                    </p>
+                  )}
+                  {order.shippingDetail.reference && (
+                    <p className="text-[12px] font-bold opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Referencia: {order.shippingDetail.reference}</p>
+                  )}
+                  {order.shippingDetail.recipientName && (
+                    <p className="text-[12px] font-bold opacity-60 mt-2" style={{ color: 'var(--text-on-secondary)' }}>Destinatario: {order.shippingDetail.recipientName}</p>
+                  )}
+                  {order.shippingDetail.phone && (
+                    <p className="text-[12px] font-bold opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Tel: {order.shippingDetail.phone}</p>
+                  )}
+                  {order.status !== 'Entregado' && order.status !== 'Cancelado' && (
+                    <button
+                      onClick={() => onGoToShipping?.(order)}
+                      className="mt-3 text-[12px] font-black underline cursor-pointer"
+                      style={{ color: 'var(--accent-on-secondary)' }}
+                    >
+                      Editar dirección
+                    </button>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-[13px] font-bold opacity-60 mb-3" style={{ color: 'var(--text-on-secondary)' }}>No se ha registrado una dirección de envío.</p>
+                  {order.status !== 'Entregado' && order.status !== 'Cancelado' && (
+                    <button
+                      onClick={() => onGoToShipping?.(order)}
+                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-black cursor-pointer transition-all"
+                      style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                    >
+                      <MapPin size={16} /> Registrar dirección
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
