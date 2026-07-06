@@ -150,7 +150,7 @@ export default function BulkUploadPage() {
       const text = await file.text();
       const { headers, rows } = parseCsv(text);
 
-      const requiredHeaders = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
+      const requiredHeaders = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'PERSONALIZABLE', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
       if (missingHeaders.length > 0) {
@@ -171,6 +171,11 @@ export default function BulkUploadPage() {
         if (!row.DESCRIPCION) errors.push(`Fila ${rowNum}: La DESCRIPCION no puede estar vacía.`);
         if (!row.TALLA) errors.push(`Fila ${rowNum}: La TALLA no puede estar vacía.`);
         if (!row.COLOR) errors.push(`Fila ${rowNum}: El COLOR no puede estar vacío.`);
+        if (!row.PERSONALIZABLE) {
+          errors.push(`Fila ${rowNum}: PERSONALIZABLE debe indicar SI o NO.`);
+        } else if (!['SI', 'SÍ', 'S', 'NO', 'N', 'TRUE', 'FALSE', 'YES', 'Y', '1', '0'].includes(row.PERSONALIZABLE.toUpperCase())) {
+          errors.push(`Fila ${rowNum}: PERSONALIZABLE solo acepta SI o NO.`);
+        }
         
         const stock = parseInt(row.STOCK);
         if (isNaN(stock)) {
@@ -321,20 +326,56 @@ export default function BulkUploadPage() {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
-    const row1 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', '89.00', '62.00', 'S', 'Negro', '10', 'polo-onyx-1.png;polo-onyx-2.png'];
-    const row2 = ['Polo Oversized Premium Onyx', 'Polo oversized de algodón con fit relajado', '89.00', '62.00', 'M', 'Negro', '8', 'polo-onyx-1.png;polo-onyx-2.png'];
-    const row3 = ['Polo Classic White', 'Polo clásico de corte estándar', '49.00', '34.00', 'S', 'Blanco', '12', 'polo-white-1.webp'];
-    const csvContent = [headers, row1, row2, row3].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const csvCell = (value: string | number) => {
+    const text = String(value);
+    return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "plantilla-productos.csv");
+    link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTemplate = () => {
+    const headers = ['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'PERSONALIZABLE', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'];
+    const rows = [
+      ['Polo Premium Personalizable', 'Polo de algodón para pedidos con logo o referencia', '50.00', '32.00', 'SI', 'S', 'Blanco', '12', 'polo-premium-frente.jpg;polo-premium-detalle.webp'],
+      ['Polo Premium Personalizable', 'Polo de algodón para pedidos con logo o referencia', '50.00', '32.00', 'SI', 'M', 'Blanco', '8', 'polo-premium-frente.jpg;polo-premium-detalle.webp'],
+      ['Polo Básico Sin Diseño', 'Polo listo para cotizar sin personalización', '40.00', '24.00', 'NO', 'S', 'Negro', '18', 'polo-basico-negro.png'],
+      ['Polo Básico Sin Diseño', 'Polo listo para cotizar sin personalización', '40.00', '24.00', 'NO', 'M', 'Negro', '15', 'polo-basico-negro.png']
+    ];
+    const csvContent = [headers, ...rows].map(row => row.map(csvCell).join(",")).join("\n");
+    triggerDownload(new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }), 'plantilla-productos.csv');
+  };
+
+  const downloadGuide = () => {
+    const guide = [
+      'Guia de carga masiva de productos',
+      '',
+      '1. Descarga y completa plantilla-productos.csv.',
+      '2. Usa una fila por cada combinacion de talla y color.',
+      '3. Repite NOMBRE, DESCRIPCION, PRECIO, COSTO y PERSONALIZABLE en todas las filas del mismo producto.',
+      '4. PERSONALIZABLE acepta SI o NO. SI permite que el cliente adjunte o use logo de tienda durante la cotizacion.',
+      '5. COLOR acepta Negro, Blanco, Rojo, Azul o Verde.',
+      '6. IMAGENES debe contener nombres exactos de archivos dentro del ZIP, separados por punto y coma.',
+      '7. Si IMAGENES esta vacio, no necesitas subir ZIP.',
+      '8. Si IMAGENES tiene archivos, sube un ZIP con esas imagenes. Formatos: JPG, JPEG, PNG o WEBP. Maximo 2MB por imagen.',
+      '',
+      'Ejemplo de IMAGENES:',
+      'polo-frente.jpg;polo-detalle.webp',
+      '',
+      'Ejemplo de ZIP:',
+      'productos.zip',
+      '- polo-frente.jpg',
+      '- polo-detalle.webp'
+    ].join('\n');
+    triggerDownload(new Blob([guide], { type: 'text/plain;charset=utf-8;' }), 'guia-carga-productos.txt');
   };
 
   const [importedSummary, setImportedSummary] = useState<{
@@ -381,7 +422,7 @@ export default function BulkUploadPage() {
     let results: ValidationResult[] = [
       { label: 'CSV con formato correcto', status: 'success' },
       { label: `${csvFile?.items || 0} productos detectados, ${csvFile?.variants || 0} variantes`, status: 'success' },
-      { label: 'Campos obligatorios completos (Nombre, Descripción, Precio, Talla, Color, Stock)', status: 'success' },
+      { label: 'Campos obligatorios completos (Nombre, Descripción, Precio, Personalizable, Talla, Color, Stock)', status: 'success' },
     ];
 
     if (csvStatus === 'error') {
@@ -494,7 +535,7 @@ export default function BulkUploadPage() {
           <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest leading-none">Productos · Importación</p>
           <h1 className="text-[42px] font-extrabold tracking-tight text-brand-black leading-none">Carga masiva de productos</h1>
           <p className="text-brand-text-muted text-[14px] font-medium max-w-2xl leading-relaxed">
-            Sube tu catálogo completo desde un archivo. Las imágenes son opcionales y pueden subirse en un archivo ZIP.
+            Sube un CSV con productos y variantes. Si el CSV referencia imágenes, adjunta también un ZIP con esos archivos.
           </p>
         </header>
 
@@ -512,8 +553,8 @@ export default function BulkUploadPage() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-camel"></div>
               <div>
                 <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">01 · Archivo de productos</h3>
-                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Archivo </h2>
-                <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Una fila por variante · máximo 500 productos por archivo</p>
+                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">CSV de productos</h2>
+                <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Una fila por talla/color · repite el nombre para agrupar variantes del mismo producto</p>
               </div>
 
               <input 
@@ -594,7 +635,7 @@ export default function BulkUploadPage() {
                 <div className="space-y-1">
                   <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">02 · Imágenes de productos</h3>
                   <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Archivo ZIP de imágenes</h2>
-                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Los nombres deben coincidir con los referenciados en el CSV · PNG, JPG, JPEG o WEBP</p>
+                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Sube un ZIP solo si la columna IMAGENES tiene nombres de archivo · PNG, JPG, JPEG o WEBP</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant="outline" className="h-6 font-black border-brand-neutral-border text-brand-text-muted !text-[9px]">OPCIONAL</Badge>
@@ -689,7 +730,7 @@ export default function BulkUploadPage() {
                 <div>
                   <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">03 · Validación previa</h3>
                   <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">Revisa antes de ejecutar</h2>
-                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Resultados analíticos del motor de importación CSV</p>
+                  <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Te avisaremos si falta algo antes de importar al catálogo</p>
                 </div>
                 {csvStatus !== 'idle' && (
                   <Badge variant={canExecute ? 'success' : 'danger'} className="h-8 !px-4 self-start sm:self-center font-black transition-all">
@@ -738,73 +779,84 @@ export default function BulkUploadPage() {
             </div>
           </div>
 
-          <div className="space-y-8">
-            {/* Export Card */}
-            <Card title="Ejecutar" subtitle="Procesamiento Final" className={`border-2 ring-4 !p-8 shadow-2xl transition-all ${
-              canExecute ? 'border-brand-black ring-brand-black/5' : 'border-brand-neutral-border ring-transparent opacity-60'
-            }`}>
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h4 className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.2em] leading-none">Confirmación de Acción</h4>
-                  <p className="text-[13px] text-brand-black font-bold leading-relaxed">
-                    Esta acción importará productos y actualizará su inventario. Asegúrate de que los nombres, tallas, colores y stocks sean correctos.
-                  </p>
-                </div>
-               
-                <div className="space-y-4">
-                  <Button 
-                    onClick={handleExecute}
-                    className={`w-full h-16 gap-3 !rounded-2xl font-black text-[16px] uppercase tracking-[0.2em] transition-all relative overflow-hidden ${
-                      canExecute && !isExecuting ? 'shadow-xl shadow-brand-black/20 hover:scale-[1.02] active:scale-95' : ''
-                    }`}
-                    variant={canExecute ? 'primary' : 'outline'}
-                    disabled={!canExecute || isExecuting}
-                  >
-                    {isExecuting ? (
-                      <Loader2 size={24} className="animate-spin" />
-                    ) : (
-                      <RefreshCcw size={24} />
-                    )}
-                    {isExecuting ? 'Procesando...' : 'Ejecutar carga masiva'}
-                  </Button>
+          <div className="space-y-5 lg:sticky lg:top-24 self-start">
+            <Card title="Guía de carga" subtitle="Plantilla y ZIP" className="!p-6">
+              <p className="text-[12px] text-brand-text-muted mb-5 leading-relaxed font-bold">
+                Descarga la plantilla CSV y, si usas imágenes, prepara un ZIP con nombres iguales a los de la columna IMAGENES.
+              </p>
 
-                  {!canExecute && csvStatus === 'valid' && !isExecuting && (
-                    <div className="text-center p-4 rounded-2xl bg-red-50 border-2 border-red-200 animate-in fade-in">
-                      <p className="text-[11px] font-black text-red-700 uppercase tracking-widest gap-2 flex items-center justify-center">
-                        <AlertCircle size={14} /> Faltan requisitos
-                      </p>
-                      <p className="text-[10px] text-red-600 font-bold mt-1 uppercase">Revisa los errores de validación</p>
-                    </div>
-                  )}
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={downloadTemplate}
+                  className="w-full flex items-center gap-3 bg-brand-neutral-light border-2 border-brand-neutral-border rounded-2xl p-4 text-left group cursor-pointer hover:bg-white hover:border-brand-black active:scale-[0.98] transition-all shadow-sm"
+                >
+                  <div className="w-11 h-11 bg-white rounded-xl border border-brand-neutral-border flex items-center justify-center group-hover:text-brand-black transition-all text-brand-text-muted">
+                    <FileText size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h5 className="text-[13px] font-black text-brand-black tracking-tight leading-none mb-1">Plantilla CSV</h5>
+                    <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-tighter">Productos, variantes, stock e imágenes</p>
+                  </div>
+                  <Download size={18} className="text-brand-text-muted group-hover:text-brand-black" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={downloadGuide}
+                  className="w-full flex items-center gap-3 border-2 border-brand-neutral-border rounded-2xl p-4 text-left group cursor-pointer hover:border-brand-black active:scale-[0.98] transition-all"
+                >
+                  <div className="w-11 h-11 bg-brand-neutral-light rounded-xl border border-brand-neutral-border flex items-center justify-center text-brand-text-muted">
+                    <Archive size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h5 className="text-[13px] font-black text-brand-black tracking-tight leading-none mb-1">Guía ZIP</h5>
+                    <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-tighter">Cómo nombrar imágenes y enlazarlas</p>
+                  </div>
+                  <Download size={18} className="text-brand-text-muted group-hover:text-brand-black" />
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-60">Columnas del CSV</p>
+                <div className="flex flex-wrap gap-2">
+                  {['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'PERSONALIZABLE', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'].map(tag => (
+                    <Badge key={tag} variant="outline" className="h-6 !px-3 font-black bg-brand-neutral-light !border-brand-neutral-border text-[9px]">{tag}</Badge>
+                  ))}
+                </div>
+                <div className="rounded-2xl bg-brand-neutral-light border border-brand-neutral-border p-4 text-[11px] font-bold text-brand-text-muted leading-relaxed">
+                  Colores permitidos: Negro, Blanco, Rojo, Azul y Verde. En IMAGENES separa varios archivos con punto y coma.
                 </div>
               </div>
             </Card>
 
-            {/* Template Card */}
-            <Card title="Plantillas" subtitle="Descarga la plantilla" className="!p-8">
-              <p className="text-[12px] text-brand-text-muted mb-6 leading-relaxed font-bold uppercase tracking-tight opacity-70">Usa nuestro formato estándar para evitar errores durante la validación.</p>
-             
-              <div 
-                onClick={downloadTemplate}
-                className="flex items-center gap-4 bg-brand-neutral-light border-2 border-brand-neutral-border rounded-[20px] p-5 group cursor-pointer hover:bg-white hover:border-brand-black active:scale-95 transition-all shadow-sm"
-              >
-                <div className="w-12 h-12 bg-white rounded-xl border border-brand-neutral-border flex items-center justify-center group-hover:text-brand-black group-hover:scale-110 transition-all text-brand-text-muted">
-                  <FileText size={24} />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-[14px] font-black text-brand-black tracking-tight leading-none mb-1">plantilla-productos.csv</h5>
-                  <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-tighter">Formato oficial • 2KB</p>
-                </div>
-                <Download size={20} className="text-brand-text-muted group-hover:text-brand-black" />
-              </div>
+            <Card title="Importar" subtitle="Confirmación final" className={`!p-5 border-2 transition-all ${
+              canExecute ? 'border-brand-black' : 'border-brand-neutral-border opacity-70'
+            }`}>
+              <div className="space-y-4">
+                <p className="text-[12px] text-brand-text-muted font-bold leading-relaxed">
+                  Ejecuta la carga cuando la validación esté lista. Se crearán productos y stock por talla/color.
+                </p>
 
-              <div className="mt-8 space-y-4">
-                <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-60">Estructura esperada</p>
-                <div className="flex flex-wrap gap-2">
-                  {['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'].map(tag => (
-                    <Badge key={tag} variant="outline" className="h-6 !px-3 font-black bg-brand-neutral-light !border-brand-neutral-border text-[9px]">{tag}</Badge>
-                  ))}
-                </div>
+                <Button
+                  onClick={handleExecute}
+                  className={`w-full h-12 gap-2 !rounded-xl font-black text-[13px] uppercase tracking-widest transition-all ${
+                    canExecute && !isExecuting ? 'shadow-lg shadow-brand-black/15 hover:scale-[1.01] active:scale-[0.98]' : ''
+                  }`}
+                  variant={canExecute ? 'primary' : 'outline'}
+                  disabled={!canExecute || isExecuting}
+                >
+                  {isExecuting ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
+                  {isExecuting ? 'Procesando...' : 'Ejecutar carga'}
+                </Button>
+
+                {!canExecute && csvStatus === 'valid' && !isExecuting && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                    <p className="text-[11px] font-black text-red-700 uppercase tracking-wide flex items-center gap-2">
+                      <AlertCircle size={14} /> Revisa los requisitos pendientes
+                    </p>
+                  </div>
+                )}
               </div>
             </Card>
           </div>

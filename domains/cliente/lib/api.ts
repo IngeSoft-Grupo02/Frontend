@@ -418,6 +418,7 @@ export function toOrder(dto: OrderResponseDTO): Order {
     realId: dto.id,
     productName: firstItem?.productName || `Pedido ${dto.id}`,
     date: formatDate(dto.createdAt),
+    createdAt: dto.createdAt ?? undefined,
     amount: dto.finalTotal ?? dto.total ?? 0,
     status: orderStatusLabel(dto.status),
     rawStatus: dto.status,

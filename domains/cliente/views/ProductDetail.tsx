@@ -107,6 +107,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
               <span className="text-[12px] font-medium uppercase tracking-widest opacity-60">Producto {latestProduct.id}</span>
             </div>
 
+            {latestProduct.customizable !== false && (
+              <span className="mb-4 inline-flex w-fit items-center rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#0F1011', color: '#FFFFFF' }}>
+                Personalizable
+              </span>
+            )}
+
             <h1 className="text-[32px] sm:text-[38px] lg:text-[42px] font-extrabold leading-tight mb-4" style={{ color: '#0F1011' }}>{latestProduct.name}</h1>
             <p className="text-[15px] sm:text-[17px] lg:text-[18px] font-medium mb-8 sm:mb-10 leading-relaxed" style={{ color: '#475569' }}>{latestProduct.description}</p>
 

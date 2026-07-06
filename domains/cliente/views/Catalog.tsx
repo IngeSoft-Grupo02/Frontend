@@ -38,6 +38,19 @@ interface CatalogProps {
 type SortOption = 'recent' | 'oldest' | 'price-asc' | 'price-desc';
 const PRODUCTS_PER_PAGE = 21;
 
+function PersonalizableBadge({ product, className = '' }: { product: Product; className?: string }) {
+  if (product.customizable === false) return null;
+
+  return (
+    <span
+      className={`inline-flex w-fit items-center rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${className}`}
+      style={{ backgroundColor: '#0F1011', color: '#FFFFFF' }}
+    >
+      Personalizable
+    </span>
+  );
+}
+
 function ProductVisual({ product, index, className = '' }: { product: Product; index: number; className?: string }) {
   const imageUrl = product.image || product.imageUrls?.[0];
   const [imageFailed, setImageFailed] = useState(false);
@@ -188,6 +201,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
           <div className={`${viewMode === 'list' ? 'w-full p-2 sm:p-6' : 'p-5 sm:p-6'} flex flex-col flex-1 text-left`}>
             <h3 className="text-[16px] font-black mb-1 transition-colors" style={{ color: '#0F1011' }}>{product.name}</h3>
             <p className="text-[12px] font-medium line-clamp-2 mb-4" style={{ color: '#475569' }}>{product.description}</p>
+            <PersonalizableBadge product={product} className="mb-4" />
             <div className="flex flex-wrap gap-2 mb-5">
               {product.sizes.slice(0, 4).map((size) => (
                 <span key={size} className="px-2 py-1 rounded-lg text-[10px] font-black border" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>{size}</span>
@@ -303,6 +317,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                       >
                         <ProductVisual product={product} index={index} className="aspect-square rounded-[18px] mb-4" />
                         <h3 className="text-[14px] font-black" style={{ color: '#0F1011' }}>{product.name}</h3>
+                        <PersonalizableBadge product={product} className="mt-3" />
                         <div className="flex justify-between items-center pt-2">
                           <p className="text-[14px] font-black" style={{ color: '#0F1011' }}>S/ {product.price.toFixed(2)}</p>
                           <span className="text-[10px] font-black px-3.5 py-1.5 rounded-lg uppercase tracking-wider" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}>Ver info</span>

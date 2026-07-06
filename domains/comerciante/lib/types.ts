@@ -85,6 +85,9 @@ export interface Quote {
   customer: string;
   status: QuoteStatus;
   discountId?: string;
+  discount?: number;
+  discountAmount?: number;
+  discountTotal?: number;
   total: number;
   subtotal: number;
   date: string;

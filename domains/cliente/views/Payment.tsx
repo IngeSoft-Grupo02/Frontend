@@ -11,6 +11,7 @@ import { payOrder } from '../lib/api';
 import { messageFromError } from '../../shared/errors';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
+import { isPaymentWindowExpired, PaymentCountdown } from '../components/PaymentCountdown';
 
 type ReceiptType = 'BOLETA' | 'FACTURA';
 
@@ -37,6 +38,8 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
+  const isPendingPayment = order.rawStatus === 'PENDING_PAYMENT' || order.status === 'Pago pendiente';
+  const [paymentExpired, setPaymentExpired] = useState(() => isPendingPayment && isPaymentWindowExpired(order.createdAt));
 
   const cleanCard = cardNumber.replace(/\s/g, '');
 
@@ -50,6 +53,10 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
     const hasName = cardName.trim().length > 2;
     return hasCard && hasExpiry && hasCvc && hasName && rucValid;
   };
+
+  React.useEffect(() => {
+    setPaymentExpired(isPendingPayment && isPaymentWindowExpired(order.createdAt));
+  }, [isPendingPayment, order.createdAt]);
 
   const handleRucChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -80,6 +87,15 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isPendingPayment) {
+      setPaymentError('Este pedido ya no está disponible para pago.');
+      return;
+    }
+    if (paymentExpired || isPaymentWindowExpired(order.createdAt)) {
+      setPaymentExpired(true);
+      setPaymentError('El tiempo para pagar terminó. Revisa tus pedidos para ver el estado actualizado.');
+      return;
+    }
     if (!isFormValid()) return;
     if (!customerToken || !store.slug || !order.realId) {
       setPaymentError('No se pudo iniciar el pago. Inténtalo nuevamente.');
@@ -172,6 +188,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
   const subtotal = order.partialTotal ?? total / 1.18;
   const discount = order.totalDiscount ?? 0;
   const igv = total - (subtotal - discount);
+  const canConfirmPayment = isPendingPayment && !paymentExpired && isFormValid();
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -193,6 +210,26 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
               <h1 className="text-[30px] sm:text-[34px] font-extrabold mb-2" style={{ color: '#0F1011' }}>Pasarela de Pago</h1>
               <p className="font-medium opacity-75" style={{ color: '#475569' }}>Conexión cifrada de extremo a extremo.</p>
             </header>
+
+            {isPendingPayment && (
+              <PaymentCountdown
+                createdAt={order.createdAt}
+                onExpired={() => setPaymentExpired(true)}
+              />
+            )}
+
+            {paymentExpired && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 text-amber-800"
+              >
+                <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                <p className="text-[13px] font-bold">
+                  El tiempo para pagar terminó. Vuelve a tus pedidos para confirmar si fue cancelado.
+                </p>
+              </motion.div>
+            )}
 
             {paymentError && (
               <motion.div
@@ -427,9 +464,9 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                     type="submit"
                     variant="primary"
                     fullWidth
-                    className={`py-5 text-[16px] font-black shadow-xl transition-all ${!isFormValid() ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
+                    className={`py-5 text-[16px] font-black shadow-xl transition-all ${!canConfirmPayment ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
                     style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
-                    disabled={isProcessing || !isFormValid()}
+                    disabled={isProcessing || !canConfirmPayment}
                   >
                     {isProcessing ? (
                       <div className="flex items-center gap-3 justify-center">
@@ -440,7 +477,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                         />
                         Procesando pago...
                       </div>
-                    ) : 'Confirmar pago'}
+                    ) : paymentExpired ? 'Tiempo agotado' : 'Confirmar pago'}
                   </Button>
                 </div>
               </div>

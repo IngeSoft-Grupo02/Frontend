@@ -11,6 +11,7 @@ import { fetchOrders, toOrder } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { isPaymentWindowExpired, PaymentCountdown } from '../components/PaymentCountdown';
 import { messageFromError } from '../../shared/errors';
 import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
 
@@ -38,6 +39,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [, forceTimerRefresh] = React.useState(0);
   const hasOrdersRef = React.useRef(false);
 
   const loadOrders = React.useCallback(async (background = false) => {
@@ -82,6 +84,10 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
     const idx = steps.indexOf(status);
     return idx >= 0 ? idx : 0;
   };
+
+  const handlePaymentExpired = React.useCallback(() => {
+    forceTimerRefresh((value) => value + 1);
+  }, []);
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -133,6 +139,8 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
             {orders.map((order, i) => {
               const step = statusStep(order.status);
               const canPay = order.rawStatus === 'PENDING_PAYMENT' || order.status === 'Pago pendiente';
+              const paymentExpired = canPay && isPaymentWindowExpired(order.createdAt);
+              const canPayNow = canPay && !paymentExpired;
 
               return (
                 <motion.div
@@ -160,6 +168,14 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                       <div className="text-[12px] font-bold uppercase tracking-widest mb-1 opacity-60">Pedido #{order.id}</div>
                       <h4 className="text-[17px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{order.productName}</h4>
                       <div className="text-[13px] font-medium opacity-60">{order.date}</div>
+                      {canPay && (
+                        <PaymentCountdown
+                          createdAt={order.createdAt}
+                          compact
+                          className="mt-3 max-w-[260px]"
+                          onExpired={handlePaymentExpired}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -215,9 +231,10 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                         variant="primary"
                         className="!px-6 !py-2.5 !text-[11px] whitespace-nowrap flex items-center gap-2 cursor-pointer font-black"
                         style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
+                        disabled={!canPayNow}
                         onClick={() => onPayOrder(order)}
                       >
-                        <CreditCard size={14} /> Pagar ahora
+                        <CreditCard size={14} /> {paymentExpired ? 'Tiempo agotado' : 'Pagar ahora'}
                       </Button>
                     )}
                     <Button

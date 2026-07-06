@@ -414,6 +414,7 @@ export interface Order {
   realId?: number;
   productName: string;
   date: string;
+  createdAt?: string;
   amount: number;
   status: 'Pago pendiente' | 'Pagado' | 'En proceso' | 'En camino' | 'Entregado' | 'Cancelado';
   rawStatus?: string;

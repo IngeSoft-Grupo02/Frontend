@@ -539,8 +539,11 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   storeId: String(raw.storeId || ''),
   customer: raw.customerName || raw.customer || 'Cliente',
   status: quoteStatusFromBackend(raw.status, raw.statusLabel),
-  total: Number(raw.totalAmount || 0),
+  total: Number(raw.totalAmount ?? raw.subTotal ?? 0),
   subtotal: Number(raw.subTotal || 0),
+  discount: Number(raw.discount ?? raw.discountAmount ?? raw.discountTotal ?? 0),
+  discountAmount: Number(raw.discountAmount ?? raw.discount ?? raw.discountTotal ?? 0),
+  discountTotal: Number(raw.discountTotal ?? raw.discount ?? raw.discountAmount ?? 0),
   date: raw.requestedAt ? String(raw.requestedAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
   requestedAt: raw.requestedAt ? String(raw.requestedAt) : undefined,
   // responseAt es null mientras está pendiente; queda undefined para mostrar "Pendiente".
@@ -748,8 +751,12 @@ export const merchantApi = {
     body: JSON.stringify({ status: ORDER_STATUS_TO_BACKEND[status] })
   }).then(mapOrder),
   quotes: (storeId?: string) => request<JsonValue[]>(`/merchant/quotations${withStore(storeId)}`).then(list => list.map(mapQuote)),
-  updateQuoteStatus: (id: string, status: Quote['status'], observations?: string, storeId?: string) => request<JsonValue>(`/merchant/quotations/${id}/respond${withStore(storeId)}`, {
+  updateQuoteStatus: (id: string, status: Quote['status'], observations?: string, discountAmount?: number, storeId?: string) => request<JsonValue>(`/merchant/quotations/${id}/respond${withStore(storeId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status: QUOTE_STATUS_TO_BACKEND[status], observations: observations ?? null })
+    body: JSON.stringify({
+      status: QUOTE_STATUS_TO_BACKEND[status],
+      observations: observations ?? null,
+      discountAmount: discountAmount ?? null
+    })
   }).then(mapQuote)
 };

@@ -71,6 +71,15 @@ const isImageDesignFile = (design: QuoteItemDesign) => {
   return type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(name);
 };
 
+const quotationAmount = (quote: Quote) =>
+    quote.items.reduce((sum, item) => sum + Number(item.subTotal ?? item.quantity * item.price), 0);
+
+const quoteAppliedDiscount = (quote: Quote) =>
+    Math.max(0, Number(quote.discountTotal ?? quote.discountAmount ?? quote.discount ?? 0));
+
+const quoteFinalAmount = (quote: Quote) =>
+    Math.max(0, quotationAmount(quote) - quoteAppliedDiscount(quote));
+
 export default function QuotesPage() {
   const { quotes, updateQuote, store, refreshData, products, discounts = [] } = useStore();
 
@@ -173,13 +182,9 @@ export default function QuotesPage() {
 
   const stats = useMemo(() => {
     const totalQuotes = storeQuotes.length;
-    const totalAmount = storeQuotes.reduce((acc, q) => {
-      const isCustomized = q.hasCustomization || (q.files && q.files.length > 0);
-      const increment = isCustomized ? (store.customizationIncrement || 10) : 0;
-      return acc + (q.total * (1 + increment / 100) * 1.18);
-    }, 0);
+    const totalAmount = storeQuotes.reduce((acc, q) => acc + quoteFinalAmount(q), 0);
     return { sent: totalQuotes, total: totalAmount };
-  }, [storeQuotes, store.customizationIncrement]);
+  }, [storeQuotes]);
 
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -212,16 +217,18 @@ export default function QuotesPage() {
 
     // 4. Calculamos el descuento
     let discountAmount = 0;
-    if (selectedDiscount) {
+    if (selectedQuote.status === 'Pendiente' && selectedDiscount) {
       const discountPercent = selectedDiscount.value || 0;
       discountAmount = subtotal * (discountPercent / 100);
+    } else if (selectedQuote.status !== 'Pendiente') {
+      discountAmount = quoteAppliedDiscount(selectedQuote);
     }
 
     // 5. Subtotal después del descuento aplicado
     const finalSubtotal = Math.max(0, subtotal - discountAmount);
 
-    // 6. Total final sumando el 18% de IGV
-    const total = finalSubtotal * 1.18;
+    // 6. Total final
+    const total = finalSubtotal;
 
     return { base, customization, subtotal, discountAmount, finalSubtotal, total, customPercentage };
   }, [selectedQuote, store.customizationIncrement, selectedDiscount]);
@@ -233,7 +240,8 @@ export default function QuotesPage() {
         await updateQuote(selectedQuoteId, {
           status,
           observations,
-          discountId: selectedDiscountId || undefined
+          discountId: selectedDiscountId || undefined,
+          discountAmount: pricing.discountAmount
         });
       } catch (error) {
         await refreshData({ background: true });
@@ -413,7 +421,7 @@ export default function QuotesPage() {
                             )}
                           </div>
                           <span className="text-[15px] font-black">
-                        S/ {(quote.total * ((quote.hasCustomization || (quote.files && quote.files.length > 0)) ? (1 + (store.customizationIncrement || 10) / 100) : 1) * 1.18).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        S/ {quoteFinalAmount(quote).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                         </div>
                       </div>

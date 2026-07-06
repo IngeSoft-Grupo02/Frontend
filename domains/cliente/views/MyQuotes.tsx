@@ -139,7 +139,10 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
               </thead>
               <tbody className="text-[14px]">
                 {filteredQuotes.map((quote, index) => {
-                  const visibleAmount = (quote.productSubtotal ?? quote.subTotal ?? quote.amount) + (quote.designFeeTotal ?? 0);
+                  const visibleAmount = Math.max(
+                    0,
+                    (quote.productSubtotal ?? quote.subTotal ?? quote.amount) + (quote.designFeeTotal ?? 0) - (quote.discountTotal ?? quote.discount ?? 0)
+                  );
                   return (
                   <motion.tr key={quote.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="border-b last:border-0 hover:bg-black/5 transition-colors" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                     <td className="px-10 py-6 font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>{quote.id}</td>

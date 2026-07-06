@@ -25,7 +25,8 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
   const generalFiles = (quote.files || []).filter((f) => !f.quotationItemId);
   const productSubtotal = quote.productSubtotal ?? quote.subTotal ?? quote.amount;
   const designFeeTotal = quote.designFeeTotal ?? items.reduce((sum, item) => sum + (item.designFeeAmount || 0), 0);
-  const visibleTotal = productSubtotal + designFeeTotal;
+  const discountTotal = quote.discountTotal ?? quote.discount ?? 0;
+  const visibleTotal = Math.max(0, productSubtotal + designFeeTotal - discountTotal);
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -75,6 +76,12 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Cargo extra por diseño</span>
                   <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>+ S/ {money(designFeeTotal)}</span>
                 </div>
+                {discountTotal > 0 && (
+                  <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+                    <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Descuento aplicado por la tienda</span>
+                    <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {money(discountTotal)}</span>
+                  </div>
+                )}
                 <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Monto total</span>
                   <span className="whitespace-nowrap font-black text-[22px] sm:text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(visibleTotal)}</span>

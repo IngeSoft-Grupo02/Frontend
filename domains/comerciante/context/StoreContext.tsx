@@ -348,16 +348,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateQuote = useCallback(async (id: string, updates: Partial<Quote>) => {
     const current = quotes.find(quote => quote.id === id);
     if (!current) return;
-    const merged = { ...current, ...updates };
+    const merged: Quote = { ...current, ...updates };
+    if (updates.discountAmount != null) {
+      const discountAmount = Number(updates.discountAmount || 0);
+      merged.discount = discountAmount;
+      merged.discountAmount = discountAmount;
+      merged.discountTotal = discountAmount;
+      merged.total = Math.max(0, Number(current.subtotal || current.total || 0) - discountAmount);
+    }
     if (!updates.status) {
       setQuotes(prev => prev.map(quote => quote.id === id ? merged : quote));
       return merged;
     }
     if (!hasBackendSession || !store.id) throw new Error('Debes iniciar sesión y seleccionar una tienda.');
-    const updated = await merchantApi.updateQuoteStatus(id, updates.status, updates.observations, store.id);
-    setQuotes(prev => prev.map(quote => quote.id === id ? updated : quote));
-    await loadScopedData(store.id, { background: true });
-    return updated;
+    setQuotes(prev => prev.map(quote => quote.id === id ? merged : quote));
+    try {
+      const updated = await merchantApi.updateQuoteStatus(id, updates.status, updates.observations, updates.discountAmount, store.id);
+      setQuotes(prev => prev.map(quote => quote.id === id ? updated : quote));
+      await loadScopedData(store.id, { background: true });
+      return updated;
+    } catch (error) {
+      setQuotes(prev => prev.map(quote => quote.id === id ? current : quote));
+      throw error;
+    }
   }, [hasBackendSession, loadScopedData, quotes, store.id]);
 
   const addDiscount = useCallback(async (d: Omit<Discount, 'id' | 'usageCount'> & Partial<Pick<Discount, 'id' | 'usageCount'>>) => {

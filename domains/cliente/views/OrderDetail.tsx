@@ -23,6 +23,7 @@ import { Store, User, View, Order } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { PaymentCountdown } from '../components/PaymentCountdown';
 
 interface OrderDetailProps {
   store: Store;
@@ -78,6 +79,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                     </div>
                   </div>
                   <p className="font-bold opacity-70" style={{ color: 'var(--text-on-secondary)' }}>Realizado el {order.date}</p>
+                  {isPendingPayment && (
+                    <PaymentCountdown createdAt={order.createdAt} className="mt-5 max-w-sm" />
+                  )}
                 </div>
                 <div className="flex w-full gap-3 sm:w-auto">
                    <Button 
