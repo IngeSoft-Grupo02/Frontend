@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ArrowLeft, FileText, CheckCircle2, AlertCircle, Download, ImageIcon } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle2, AlertCircle, Download, ImageIcon, Loader2 } from 'lucide-react';
 import { Store, User, Quote, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Badge } from '../components/ui/Badge';
@@ -16,17 +16,33 @@ interface QuoteDetailProps {
   user: User | null;
   quote: Quote;
   onNavigate: (view: View) => void;
+  onGoToApprovedQuoteOrder: (quote: Quote) => Promise<void>;
   onLogout?: () => void;
   cartCount: number;
 }
 
-export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, onNavigate, onLogout, cartCount }) => {
+export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, onNavigate, onGoToApprovedQuoteOrder, onLogout, cartCount }) => {
   const items = quote.items || [];
   const generalFiles = (quote.files || []).filter((f) => !f.quotationItemId);
   const productSubtotal = quote.productSubtotal ?? quote.subTotal ?? quote.amount;
   const designFeeTotal = quote.designFeeTotal ?? items.reduce((sum, item) => sum + (item.designFeeAmount || 0), 0);
   const discountTotal = quote.discountTotal ?? quote.discount ?? 0;
   const visibleTotal = Math.max(0, productSubtotal + designFeeTotal - discountTotal);
+  const [orderError, setOrderError] = React.useState<string | null>(null);
+  const [ensuringOrder, setEnsuringOrder] = React.useState(false);
+
+  const handleApprovedOrderClick = async () => {
+    if (ensuringOrder) return;
+    setEnsuringOrder(true);
+    setOrderError(null);
+    try {
+      await onGoToApprovedQuoteOrder(quote);
+    } catch (error) {
+      setOrderError(error instanceof Error ? error.message : 'No se pudo preparar el pedido para pago.');
+    } finally {
+      setEnsuringOrder(false);
+    }
+  };
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -210,12 +226,25 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                     </p>
                   </div>
                   <button
-                    onClick={() => onNavigate(View.MY_ORDERS)}
-                    className="w-full py-4 rounded-2xl font-black text-[14px] text-center transition-all hover:opacity-90 cursor-pointer"
+                    onClick={handleApprovedOrderClick}
+                    disabled={ensuringOrder}
+                    className="w-full py-4 rounded-2xl font-black text-[14px] text-center transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer inline-flex items-center justify-center gap-2"
                     style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
                   >
-                    Ir a Mis pedidos para pagar
+                    {ensuringOrder ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Preparando pedido...
+                      </>
+                    ) : (
+                      'Ir a Mis pedidos para pagar'
+                    )}
                   </button>
+                  {orderError ? (
+                    <p className="rounded-xl border px-4 py-3 text-[12px] font-bold" style={{ borderColor: '#FCA5A5', backgroundColor: '#FEF2F2', color: '#991B1B' }}>
+                      {orderError}
+                    </p>
+                  ) : null}
                 </div>
               ) : quote.status === 'Propuesta enviada' ? (
                 <div className="flex items-start gap-4">
