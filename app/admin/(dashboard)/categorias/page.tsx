@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/domains/admin/lib/api';
 import { Badge, Button, Card, Input } from '@/domains/admin/components/UI';
 import { AnimatePresence, motion } from 'motion/react';
-import { Plus, Search, Edit2, X, Loader2, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, X, Loader2, AlertCircle, ChevronLeft, ChevronRight, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
+import { ConfirmDialog, FloatingToast, ToastVariant } from '@/domains/shared/components/FloatingFeedback';
 
 interface Category { id: number; storeCategoryName: string; active: boolean; }
 
@@ -92,7 +93,8 @@ export default function CategoriasPage() {
   const [showModal,     setShowModal]     = useState(false);
   const [editTarget,    setEditTarget]    = useState<Category|null>(null);
   const [actionLoading, setActionLoading] = useState<number|null>(null);
-  const [successMsg,    setSuccessMsg]    = useState<string|null>(null);
+  const [toast,         setToast]         = useState<{ message: string; variant: ToastVariant } | null>(null);
+  const [deleteTarget,  setDeleteTarget]  = useState<Category|null>(null);
   const hasLoadedCategoriesRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -120,9 +122,14 @@ export default function CategoriasPage() {
   });
 
   const showSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 3000);
+    setToast({ message: msg, variant: 'success' });
   };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   const handleToggleStatus = async (cat: Category) => {
     setActionLoading(cat.id);
@@ -131,17 +138,20 @@ export default function CategoriasPage() {
       else            await api.categories.reactivate(cat.id);
       showSuccess(`"${cat.storeCategoryName}" ${cat.active ? 'desactivada' : 'reactivada'}.`);
       await loadCategories();
-    } catch (e: any) { setError(e.message); } finally { setActionLoading(null); }
+    } catch (e: any) { setToast({ message: e.message, variant: 'error' }); } finally { setActionLoading(null); }
   };
 
-  const handleDelete = async (cat: Category) => {
-    if (!window.confirm(`¿Eliminar "${cat.storeCategoryName}"?`)) return;
-    setActionLoading(cat.id);
+  const handleDelete = (cat: Category) => setDeleteTarget(cat);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setActionLoading(deleteTarget.id);
     try {
-      await api.categories.delete(cat.id);
-      showSuccess(`"${cat.storeCategoryName}" eliminada.`);
+      await api.categories.delete(deleteTarget.id);
+      showSuccess(`"${deleteTarget.storeCategoryName}" eliminada.`);
+      setDeleteTarget(null);
       await loadCategories();
-    } catch (e: any) { setError(e.message); } finally { setActionLoading(null); }
+    } catch (e: any) { setToast({ message: e.message, variant: 'error' }); } finally { setActionLoading(null); }
   };
 
   const filtered = categories.filter(c => {
@@ -164,16 +174,7 @@ export default function CategoriasPage() {
 
   return (
       <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-        <AnimatePresence>
-          {successMsg && (
-              <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-10 }}
-                          transition={{ duration:0.15 }}
-                          className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
-                <CheckCircle2 size={18} className="text-green-600 shrink-0"/>
-                <p className="text-[14px] text-green-800 font-medium">{successMsg}</p>
-              </motion.div>
-          )}
-        </AnimatePresence>
+        <FloatingToast message={toast?.message ?? null} variant={toast?.variant} onClose={() => setToast(null)} />
 
         {/* Filtros */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
@@ -317,8 +318,20 @@ export default function CategoriasPage() {
                                showSuccess(editTarget ? 'Categoría actualizada.' : 'Categoría creada.');
                                loadCategories();
                              }}/>
-          )}
+              )}
         </AnimatePresence>
+        <ConfirmDialog
+          open={Boolean(deleteTarget)}
+          title="Eliminar categoría"
+          message={deleteTarget ? `¿Estás seguro de eliminar la categoría "${deleteTarget.storeCategoryName}"? Esta acción no se puede deshacer.` : ''}
+          confirmLabel="Sí, eliminar"
+          tone="danger"
+          loading={deleteTarget ? actionLoading === deleteTarget.id : false}
+          onCancel={() => {
+            if (!actionLoading) setDeleteTarget(null);
+          }}
+          onConfirm={confirmDelete}
+        />
       </div>
   );
 }

@@ -3,6 +3,7 @@
 import { Badge, Button, Card, Input, Select } from '@/domains/admin/components/UI';
 import { api, UserResponseDTO } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { ConfirmDialog, FloatingToast, ToastVariant } from '@/domains/shared/components/FloatingFeedback';
 import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 import { Plus, UploadCloud, X, Loader2, AlertCircle, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -28,6 +29,8 @@ export default function UsuariosPage() {
   const [error,         setError]         = useState<string|null>(null);
   const [showDetail,    setShowDetail]    = useState<UserResponseDTO|null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<UserResponseDTO | null>(null);
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
   const [searchTerm,    setSearchTerm]    = useState('');
   const [filterRole,    setFilterRole]    = useState('');
   const [filterStore,   setFilterStore]   = useState('');
@@ -58,6 +61,24 @@ export default function UsuariosPage() {
     onRefresh: () => loadData(true),
   });
 
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('created') === '1') {
+      setToast({ message: 'El usuario se creó correctamente.', variant: 'success' });
+      router.replace(ADMIN_ROUTES.users, { scroll: false });
+    }
+    if (query.get('updated') === '1') {
+      setToast({ message: 'El usuario se actualizó correctamente.', variant: 'success' });
+      router.replace(ADMIN_ROUTES.users, { scroll: false });
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
   const filtered = users.filter(u => {
     const name = `${u.firstName ?? ''} ${u.paternalSurname ?? ''} ${u.email}`.toLowerCase();
     const matchSearch = name.includes(searchTerm.toLowerCase());
@@ -78,19 +99,24 @@ export default function UsuariosPage() {
     setCurrentPage(page => Math.min(page, totalPages));
   }, [totalPages]);
 
-  const handleDeactivate = async (user: UserResponseDTO) => {
-    if (!window.confirm(`¿Desactivar el usuario "${user.email}"?`)) return;
+  const handleDeactivate = (user: UserResponseDTO) => setDeactivateTarget(user);
+
+  const confirmDeactivate = async () => {
+    if (!deactivateTarget) return;
     setActionLoading(true);
     try {
-      await api.users.deactivate(user.id);
+      await api.users.deactivate(deactivateTarget.id);
       setShowDetail(null);
+      setDeactivateTarget(null);
+      setToast({ message: 'El usuario se desactivó correctamente.', variant: 'success' });
       await loadData();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) { setToast({ message: e.message, variant: 'error' }); }
     finally { setActionLoading(false); }
   };
 
   return (
       <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+        <FloatingToast message={toast?.message ?? null} variant={toast?.variant} onClose={() => setToast(null)} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
           <Input label="Buscar" placeholder="Nombre o correo" icon={Search}
                  value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -295,6 +321,18 @@ export default function UsuariosPage() {
               </div>
           )}
         </AnimatePresence>
+        <ConfirmDialog
+          open={Boolean(deactivateTarget)}
+          title="Desactivar usuario"
+          message={deactivateTarget ? `¿Estás seguro de desactivar el usuario "${deactivateTarget.email}"?` : ''}
+          confirmLabel="Sí, desactivar"
+          tone="danger"
+          loading={actionLoading}
+          onCancel={() => {
+            if (!actionLoading) setDeactivateTarget(null);
+          }}
+          onConfirm={confirmDeactivate}
+        />
       </div>
   );
 }

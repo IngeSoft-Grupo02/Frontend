@@ -8,6 +8,7 @@ import { MerchantLayout } from '@/domains/comerciante/components/MerchantLayout'
 import { Badge, Button, Card, Input } from '@/domains/comerciante/components/ui';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
 import { Discount, Product} from '@/domains/comerciante/lib/types';
+import { ConfirmDialog, FloatingToast, ToastVariant } from '@/domains/shared/components/FloatingFeedback';
 import { messageFromError } from '@/domains/shared/errors';
 import {
     ArrowUpRight,
@@ -24,7 +25,7 @@ import {
     Trash2,
     X
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 export default function DiscountsPage() {
   const { discounts, products, addDiscount, updateDiscount, deleteDiscount, refreshData } = useStore();
@@ -36,6 +37,9 @@ export default function DiscountsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Discount | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Discount>>({
@@ -110,6 +114,12 @@ export default function DiscountsPage() {
     [discounts, showDetailId]
   );
 
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
   const filteredDiscounts = useMemo(() => {
     return discounts.filter((d: Discount) => {
       const displayStatus = d.status === 'Activa' ? 'Activas' : 'Inactivos';
@@ -151,6 +161,7 @@ export default function DiscountsPage() {
       status: (formData.status || 'Activa') as Discount['status']
     };
 
+    const isEditing = Boolean(editingId);
     try {
       if (editingId) {
         await updateDiscount(editingId, payload);
@@ -182,6 +193,7 @@ export default function DiscountsPage() {
     setFormErrors({});
     setIsProductPickerOpen(false);
     setProductSearchTerm('');
+    setToast({ message: isEditing ? 'El descuento se actualizó correctamente.' : 'El descuento se creó correctamente.', variant: 'success' });
   };
   const startEdit = (discount: Discount) => {
     setFormData({
@@ -204,9 +216,27 @@ export default function DiscountsPage() {
   const toggleStatus = async (id: string, currentStatus: string) => {
     try {
       await updateDiscount(id, { status: currentStatus === 'Activa' ? 'Pausada' : 'Activa' });
+      setToast({ message: currentStatus === 'Activa' ? 'La promoción se pausó correctamente.' : 'La promoción se reactivó correctamente.', variant: 'success' });
     } catch (error) {
       await refreshData({ background: true });
-      setFormErrors({ form: messageFromError(error, 'No se pudo cambiar el estado') });
+      setToast({ message: messageFromError(error, 'No se pudo cambiar el estado'), variant: 'error' });
+    }
+  };
+
+  const confirmDeleteDiscount = async () => {
+    if (!deleteTarget) return;
+    const idToDelete = deleteTarget.id;
+    setIsDeleting(true);
+    setShowDetailId(null);
+    try {
+      await deleteDiscount(idToDelete);
+      setToast({ message: 'El descuento se eliminó correctamente.', variant: 'success' });
+      setDeleteTarget(null);
+      await refreshData({ background: true });
+    } catch (error) {
+      setToast({ message: messageFromError(error, 'Hubo un problema al eliminar el descuento'), variant: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -440,6 +470,7 @@ export default function DiscountsPage() {
 
   return (
     <MerchantLayout title="Promociones de Volumen" subtitle="Configuración de descuentos por cantidad">
+      <FloatingToast message={toast?.message ?? null} variant={toast?.variant} onClose={() => setToast(null)} />
       <div className="flex flex-col gap-10">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
@@ -665,25 +696,7 @@ export default function DiscountsPage() {
                 </div>
 
                 <Button
-                    onClick={async () => {
-                      if (confirm('¿Eliminar esta regla permanentemente?')) {
-                        // 1. Guardamos el ID porque al cerrar la ventana perderemos la referencia
-                        const idToDelete = selectedDiscount.id;
-
-                        // 2. Cerramos la ventana INMEDIATAMENTE para volver a la tabla de reglas
-                        setShowDetailId(null);
-
-                        try {
-                          // 3. El sistema elimina el descuento en el backend silenciosamente
-                          await deleteDiscount(idToDelete);
-
-                          // 4. Refresca los datos para que desaparezca de la tabla
-                          await refreshData({ background: true });
-                        } catch (error) {
-                          setFormErrors({ form: messageFromError(error, 'Hubo un problema al eliminar el descuento') });
-                        }
-                      }
-                    }}
+                    onClick={() => setDeleteTarget(selectedDiscount)}
                     variant="ghost"
                     className="h-14 rounded-xl font-bold text-red-500 hover:bg-red-50"
                 >
@@ -696,8 +709,19 @@ export default function DiscountsPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Eliminar descuento"
+        message={deleteTarget ? `¿Estás seguro de eliminar permanentemente la promoción "${deleteTarget.name}"?` : ''}
+        confirmLabel="Sí, eliminar"
+        tone="danger"
+        loading={isDeleting}
+        onCancel={() => {
+          if (!isDeleting) setDeleteTarget(null);
+        }}
+        onConfirm={confirmDeleteDiscount}
+      />
     </MerchantLayout>
   );
 }
-
 

@@ -26,6 +26,7 @@ import {
 } from '@/domains/admin/components/admin/StoreForm';
 import { api, StoreCategoryResponse, StoreResponse } from '@/domains/admin/lib/api';
 import { ADMIN_ROUTES } from '@/domains/admin/lib/routes';
+import { ConfirmDialog, FloatingToast, ToastVariant } from '@/domains/shared/components/FloatingFeedback';
 import { useAutoRefresh } from '@/domains/shared/hooks/useAutoRefresh';
 
 const STATUS_MAP: Record<string, string> = {
@@ -74,9 +75,10 @@ export default function TiendasPage() {
   const [categories, setCategories] = useState<StoreCategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
   const [showDetail, setShowDetail] = useState<StoreResponse | null>(null);
   const [actionLoading, setActionLoading] = useState<{ id: number; action: StoreAction } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ action: StoreAction; store: StoreResponse } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -116,17 +118,21 @@ export default function TiendasPage() {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
+    if (query.get('created') === '1') {
+      setToast({ message: 'La tienda se creó correctamente.', variant: 'success' });
+      router.replace(ADMIN_ROUTES.stores, { scroll: false });
+    }
     if (query.get('updated') === '1') {
-      setSuccessMessage('La tienda se actualizó correctamente.');
+      setToast({ message: 'La tienda se actualizó correctamente.', variant: 'success' });
       router.replace(ADMIN_ROUTES.stores, { scroll: false });
     }
   }, [router]);
 
   useEffect(() => {
-    if (!successMessage) return;
-    const timeout = window.setTimeout(() => setSuccessMessage(null), 4000);
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 4000);
     return () => window.clearTimeout(timeout);
-  }, [successMessage]);
+  }, [toast]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -149,24 +155,30 @@ export default function TiendasPage() {
     setCurrentPage(page => Math.min(page, totalPages));
   }, [totalPages]);
 
-  const handleAction = async (action: StoreAction, store: StoreResponse) => {
-    const question = {
-      suspend: '¿Suspender',
-      reactivate: '¿Reactivar',
-      deactivate: '¿Desactivar',
-    }[action];
-    if (!window.confirm(`${question} "${store.storeName}"?`)) return;
+  const actionLabel = (action: StoreAction) => ({
+    suspend: 'suspender',
+    reactivate: 'reactivar',
+    deactivate: 'desactivar',
+  })[action];
 
+  const handleAction = (action: StoreAction, store: StoreResponse) => {
+    setPendingAction({ action, store });
+  };
+
+  const confirmStoreAction = async () => {
+    if (!pendingAction) return;
+    const { action, store } = pendingAction;
     setActionLoading({ id: store.id, action });
     try {
       if (action === 'suspend') await api.stores.suspend(store.id);
       if (action === 'reactivate') await api.stores.reactivate(store.id);
       if (action === 'deactivate') await api.stores.deactivate(store.id);
       setShowDetail(null);
-      setSuccessMessage(`La tienda se ${action === 'suspend' ? 'suspendió' : action === 'reactivate' ? 'reactivó' : 'desactivó'} correctamente.`);
+      setPendingAction(null);
+      setToast({ message: `La tienda se ${action === 'suspend' ? 'suspendió' : action === 'reactivate' ? 'reactivó' : 'desactivó'} correctamente.`, variant: 'success' });
       await loadStores();
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'No se pudo actualizar el estado de la tienda.');
+      setToast({ message: actionError instanceof Error ? actionError.message : 'No se pudo actualizar el estado de la tienda.', variant: 'error' });
     } finally {
       setActionLoading(null);
     }
@@ -177,11 +189,7 @@ export default function TiendasPage() {
 
   return (
     <div className="space-y-6 relative max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      {successMessage && (
-        <div role="status" className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-[14px] font-bold text-green-800">
-          {successMessage}
-        </div>
-      )}
+      <FloatingToast message={toast?.message ?? null} variant={toast?.variant} onClose={() => setToast(null)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
         <Input label="Buscar tienda" placeholder="Nombre o slug" icon={Search} value={searchTerm} onChange={event => setSearchTerm(event.target.value)} />
@@ -385,6 +393,18 @@ export default function TiendasPage() {
           </div>
         )}
       </AnimatePresence>
+      <ConfirmDialog
+        open={Boolean(pendingAction)}
+        title="Confirma esta acción"
+        message={pendingAction ? `¿Estás seguro de ${actionLabel(pendingAction.action)} la tienda "${pendingAction.store.storeName}"?` : ''}
+        confirmLabel={pendingAction ? `Sí, ${actionLabel(pendingAction.action)}` : 'Confirmar'}
+        tone={pendingAction?.action === 'reactivate' ? 'success' : pendingAction?.action === 'deactivate' ? 'danger' : 'warning'}
+        loading={Boolean(actionLoading)}
+        onCancel={() => {
+          if (!actionLoading) setPendingAction(null);
+        }}
+        onConfirm={confirmStoreAction}
+      />
     </div>
   );
 }

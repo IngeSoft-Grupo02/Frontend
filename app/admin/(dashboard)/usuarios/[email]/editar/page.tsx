@@ -166,7 +166,7 @@ export default function EditarUsuarioPage() {
         storeIds:        form.role==='MERCHANT' ? selectedMerchantStores.map(store => store.id) : undefined,
         storeId:         form.role==='CUSTOMER' && form.storeId ? Number(form.storeId) : undefined,
       });
-      router.push(ADMIN_ROUTES.users);
+      router.push(`${ADMIN_ROUTES.users}?updated=1`);
     } catch (err:any) { setGlobalError(messageFromError(err)); } finally { setSaving(false); }
   };
 

@@ -21,7 +21,7 @@ export default function NuevaTiendaPage() {
           tertiaryColor: values.tertiaryColor,
           merchantId: merchant.id,
         });
-        router.push(ADMIN_ROUTES.stores);
+        router.push(`${ADMIN_ROUTES.stores}?created=1`);
       }}
     />
   );
