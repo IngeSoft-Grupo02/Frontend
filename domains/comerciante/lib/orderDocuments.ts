@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { API_BASE_URL, merchantSession } from './api';
 import { Order, OrderItemDetail, Store } from './types';
 
 const NR = 'No registrado';
@@ -27,34 +28,96 @@ interface LoadedLogo {
  * Carga el logo de la tienda como dataURL para incrustarlo en el PDF.
  * Devuelve null si no hay logo o si no se puede cargar (p. ej. CORS en una URL externa).
  */
-const loadStoreLogo = (url?: string): Promise<LoadedLogo | null> =>
-  new Promise((resolve) => {
-    if (!url || url.startsWith('blob:')) {
-      resolve(null);
-      return;
+const LOGO_FETCH_TIMEOUT_MS = 7000;
+
+const resolveLogoUrl = (url: string) => {
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:')) return trimmed;
+  if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+  return trimmed;
+};
+
+const fetchLogoBlob = async (url: string, authenticated: boolean): Promise<Blob | null> => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), LOGO_FETCH_TIMEOUT_MS);
+  try {
+    const headers = new Headers();
+    if (authenticated) {
+      const token = merchantSession.getToken();
+      if (!token) return null;
+      headers.set('Authorization', `Bearer ${token}`);
     }
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers,
+      signal: controller.signal
+    });
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType && !contentType.toLowerCase().startsWith('image/')) return null;
+    const blob = await response.blob();
+    const blobType = blob.type || contentType;
+    if (blobType && !blobType.toLowerCase().startsWith('image/')) return null;
+    return blob;
+  } catch {
+    return null;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
+
+const blobToPngLogo = (blob: Blob): Promise<LoadedLogo | null> =>
+  new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(blob);
     const image = new Image();
-    image.crossOrigin = 'anonymous';
     image.onload = () => {
       try {
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+        if (!width || !height) {
+          resolve(null);
+          return;
+        }
         const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth || image.width;
-        canvas.height = image.naturalHeight || image.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(null);
           return;
         }
         ctx.drawImage(image, 0, 0);
-        resolve({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height });
+        resolve({ dataUrl: canvas.toDataURL('image/png'), width, height });
       } catch {
-        // toDataURL lanza si el canvas quedó "tainted" por una imagen de otro origen.
         resolve(null);
+      } finally {
+        URL.revokeObjectURL(objectUrl);
       }
     };
-    image.onerror = () => resolve(null);
-    image.src = url;
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+    image.src = objectUrl;
   });
+
+const loadLogoFromUrl = async (url: string, authenticated: boolean): Promise<LoadedLogo | null> => {
+  const blob = await fetchLogoBlob(url, authenticated);
+  return blob ? blobToPngLogo(blob) : null;
+};
+
+const loadStoreLogo = async (store: Store): Promise<LoadedLogo | null> => {
+  const source = store.logoUrl || store.logo;
+  if (!source || source.startsWith('blob:')) return null;
+
+  if (store.id) {
+    const backendLogoUrl = `${API_BASE_URL}/merchant/stores/${encodeURIComponent(store.id)}/logo`;
+    const backendLogo = await loadLogoFromUrl(backendLogoUrl, true);
+    if (backendLogo) return backendLogo;
+  }
+
+  return loadLogoFromUrl(resolveLogoUrl(source), false);
+};
 
 /** Resultado de la generación: indica si el logo se pudo incrustar (para avisar al usuario). */
 export interface DocumentResult {
@@ -185,7 +248,7 @@ export const generateDispatchGuide = async (
   increment?: number | null
 ): Promise<DocumentResult> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const logo = await loadStoreLogo(store.logoUrl || store.logo);
+  const logo = await loadStoreLogo(store);
   drawWatermark(doc, logo);
   let y = drawHeader(doc, store, logo, 'Guía de Despacho');
 
@@ -254,7 +317,7 @@ export const generatePaymentReceipt = async (
   increment?: number | null
 ): Promise<DocumentResult> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const logo = await loadStoreLogo(store.logoUrl || store.logo);
+  const logo = await loadStoreLogo(store);
   drawWatermark(doc, logo);
   let y = drawHeader(doc, store, logo, 'Comprobante de Pago');
 
