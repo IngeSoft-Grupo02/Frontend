@@ -2,7 +2,7 @@
 
 import { useState, useRef, DragEvent, useEffect } from 'react';
 import JSZip from 'jszip';
-import { api, type ExistingBulkMerchant, type ExistingBulkStore } from '@/domains/admin/lib/api';
+import { ApiError, api, type ExistingBulkMerchant, type ExistingBulkStore } from '@/domains/admin/lib/api';
 import { messageFromError } from '@/domains/shared/errors';
 import { Button, Card } from '../UI';
 import {
@@ -34,6 +34,23 @@ interface BulkResult {
   merchantsCreated: number;
   storesCreated: number;
   logosProcessed: number;
+}
+
+interface BackendBulkIncidence {
+  block?: 'MERCHANTS' | 'STORES' | 'IMAGES' | string;
+  row?: number | string;
+  code?: string;
+  type?: 'ERROR' | 'WARNING' | string;
+  detail?: string;
+}
+
+interface BackendBulkPayload {
+  errorCount?: number;
+  incidences?: BackendBulkIncidence[];
+  message?: string;
+  merchantsCreated?: number;
+  storesCreated?: number;
+  logosUploaded?: number;
 }
 
 // ── Constantes ────────────────────────────────────────────────────
@@ -68,7 +85,7 @@ function splitCsvLine(line: string): string[] {
 function parseCsv(text: string): { headers: string[]; rows: Record<string,string>[] } {
   const lines = text.split(/\r?\n/).filter(l => l.trim() !== '' && !l.trim().startsWith('#'));
   if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = splitCsvLine(lines[0]).map(h => h.trim());
+  const headers = splitCsvLine(lines[0]).map(normalizeCsvHeader);
   const rows = lines.slice(1).map(line => {
     const cols = splitCsvLine(line);
     const row: Record<string,string> = {};
@@ -76,6 +93,10 @@ function parseCsv(text: string): { headers: string[]; rows: Record<string,string
     return row;
   });
   return { headers, rows };
+}
+
+function normalizeCsvHeader(header: string) {
+  return header.replace(/\uFEFF/g, '').trim();
 }
 
 function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
@@ -520,6 +541,48 @@ function backendBulkErrorMessage(data: any): string | null {
   return `La carga masiva contiene ${errorCount} ${errorCount === 1 ? 'error' : 'errores'} de datos.${detail}`;
 }
 
+function isBackendBulkPayload(payload: unknown): payload is BackendBulkPayload {
+  return !!payload && typeof payload === 'object'
+      && ('errorCount' in payload || 'incidences' in payload);
+}
+
+function backendBlockLabel(block?: string): Incidence['block'] {
+  if (block === 'MERCHANTS') return 'Comerciantes';
+  if (block === 'STORES') return 'Tiendas';
+  return 'Imágenes';
+}
+
+function blockKeyFromLabel(block: Incidence['block']): BlockKey {
+  if (block === 'Comerciantes') return 'merchants';
+  if (block === 'Tiendas') return 'stores';
+  return 'images';
+}
+
+function mapBackendIncidences(payload: BackendBulkPayload): Incidence[] {
+  if (!Array.isArray(payload.incidences)) {
+    return (payload.errorCount ?? 0) > 0
+        ? [{
+          block: 'Comerciantes',
+          row: '—',
+          detail: payload.message || 'El backend devolvió errores de carga masiva sin detalle de fila.',
+          isError: true,
+        }]
+        : [];
+  }
+  return payload.incidences.map((incidence) => ({
+    block: backendBlockLabel(incidence.block),
+    row: incidence.row && Number(incidence.row) > 0 ? incidence.row : '—',
+    detail: incidence.detail?.trim() || incidence.code || 'Incidencia devuelta por el backend.',
+    isError: incidence.type === 'ERROR',
+  }));
+}
+
+function backendErrorCount(payload: BackendBulkPayload, incidences: Incidence[]) {
+  return typeof payload.errorCount === 'number'
+      ? payload.errorCount
+      : incidences.filter(incidence => incidence.isError).length;
+}
+
 
 // ── Componente ────────────────────────────────────────────────────
 
@@ -542,6 +605,8 @@ export function CargaMasivaScreen() {
   const [executed,  setExecuted]    = useState(false);
   const [result,    setResult]      = useState<BulkResult | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [backendIncidences, setBackendIncidences] = useState<Incidence[]>([]);
+  const [backendErrors, setBackendErrors] = useState(0);
   const [dragOver,  setDragOver]    = useState<BlockKey | null>(null);
 
   // ── Datos reales de la BD ─────────────────────────────────────
@@ -684,11 +749,15 @@ export function CargaMasivaScreen() {
 
     setExecuted(false);
     setResult(null);
+    setBackendIncidences([]);
+    setBackendErrors(0);
     setGlobalError(null);
   };
 
   const handleFileSelect = (key: BlockKey, file: File | null) => {
     if (!file) return;
+    setBackendIncidences([]);
+    setBackendErrors(0);
     // Validar extensión antes de cualquier otra cosa
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     const allowedExts: Record<BlockKey, string[]> = {
@@ -712,6 +781,31 @@ export function CargaMasivaScreen() {
     });
   };
 
+  const applyBackendResponse = (payload: BackendBulkPayload) => {
+    const mappedIncidences = mapBackendIncidences(payload);
+    const mappedErrorCount = backendErrorCount(payload, mappedIncidences);
+
+    setBackendIncidences(mappedIncidences);
+    setBackendErrors(mappedErrorCount);
+
+    const errorBlocks = new Set(
+        mappedIncidences
+            .filter(incidence => incidence.isError)
+            .map(incidence => blockKeyFromLabel(incidence.block)),
+    );
+    if (errorBlocks.size > 0) {
+      setBlocks(prev => {
+        const next = { ...prev };
+        errorBlocks.forEach(blockKey => {
+          next[blockKey] = { ...next[blockKey], status: next[blockKey].file ? 'error' : next[blockKey].status };
+        });
+        return next;
+      });
+    }
+
+    return { mappedIncidences, mappedErrorCount };
+  };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>, key: BlockKey) => {
     e.preventDefault(); setDragOver(null);
     handleFileSelect(key, e.dataTransfer.files[0] ?? null);
@@ -733,6 +827,8 @@ export function CargaMasivaScreen() {
 
     setExecuting(true);
     setGlobalError(null);
+    setBackendIncidences([]);
+    setBackendErrors(0);
 
     try {
       const data = await api.bulk.upload(
@@ -740,8 +836,9 @@ export function CargaMasivaScreen() {
           blocks.stores.file    ?? undefined,
           blocks.images.file    ?? undefined,
       );
+      const { mappedErrorCount } = applyBackendResponse(data);
       const backendError = backendBulkErrorMessage(data);
-      if (backendError) {
+      if (backendError || mappedErrorCount > 0) {
         setGlobalError(backendError);
         setResult(null);
         setExecuted(false);
@@ -754,6 +851,13 @@ export function CargaMasivaScreen() {
       });
       setExecuted(true);
     } catch (err: any) {
+      if (err instanceof ApiError && isBackendBulkPayload(err.payload)) {
+        const { mappedErrorCount } = applyBackendResponse(err.payload);
+        setGlobalError(backendBulkErrorMessage(err.payload) || messageFromError(err, 'Error inesperado.'));
+        setResult(null);
+        setExecuted(false);
+        if (mappedErrorCount > 0) return;
+      }
       setGlobalError(messageFromError(err, 'Error inesperado.'));
     } finally {
       setExecuting(false);
@@ -762,12 +866,17 @@ export function CargaMasivaScreen() {
 
   // ── Métricas ──────────────────────────────────────────────────
 
-  const allIncidences = [
+  const localIncidences = [
     ...blocks.merchants.incidences,
     ...blocks.stores.incidences,
     ...blocks.images.incidences,
   ];
-  const errorCount = allIncidences.filter(i => i.isError).length;
+  const allIncidences = [
+    ...localIncidences,
+    ...backendIncidences,
+  ];
+  const incidenceErrorCount = allIncidences.filter(i => i.isError).length;
+  const errorCount = Math.max(incidenceErrorCount, backendErrors);
   const hasBlockingErrors = errorCount > 0;
 
   const canExecute =
@@ -881,7 +990,8 @@ export function CargaMasivaScreen() {
             const state = blocks[block.key];
             const Icon  = block.icon;
             const isDrag = dragOver === block.key;
-            const blockErrors = state.incidences.filter(i => i.isError).length;
+            const blockErrors = state.incidences.filter(i => i.isError).length
+                + backendIncidences.filter(i => i.isError && blockKeyFromLabel(i.block) === block.key).length;
 
             return (
                 <Card
