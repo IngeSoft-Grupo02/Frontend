@@ -857,7 +857,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     <div className="flex items-start gap-2">
                       <ImageIcon size={16} className="mt-0.5 shrink-0" />
                       <span className="leading-tight">
-                        {activeDesignFiles.length > 0 ? `Incremento por diseño (${currentDesignFeePercentage}%)` : 'Logo predeterminado'}
+                        {`Incremento por diseño (${currentDesignFeePercentage}%)`}
                       </span>
                     </div>
                   </div>
