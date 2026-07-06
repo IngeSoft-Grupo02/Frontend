@@ -680,8 +680,7 @@ export default function DiscountsPage() {
                           // 4. Refresca los datos para que desaparezca de la tabla
                           await refreshData({ background: true });
                         } catch (error) {
-                          console.error("Error al eliminar:", error);
-                          alert("Hubo un problema al eliminar el descuento.");
+                          setFormErrors({ form: messageFromError(error, 'Hubo un problema al eliminar el descuento') });
                         }
                       }
                     }}

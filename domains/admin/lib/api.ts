@@ -60,25 +60,33 @@ export class ApiError extends Error {
     message: string,
     public readonly status: number,
     public readonly endpoint: string,
+    public readonly payload?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
   }
 }
 
-async function readErrorMessage(response: Response, endpoint: string): Promise<string> {
+interface ErrorResponseData {
+  message: string;
+  payload?: unknown;
+}
+
+async function readErrorResponse(response: Response, endpoint: string): Promise<ErrorResponseData> {
   const text = await response.text().catch(() => '');
   if (text) {
     try {
       const payload = JSON.parse(text) as { message?: string; error?: string; code?: string };
       const bulkMessage = bulkUploadErrorMessage(payload);
-      if (bulkMessage) return bulkMessage;
-      return payload.message || payload.error || payload.code || text;
+      return {
+        message: bulkMessage || payload.message || payload.error || payload.code || text,
+        payload,
+      };
     } catch {
-      return text;
+      return { message: text };
     }
   }
-  return `Error ${response.status}: ${endpoint}`;
+  return { message: `Error ${response.status}: ${endpoint}` };
 }
 
 function bulkUploadErrorMessage(payload: unknown): string | null {
@@ -116,7 +124,8 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
     if (auth && shouldClearSession(response.status)) {
       handleSesionNoAutorizada();
     }
-    throw new ApiError(translateErrorMessage(await readErrorMessage(response, endpoint)), response.status, endpoint);
+    const error = await readErrorResponse(response, endpoint);
+    throw new ApiError(translateErrorMessage(error.message), response.status, endpoint, error.payload);
   }
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
@@ -133,7 +142,8 @@ async function requestMultipart<T>(endpoint: string, body: FormData): Promise<T>
   }
   if (!response.ok) {
     if (shouldClearSession(response.status)) handleSesionNoAutorizada();
-    throw new ApiError(translateErrorMessage(await readErrorMessage(response, endpoint)), response.status, endpoint);
+    const error = await readErrorResponse(response, endpoint);
+    throw new ApiError(translateErrorMessage(error.message), response.status, endpoint, error.payload);
   }
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
