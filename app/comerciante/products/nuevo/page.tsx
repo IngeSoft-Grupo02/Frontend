@@ -643,9 +643,7 @@ function ProductFormPageContent() {
                 <div className="p-3">
                   <div className="bg-white rounded-2xl border border-brand-neutral-border overflow-hidden group">
                     <div className="aspect-[4/3] bg-zinc-100 relative flex items-center justify-center overflow-hidden">
-                      <div className="absolute top-2 left-2 z-10">
-                        <Badge variant="black" className="bg-white text-black h-5 px-3 font-black text-[9px]">NEW</Badge>
-                      </div>
+                      
 
                       {formData.images[0]?.url ? (
                         <img
