@@ -470,6 +470,8 @@ const mapShippingDetail = (raw: JsonValue): Order['shippingDetail'] => {
     address: shipping.address || undefined,
     district: shipping.district || undefined,
     reference: shipping.reference || undefined,
+    recipientName: shipping.recipientName || undefined,
+    phone: shipping.phone || undefined,
     estimatedDeliveryDate: shipping.estimatedDeliveryDate || undefined,
     actualDeliveryDate: shipping.actualDeliveryDate || undefined
   };

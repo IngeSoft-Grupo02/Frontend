@@ -21,6 +21,7 @@ export const PROTECTED_CLIENT_VIEWS = new Set<View>([
   View.ORDER_DETAIL,
   View.CART,
   View.PAYMENT,
+  View.SHIPPING_ADDRESS,
   View.PROFILE,
 ]);
 
@@ -46,6 +47,7 @@ export function parseClientePath(segments: string[] | undefined): ClienteRouteSt
   }
   if (first === 'pedidos') {
     if (second && third === 'pago') return { view: View.PAYMENT, orderId: second };
+    if (second && third === 'envio') return { view: View.SHIPPING_ADDRESS, orderId: second };
     return second ? { view: View.ORDER_DETAIL, orderId: second } : { view: View.MY_ORDERS };
   }
   if (first === 'carrito') return { view: View.CART };
@@ -86,6 +88,8 @@ export function viewToClientePath(view: View, slug: string | undefined | null, p
       return orderId ? `/${encodedSlug}/pedidos/${orderId}` : `/${encodedSlug}/pedidos`;
     case View.PAYMENT:
       return orderId ? `/${encodedSlug}/pedidos/${orderId}/pago` : `/${encodedSlug}/pedidos`;
+    case View.SHIPPING_ADDRESS:
+      return orderId ? `/${encodedSlug}/pedidos/${orderId}/envio` : `/${encodedSlug}/pedidos`;
     case View.CART:
       return `/${encodedSlug}/carrito`;
     case View.AUTH_LOGIN:

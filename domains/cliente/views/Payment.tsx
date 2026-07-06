@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { CreditCard, ArrowLeft, ShieldCheck, CheckCircle2, Lock, Info, ShoppingBag, AlertTriangle } from 'lucide-react';
+import { CreditCard, ArrowLeft, ShieldCheck, CheckCircle2, Lock, Info, ShoppingBag, AlertTriangle, MapPin } from 'lucide-react';
 import { Store, User, Order, View } from '../types';
 import { payOrder } from '../lib/api';
 import { messageFromError } from '../../shared/errors';
@@ -24,9 +24,10 @@ interface PaymentProps {
   onLogout?: () => void;
   cartCount: number;
   onPaymentCompleted?: () => Promise<void> | void;
+  onGoToShipping?: (order: Order) => void;
 }
 
-export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerToken, onNavigate, onLogout, cartCount, onPaymentCompleted }) => {
+export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerToken, onNavigate, onLogout, cartCount, onPaymentCompleted, onGoToShipping }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -163,18 +164,20 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   fullWidth
                   className="py-5 text-[15px] font-black shadow-xl cursor-pointer"
                   style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
-                  onClick={() => onNavigate(View.MY_ORDERS)}
+                  onClick={() => onGoToShipping?.(order) ?? onNavigate(View.MY_ORDERS)}
                 >
-                  Ver mis pedidos
+                  <span className="flex items-center justify-center gap-2">
+                    <MapPin size={18} /> Registrar dirección de envío
+                  </span>
                 </Button>
                 <Button
                   variant="ghost"
                   fullWidth
                   className="py-5 text-[15px] font-black border-2 cursor-pointer"
                   style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.1)' }}
-                  onClick={() => onNavigate(View.CATALOG)}
+                  onClick={() => onNavigate(View.MY_ORDERS)}
                 >
-                  Seguir comprando
+                  Ver mis pedidos
                 </Button>
               </div>
             </div>

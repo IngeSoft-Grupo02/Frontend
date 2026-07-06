@@ -80,7 +80,7 @@ export function ClienteRouteView({ view, slug, path }: ClienteRouteViewProps) {
             if (!active) return;
             setSelectedOrder(order);
           }
-        } else if (routeState.view !== View.ORDER_DETAIL && routeState.view !== View.PAYMENT) {
+        } else if (routeState.view !== View.ORDER_DETAIL && routeState.view !== View.PAYMENT && routeState.view !== View.SHIPPING_ADDRESS) {
           setSelectedOrder(null);
         }
 

@@ -56,6 +56,8 @@ export interface ShippingInfo {
   address?: string;
   district?: string;
   reference?: string;
+  recipientName?: string;
+  phone?: string;
   estimatedDeliveryDate?: string;
   actualDeliveryDate?: string;
 }

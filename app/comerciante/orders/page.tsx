@@ -552,11 +552,19 @@ export default function OrdersPage() {
                         <div className="space-y-1 text-left">
                           <h5 className="text-[15px] font-black text-brand-black">Dirección de envío</h5>
                           {selectedOrder.shippingDetail?.address ? (
-                            <p className="text-[12px] font-bold text-brand-text-muted leading-relaxed">
-                              {selectedOrder.shippingDetail.address}
-                              {selectedOrder.shippingDetail.district ? ` · ${selectedOrder.shippingDetail.district.replace(/_/g, ' ')}` : ''}
-                              {selectedOrder.shippingDetail.reference ? <><br />Referencia: {selectedOrder.shippingDetail.reference}</> : null}
-                            </p>
+                            <div className="space-y-0.5">
+                              <p className="text-[12px] font-bold text-brand-text-muted leading-relaxed">
+                                {selectedOrder.shippingDetail.address}
+                                {selectedOrder.shippingDetail.district ? ` · ${selectedOrder.shippingDetail.district.replace(/_/g, ' ')}` : ''}
+                                {selectedOrder.shippingDetail.reference ? <><br />Referencia: {selectedOrder.shippingDetail.reference}</> : null}
+                              </p>
+                              {selectedOrder.shippingDetail.recipientName && (
+                                <p className="text-[12px] font-bold text-brand-text-muted">Destinatario: {selectedOrder.shippingDetail.recipientName}</p>
+                              )}
+                              {selectedOrder.shippingDetail.phone && (
+                                <p className="text-[12px] font-bold text-brand-text-muted">Tel: {selectedOrder.shippingDetail.phone}</p>
+                              )}
+                            </div>
                           ) : (
                             <p className="text-[12px] font-bold text-brand-text-muted leading-relaxed">No registrada</p>
                           )}
