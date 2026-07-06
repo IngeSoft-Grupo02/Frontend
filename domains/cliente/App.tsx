@@ -73,11 +73,8 @@ export default function App() {
     setSelectedOrder,
     cartItems,
     setCartItems,
-    quotationDescription,
-    setQuotationDescription,
     itemDesignFiles,
     setItemDesignFiles,
-    generalDesignFiles,
     setGeneralDesignFiles,
     isHydrated,
   } = useApp();
@@ -207,6 +204,7 @@ export default function App() {
       setItemDesignFiles((current) => {
         const next: Record<string, File[]> = {};
         for (const item of mappedItems) {
+          if ((item as { customizable?: boolean }).customizable === false) continue;
           const files = current[item.id]?.length ? current[item.id] : persistedFiles[item.id];
           if (files?.length) next[item.id] = files;
         }
@@ -214,7 +212,7 @@ export default function App() {
       });
       setCartItems(mappedItems.map((item) => ({
         ...item,
-        localDesignFiles: persistedFiles[item.id] || [],
+        localDesignFiles: (item as { customizable?: boolean }).customizable === false ? [] : persistedFiles[item.id] || [],
       })));
       return cart;
     } finally {
@@ -295,7 +293,8 @@ export default function App() {
     const filesByItemId: Record<string, File[]> = {};
     const validRows = (item.rows || []).filter((row: any) => Number(row.quantity) > 0);
     const customerDescription = String(item.specs || '').trim();
-    const hasDesignFiles = item.files?.length > 0;
+    const itemAllowsCustomization = item.customizable !== false && selectedProduct.customizable !== false;
+    const hasDesignFiles = itemAllowsCustomization && item.files?.length > 0;
     for (const row of validRows) {
       const variant = selectedProduct.variants.find(
         (entry) => entry.size === row.size && String(entry.color) === String(row.color),
@@ -336,10 +335,17 @@ export default function App() {
         ...current,
         ...filesByItemId,
       }));
-      setCartItems(toCartItems(latestCart).map((cartItem) => ({
-        ...cartItem,
-        localDesignFiles: filesByItemId[cartItem.id] || itemDesignFiles[cartItem.id] || [],
-      })));
+      setCartItems(toCartItems(latestCart).map((cartItem) => {
+        const isSelectedProduct = cartItem.productId === String(selectedProduct.id);
+        const customizable = isSelectedProduct
+          ? selectedProduct.customizable !== false
+          : (cartItem as { customizable?: boolean }).customizable;
+        return {
+          ...cartItem,
+          customizable,
+          localDesignFiles: customizable === false ? [] : filesByItemId[cartItem.id] || itemDesignFiles[cartItem.id] || [],
+        };
+      }));
     } else {
       await loadCart(selectedStore.slug, customerToken, { showLoading: currentView === View.CART });
     }
@@ -398,6 +404,10 @@ export default function App() {
   };
 
   const updateItemDesignFiles = (itemId: string, files: File[]) => {
+    const targetItem = cartItems.find((item) => item.id === itemId);
+    if ((targetItem as { customizable?: boolean } | undefined)?.customizable === false) {
+      return;
+    }
     if (selectedStore?.slug) {
       void saveDraftItemDesignFiles(selectedStore.slug, itemId, files);
     }
@@ -415,6 +425,12 @@ export default function App() {
     )));
   };
 
+  const updateItemDesignOverlay = (itemId: string, overlay: { x: number; y: number; width: number; height: number } | null) => {
+    setCartItems((current) => current.map((item) => (
+      item.id === itemId ? { ...item, designOverlay: overlay } : item
+    )));
+  };
+
   const updateItemDesignDescription = async (itemId: string, description: string) => {
     const trimmed = description.trim();
     setCartItems((current) => current.map((item) => (
@@ -425,7 +441,8 @@ export default function App() {
     try {
       const targetItem = cartItems.find((item) => item.id === itemId);
       const localFiles = itemDesignFiles[itemId] || [];
-      const shouldPreserveDesignFee = Boolean(targetItem?.hasDesignFee) || localFiles.length > 0;
+      const itemAllowsCustomization = (targetItem as { customizable?: boolean } | undefined)?.customizable !== false;
+      const shouldPreserveDesignFee = itemAllowsCustomization && (Boolean(targetItem?.hasDesignFee) || localFiles.length > 0);
       const cart = await addCartDesign(selectedStore.slug, customerToken, itemId, {
         description: trimmed,
         imageUrl: shouldPreserveDesignFee ? pendingDesignImageMarker : null,
@@ -465,6 +482,7 @@ export default function App() {
       for (const [itemId, files] of Object.entries(itemDesignFiles)) {
         const cartItem = cartItems.find((item) => item.id === itemId);
         if (!cartItem) continue;
+        if ((cartItem as { customizable?: boolean }).customizable === false) continue;
         for (const file of files) {
           allDesigns.push(file);
           associations.push({
@@ -476,10 +494,6 @@ export default function App() {
           });
         }
       }
-      for (const file of generalDesignFiles) {
-        allDesigns.push(file);
-        associations.push(null);
-      }
 
       const quotation = await createQuotation(selectedStore.slug, customerToken, {
         description,
@@ -488,7 +502,6 @@ export default function App() {
       });
       const mappedQuote = toQuote(quotation);
       setSelectedQuote(mappedQuote);
-      setQuotationDescription('');
       await deleteDraftItemDesignFilesMany(selectedStore.slug, Object.keys(itemDesignFiles));
       setItemDesignFiles({});
       setGeneralDesignFiles([]);
@@ -659,7 +672,7 @@ export default function App() {
 
       case View.CART:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;
-        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} isLoading={isCartLoading} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} quotationDescription={quotationDescription} onQuotationDescriptionChange={setQuotationDescription} quotationFiles={generalDesignFiles} onQuotationFilesChange={setGeneralDesignFiles} itemDesignFiles={itemDesignFiles} onItemDesignFilesChange={updateItemDesignFiles} onItemDesignDescriptionChange={updateItemDesignDescription} />;
+        return <Cart store={selectedStore} user={currentUser} items={cartItems} onRemoveItem={removeFromCart} onCreateQuotation={submitCartQuotation} onNavigate={navigate} onLogout={handleLogout} isSubmitting={isSubmittingQuote} isLoading={isCartLoading} cartError={cartError} cartAlreadySubmitted={cartAlreadySubmitted} itemDesignFiles={itemDesignFiles} onItemDesignFilesChange={updateItemDesignFiles} onItemDesignDescriptionChange={updateItemDesignDescription} onItemDesignOverlayChange={updateItemDesignOverlay} />;
 
       case View.MY_QUOTES:
         if (!selectedStore) return <Directory onSelectStore={handleSelectStore} onNavigate={navigate} onLogout={handleLogout} />;

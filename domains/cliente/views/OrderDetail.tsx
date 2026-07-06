@@ -34,13 +34,16 @@ interface OrderDetailProps {
 }
 
 export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, onNavigate, onLogout, cartCount }) => {
-  // Timeline steps
+  const statusOrder: Order['status'][] = ['Pago pendiente', 'Pagado', 'En proceso', 'En camino', 'Entregado'];
+  const currentStep = Math.max(0, statusOrder.indexOf(order.status));
   const steps = [
-    { label: 'Pago Exitoso', status: 'completed', date: '22 Abr, 2024 · 11:20 AM', icon: CreditCard },
-    { label: 'En Proceso', status: order.status !== 'Pagado' ? 'completed' : 'pending', date: '23 Abr, 2024 · 09:15 AM', icon: Clock },
-    { label: 'En Camino', status: (order.status === 'En camino' || order.status === 'Entregado') ? 'completed' : 'pending', date: '24 Abr, 2024 · 02:30 PM', icon: Truck },
-    { label: 'Entregado', status: order.status === 'Entregado' ? 'completed' : 'pending', date: '25 Abr, 2024 · 10:00 AM', icon: CheckCircle2 },
+    { label: 'Pago pendiente', status: currentStep >= 0 ? 'completed' : 'pending', date: order.date, icon: CreditCard },
+    { label: 'Pagado', status: currentStep >= 1 ? 'completed' : 'pending', date: currentStep >= 1 ? order.date : 'Pendiente', icon: CheckCircle2 },
+    { label: 'En proceso', status: currentStep >= 2 ? 'completed' : 'pending', date: currentStep >= 2 ? order.date : 'Pendiente', icon: Clock },
+    { label: 'En camino', status: currentStep >= 3 ? 'completed' : 'pending', date: currentStep >= 3 ? order.date : 'Pendiente', icon: Truck },
+    { label: 'Entregado', status: currentStep >= 4 ? 'completed' : 'pending', date: currentStep >= 4 ? order.date : 'Pendiente', icon: CheckCircle2 },
   ];
+  const isPendingPayment = order.status === 'Pago pendiente';
 
   return (
     <div className="min-h-screen pb-20 transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -189,7 +192,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                   <span style={{ color: 'var(--text-on-secondary)' }}>S/ {(order.amount - (order.amount / 1.18)).toFixed(2)}</span>
                 </div>
                 <div className="pt-4 border-t flex justify-between items-center" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                  <span className="text-[16px] font-black uppercase tracking-widest" style={{ color: 'var(--text-on-secondary)' }}>Total Pagado</span>
+                  <span className="text-[16px] font-black uppercase tracking-widest" style={{ color: 'var(--text-on-secondary)' }}>{isPendingPayment ? 'Total por pagar' : 'Total pagado'}</span>
                   <span className="whitespace-nowrap text-[24px] sm:text-[28px] font-black leading-none" style={{ color: 'var(--accent-on-secondary)' }}>S/ {order.amount.toFixed(2)}</span>
                 </div>
               </div>
@@ -199,9 +202,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--color-secondary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                     <CreditCard size={16} style={{ color: 'var(--accent-on-secondary)' }} />
                   </div>
-                  <span className="text-[13px] font-black" style={{ color: 'var(--text-on-primary)' }}>Pago con Tarjeta VISA</span>
+                  <span className="text-[13px] font-black" style={{ color: 'var(--text-on-primary)' }}>{isPendingPayment ? 'Pago pendiente' : 'Pago con Tarjeta VISA'}</span>
                 </div>
-                <p className="text-[11px] font-bold ml-11 opacity-60" style={{ color: 'var(--text-on-primary)' }}>Termina en **** 4567</p>
+                <p className="text-[11px] font-bold ml-11 opacity-60" style={{ color: 'var(--text-on-primary)' }}>{isPendingPayment ? 'Completa el pago para iniciar la preparación del pedido.' : 'Termina en **** 4567'}</p>
               </div>
             </div>
  

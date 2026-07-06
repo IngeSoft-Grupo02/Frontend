@@ -24,8 +24,8 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
   const items = quote.items || [];
   const generalFiles = (quote.files || []).filter((f) => !f.quotationItemId);
   const productSubtotal = quote.productSubtotal ?? quote.subTotal ?? quote.amount;
-  const discountTotal = quote.discountTotal ?? quote.discount ?? 0;
   const designFeeTotal = quote.designFeeTotal ?? items.reduce((sum, item) => sum + (item.designFeeAmount || 0), 0);
+  const visibleTotal = productSubtotal + designFeeTotal;
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -72,23 +72,23 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                   <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(productSubtotal)}</span>
                 </div>
                 <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                  <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Descuento</span>
-                  <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--accent-on-secondary)' }}>- S/ {money(discountTotal)}</span>
-                </div>
-                <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Cargo extra por diseño</span>
                   <span className="whitespace-nowrap font-black text-[18px]" style={{ color: 'var(--text-on-secondary)' }}>+ S/ {money(designFeeTotal)}</span>
                 </div>
                 <div className="flex flex-wrap justify-between gap-2 items-center py-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="font-bold uppercase tracking-widest text-[11px] opacity-60">Monto total</span>
-                  <span className="whitespace-nowrap font-black text-[22px] sm:text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(quote.amount)}</span>
+                  <span className="whitespace-nowrap font-black text-[22px] sm:text-[24px] tracking-tight" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(visibleTotal)}</span>
                 </div>
 
                 {items.length > 0 && (
                   <div className="py-8">
                     <span className="font-bold uppercase tracking-widest text-[11px] opacity-60 block mb-4">Productos solicitados</span>
                     <div className="space-y-3">
-                      {items.map((item) => (
+                      {items.map((item) => {
+                        const itemUnitPrice = item.baseUnitPrice || item.unitPrice || item.price || 0;
+                        const itemBaseSubtotal = item.baseSubtotal ?? (itemUnitPrice > 0 ? itemUnitPrice * item.quantity : item.subTotal);
+                        const itemDesignFee = item.designFeeAmount || 0;
+                        return (
                         <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
@@ -97,17 +97,13 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                             </div>
                             <div className="text-right">
                               <div className="text-[12px] font-bold">{item.quantity} u. x S/ {(item.baseUnitPrice || item.unitPrice || item.price || 0).toFixed(2)}</div>
-                              <div className="text-[14px] font-black">S/ {money(item.lineTotal ?? item.subTotal)}</div>
+                              <div className="text-[14px] font-black">S/ {money(itemBaseSubtotal + itemDesignFee)}</div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-bold opacity-70">
-                            <span>Base: S/ {money(item.baseSubtotal ?? item.subTotal)}</span>
-                            <span>Descuento: -S/ {money(item.discountAmount || 0)}</span>
-                            <span>Diseño: +S/ {money(item.designFeeAmount || 0)}</span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-bold opacity-70">
+                            <span>Base: S/ {money(itemBaseSubtotal)}</span>
+                            <span>Diseño: +S/ {money(itemDesignFee)}</span>
                           </div>
-                          {item.discountRuleLabel && (
-                            <p className="text-[10px] font-bold text-emerald-600">{item.discountRuleLabel}</p>
-                          )}
                           {item.customerDescription && (
                             <div className="pt-2 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                               <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Indicaciones</span>
@@ -128,7 +124,8 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                             </div>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

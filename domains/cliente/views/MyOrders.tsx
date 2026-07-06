@@ -78,7 +78,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
   });
 
   const statusStep = (status: Order['status']): number => {
-    const steps: Order['status'][] = ['Pagado', 'En proceso', 'En camino', 'Entregado'];
+    const steps: Order['status'][] = ['Pago pendiente', 'Pagado', 'En proceso', 'En camino', 'Entregado'];
     const idx = steps.indexOf(status);
     return idx >= 0 ? idx : 0;
   };
@@ -132,7 +132,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
           <div className="space-y-6">
             {orders.map((order, i) => {
               const step = statusStep(order.status);
-              const canPay = order.rawStatus === 'PAYMENT_CONFIRMED';
+              const canPay = order.rawStatus === 'PENDING_PAYMENT' || order.status === 'Pago pendiente';
 
               return (
                 <motion.div
@@ -166,7 +166,8 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                   {/* Timeline de estado */}
                   <div className="w-full flex-1 flex items-center gap-2 overflow-x-auto px-0 py-4 no-scrollbar lg:px-6 lg:py-0 lg:border-x lg:mx-auto" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
                     {[
-                      { label: 'Pagado', icon: CreditCard },
+                      { label: 'Pago pendiente', icon: CreditCard },
+                      { label: 'Pagado', icon: CheckCircle2 },
                       { label: 'En proceso', icon: Clock },
                       { label: 'En camino', icon: Truck },
                       { label: 'Entregado', icon: CheckCircle2 },
@@ -190,7 +191,7 @@ export const MyOrders: React.FC<MyOrdersProps> = ({
                             {s.label}
                           </span>
                         </div>
-                        {idx < 3 && (
+                        {idx < 4 && (
                           <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
                             <div className="h-full" style={{ backgroundColor: 'var(--color-tertiary)', width: step > idx ? '100%' : '0%', transition: 'width 0.4s' }} />
                           </div>

@@ -11,6 +11,7 @@ import {
     Box,
     Check,
     CheckCircle2,
+    Clock,
     FileText,
     Layers,
     MapPin,
@@ -143,6 +144,7 @@ export default function OrdersPage() {
   };
 
   const nextStatusMap: Record<Order['status'], Order['status'] | null> = {
+    'Pago pendiente': null,
     'Pagado': 'En proceso',
     'En proceso': 'Enviado',
     'Enviado': 'Entregado',
@@ -166,8 +168,8 @@ export default function OrdersPage() {
   };
 
   const handleStepClick = async (stepLabel: string) => {
+    if (stepLabel === 'Pago pendiente' || stepLabel === 'Pagado') return;
     const statusMap: Record<string, Order['status']> = {
-      'Pagado': 'Pagado',
       'En proceso': 'En proceso',
       'Enviado': 'Enviado',
       'Entregado': 'Entregado'
@@ -185,13 +187,14 @@ export default function OrdersPage() {
   };
 
   const getStatusSteps = (status: Order['status']) => {
-    const allSteps = ['Pagado', 'En proceso', 'Enviado', 'Entregado'];
+    const allSteps: Order['status'][] = ['Pago pendiente', 'Pagado', 'En proceso', 'Enviado', 'Entregado'];
     const currentIdx = allSteps.indexOf(status);
     return [
-      { label: 'Pagado', icon: Check, completed: currentIdx >= 0, active: status === 'Pagado' },
-      { label: 'En proceso', icon: PackageIcon, completed: currentIdx >= 1, active: status === 'En proceso' },
-      { label: 'Enviado', icon: Truck, completed: currentIdx >= 2, active: status === 'Enviado' },
-      { label: 'Entregado', icon: ShoppingBag, completed: currentIdx >= 3, active: status === 'Entregado' },
+      { label: 'Pago pendiente', icon: Clock, completed: currentIdx >= 0, active: status === 'Pago pendiente' },
+      { label: 'Pagado', icon: Check, completed: currentIdx >= 1, active: status === 'Pagado' },
+      { label: 'En proceso', icon: PackageIcon, completed: currentIdx >= 2, active: status === 'En proceso' },
+      { label: 'Enviado', icon: Truck, completed: currentIdx >= 3, active: status === 'Enviado' },
+      { label: 'Entregado', icon: ShoppingBag, completed: currentIdx >= 4, active: status === 'Entregado' },
     ];
   };
 
@@ -235,7 +238,7 @@ export default function OrdersPage() {
                   backgroundSize: '1rem'
                 }}
               >
-                {['Todos', 'Pagado', 'En proceso', 'Enviado', 'Entregado', 'Cancelado'].map(item => (
+                {['Todos', 'Pago pendiente', 'Pagado', 'En proceso', 'Enviado', 'Entregado', 'Cancelado'].map(item => (
                   <option key={item} value={item}>{item === 'Todos' ? 'Ver Todos' : item}</option>
                 ))}
               </select>
@@ -341,6 +344,7 @@ export default function OrdersPage() {
                         <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest">{formatOrderDate(order.date)}</p>
                       </div>
                       <Badge variant={
+                        order.status === 'Pago pendiente' ? 'warning' :
                         order.status === 'Pagado' ? 'info' :
                         order.status === 'En proceso' ? 'warning' :
                         order.status === 'Enviado' ? 'secondary' :
@@ -418,6 +422,7 @@ export default function OrdersPage() {
                         <h2 className="text-[26px] font-black tracking-tighter text-brand-black leading-none">{selectedOrder.customer}</h2>
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                           <Badge variant={
+                            selectedOrder.status === 'Pago pendiente' ? 'warning' :
                             selectedOrder.status === 'Pagado' ? 'info' :
                             selectedOrder.status === 'En proceso' ? 'warning' :
                             selectedOrder.status === 'Enviado' ? 'secondary' :
@@ -459,9 +464,11 @@ export default function OrdersPage() {
                         <div
                           className="absolute left-[5%] top-[20px] h-[3px] bg-brand-black z-0 transition-all duration-700"
                           style={{
-                            width: selectedOrder.status === 'Pagado' ? '0%' :
-                              selectedOrder.status === 'En proceso' ? '33%' :
-                              selectedOrder.status === 'Enviado' ? '66%' : '95%'
+                            width: selectedOrder.status === 'Pago pendiente' ? '0%' :
+                              selectedOrder.status === 'Pagado' ? '25%' :
+                              selectedOrder.status === 'En proceso' ? '50%' :
+                              selectedOrder.status === 'Enviado' ? '75%' :
+                              selectedOrder.status === 'Entregado' ? '95%' : '0%'
                           }}
                         ></div>
                         {currentSteps.map((step, idx) => (

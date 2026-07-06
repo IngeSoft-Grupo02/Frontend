@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { messageFromError } from '../../shared/errors';
 import { useAutoRefresh } from '../../shared/hooks/useAutoRefresh';
+import { money } from '../lib/pricing';
 
 interface MyQuotesProps {
   store: Store;
@@ -137,7 +138,9 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
                 </tr>
               </thead>
               <tbody className="text-[14px]">
-                {filteredQuotes.map((quote, index) => (
+                {filteredQuotes.map((quote, index) => {
+                  const visibleAmount = (quote.productSubtotal ?? quote.subTotal ?? quote.amount) + (quote.designFeeTotal ?? 0);
+                  return (
                   <motion.tr key={quote.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="border-b last:border-0 hover:bg-black/5 transition-colors" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                     <td className="px-10 py-6 font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>{quote.id}</td>
                     <td className="px-6 py-6">
@@ -147,7 +150,7 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
                       </div>
                     </td>
                     <td className="px-6 py-6 font-medium opacity-80" style={{ color: 'var(--text-on-secondary)' }}>{quote.date}</td>
-                    <td className="px-6 py-6 font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>S/ {quote.amount.toLocaleString()}</td>
+                    <td className="px-6 py-6 font-extrabold" style={{ color: 'var(--text-on-secondary)' }}>S/ {money(visibleAmount)}</td>
                     <td className="px-6 py-6"><div className="scale-110 origin-left"><Badge status={quote.status} /></div></td>
                     <td className="px-10 py-6 text-center">
                       <Button variant="primary" className="px-5 py-2 !text-[11px] flex items-center gap-2 mx-auto cursor-pointer font-black" style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', borderColor: 'transparent' }} onClick={() => onSelectQuote(quote)}>
@@ -155,7 +158,8 @@ export const MyQuotes: React.FC<MyQuotesProps> = ({ store, user, customerToken, 
                       </Button>
                     </td>
                   </motion.tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

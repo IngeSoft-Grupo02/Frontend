@@ -148,6 +148,7 @@ export function toStore(dto: StorePublicDTO): Store {
   const primaryColor = resolveColor(PrimaryColor as unknown as Record<string, string>, dto.primaryColor, PrimaryColor.ONYX_BLACK);
   const secondaryColor = resolveColor(SecondaryColor as unknown as Record<string, string>, dto.secondaryColor, SecondaryColor.SLATE);
   const tertiaryColor = resolveColor(TertiaryColor as unknown as Record<string, string>, dto.tertiaryColor, TertiaryColor.RAW_GOLD);
+  const contactPhone = String(dto.contactPhone || dto.whatsapp || dto.phone || '').trim();
 
   return {
     id: dto.slug,
@@ -162,7 +163,7 @@ export function toStore(dto: StorePublicDTO): Store {
     tertiaryColor,
     logo: buildInitials(dto.storeName),
     logoUrl: dto.logoUrl,
-    whatsapp: '',
+    whatsapp: contactPhone,
   };
 }
 
@@ -238,6 +239,7 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     productVariantId: String(item.productVariantId),
     productName: item.productName,
     productImageUrl: item.productImageUrl ?? null,
+    customizable: item.customizable ?? (item as any).productCustomizable ?? true,
     quantity: item.quantity,
     specs: [item.size, item.color ? getColorLabel(item.color) : ''].filter(Boolean).join(' / '),
     hasDesign: Boolean(item.customDesign),
@@ -399,6 +401,7 @@ export function fetchQuotation(slug: string, token: string, quoteId: string | nu
 
 function orderStatusLabel(rawStatus: string): Order['status'] {
   const map: Record<string, Order['status']> = {
+    PENDING_PAYMENT: 'Pago pendiente',
     PAYMENT_CONFIRMED: 'Pagado',
     IN_PREPARATION: 'En proceso',
     IN_TRANSIT: 'En camino',

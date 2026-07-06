@@ -31,7 +31,7 @@ export interface Store {
   };
 }
 
-export type OrderStatus = 'Pagado' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
+export type OrderStatus = 'Pago pendiente' | 'Pagado' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
 
 export interface OrderItemDetail {
   productId?: string;

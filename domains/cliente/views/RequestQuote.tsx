@@ -5,12 +5,13 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Upload, Info, CheckCircle2, ChevronRight, FileText, ImageIcon, X, Plus, Loader2, AlertTriangle, Move } from 'lucide-react';
+import { ArrowLeft, Upload, Info, CheckCircle2, ChevronRight, ImageIcon, X, Plus, Loader2, AlertTriangle, Move } from 'lucide-react';
 import { Store, User, Product, View } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
 import { getColorLabel, getColorSwatchStyle } from '../../shared/colors';
-import { DESIGN_FEE_RATE, bestDiscount, discountRuleLabel, money } from '../lib/pricing';
+import { DESIGN_FEE_RATE, money } from '../lib/pricing';
+import { resolveStoreLogoUrl } from '../lib/storeLogo';
 
 interface RequestQuoteProps {
   store: Store;
@@ -37,6 +38,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   const [overlayInteraction, setOverlayInteraction] = useState<OverlayInteraction>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [storeLogoFailed, setStoreLogoFailed] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const previewFrameRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -86,35 +88,39 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files || []);
     event.target.value = '';
+    if (product?.customizable === false) {
+      setUploadedFiles([]);
+      return;
+    }
     if (selected.length === 0) return;
 
-    const remainingSlots = 5 - uploadedFiles.length;
+    const remainingSlots = 1 - uploadedFiles.length;
     if (remainingSlots <= 0) {
-      setAddError('Máximo 5 archivos permitidos.');
+      setAddError('Solo puedes adjuntar una imagen de diseño.');
       return;
     }
 
-    const allowedFileTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+    const allowedFileTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
     const maxFileSizeBytes = 10 * 1024 * 1024;
     const accepted: File[] = [];
 
     for (const file of selected.slice(0, remainingSlots)) {
       if (file.size === 0) {
-        setAddError('El archivo está vacío.');
+        setAddError('La imagen está vacía.');
         return;
       }
       if (file.size > maxFileSizeBytes) {
-        setAddError('El archivo supera el tamaño máximo permitido.');
+        setAddError('La imagen supera el tamaño máximo permitido.');
         return;
       }
       if (!allowedFileTypes.has(file.type)) {
-        setAddError('Formato de archivo no permitido.');
+        setAddError('Solo puedes adjuntar imágenes PNG, JPG, JPEG o WEBP.');
         return;
       }
       accepted.push(file);
     }
 
-    setUploadedFiles(prev => [...prev, ...accepted]);
+    setUploadedFiles(accepted);
     setAddError(null);
   };
 
@@ -127,7 +133,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     setDesignMode(mode);
     if (mode === 'none') {
       setUploadedFiles([]);
-      setSpecs('');
       setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 });
     }
     setAddError(null);
@@ -164,11 +169,31 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0) || null;
   }, [product]);
   const productAllowsCustomization = product?.customizable !== false;
+  const storeLogoUrl = React.useMemo(() => resolveStoreLogoUrl(store), [store]);
+  const generatedStoreLogoUrl = React.useMemo(() => {
+    const label = (store.logo || store.name || 'KS').trim().slice(0, 3).toUpperCase();
+    const safeLabel = label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const background = store.primaryColor || store.color || '#0F1011';
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420">
+        <rect width="420" height="420" rx="72" fill="${background}"/>
+        <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="900" fill="#FFFFFF">${safeLabel}</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }, [store.color, store.logo, store.name, store.primaryColor]);
+  const defaultDesignPreviewUrl = !storeLogoFailed && storeLogoUrl ? storeLogoUrl : generatedStoreLogoUrl;
   const previewDesignFile = React.useMemo(
     () => uploadedFiles.find((file) => file.type.startsWith('image/')) || null,
     [uploadedFiles],
   );
   const [designPreviewUrl, setDesignPreviewUrl] = useState<string | null>(null);
+  const activeDesignPreviewUrl = designPreviewUrl || defaultDesignPreviewUrl;
+  const isUsingDefaultDesignPreview = !designPreviewUrl;
+
+  React.useEffect(() => {
+    setStoreLogoFailed(false);
+  }, [storeLogoUrl]);
 
   React.useEffect(() => {
     if (!previewDesignFile) {
@@ -292,6 +317,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
         quantity,
         specs: activeSpecs,
         rows,
+        customizable: productAllowsCustomization,
         hasDesign: productAllowsCustomization && (activeFiles.length > 0 || activeSpecs.length > 0),
         files: activeFiles,
         designOverlay: hasVisualOverlay ? designOverlay : null,
@@ -310,10 +336,150 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
   const activeDesignFiles = productAllowsCustomization && designMode === 'custom' ? uploadedFiles : [];
   const designFeeAmount = activeDesignFiles.length > 0 ? subtotal * DESIGN_FEE_RATE : 0;
-  const applicableDiscount = bestDiscount(product?.discounts || [], quantity);
-  const discountRate = Number(applicableDiscount?.discountPercentage || 0) / 100;
-  const discountAmount = subtotal * discountRate;
-  const total = subtotal - discountAmount + designFeeAmount;
+  const total = subtotal + designFeeAmount;
+  const renderProductPreview = () => (
+    <div className="rounded-2xl border p-4 sm:p-5" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h4 className="text-[15px] font-black flex items-center gap-2">
+            <Move size={16} /> Vista previa del producto
+          </h4>
+          <p className="mt-1 text-[12px] font-bold opacity-60">
+            {isUsingDefaultDesignPreview
+              ? `Mostramos el logo de ${store.name} como diseño predeterminado.`
+              : 'Arrastra el diseño y toma sus bordes para cambiar el tamaño.'}
+          </p>
+        </div>
+        <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider opacity-70" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+          Referencial
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        <div
+          ref={previewFrameRef}
+          className="relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-2xl border bg-white touch-none"
+          style={{ borderColor: 'rgba(0,0,0,0.08)' }}
+          onPointerMove={handlePreviewPointerMove}
+          onPointerUp={stopOverlayInteraction}
+          onPointerCancel={stopOverlayInteraction}
+          onPointerLeave={() => setOverlayInteraction(null)}
+        >
+          {productImageUrl ? (
+            <img
+              src={productImageUrl}
+              alt={product?.name || 'Producto'}
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-neutral-400">
+              <ImageIcon size={34} />
+              <p className="text-[12px] font-bold">Producto sin imagen disponible.</p>
+            </div>
+          )}
+
+          {activeDesignPreviewUrl && productImageUrl ? (
+            <div
+              role="presentation"
+              onPointerDown={handleOverlayPointerDown}
+              className="absolute z-10 select-none rounded-md border-2 border-black/80 shadow-xl touch-none"
+              style={{
+                left: `${designOverlay.x}%`,
+                top: `${designOverlay.y}%`,
+                width: `${designOverlay.width}%`,
+                height: `${designOverlay.height}%`,
+                transform: 'translate(-50%, -50%)',
+                cursor: overlayInteraction?.type === 'move' ? 'grabbing' : 'grab',
+                backgroundColor: 'rgba(255,255,255,0.16)',
+              }}
+            >
+              <img
+                src={activeDesignPreviewUrl}
+                alt={isUsingDefaultDesignPreview ? `Logo de ${store.name}` : 'Diseño ubicado sobre el producto'}
+                referrerPolicy="no-referrer"
+                draggable={false}
+                onError={() => {
+                  if (isUsingDefaultDesignPreview) setStoreLogoFailed(true);
+                }}
+                className="h-full w-full rounded-md object-contain"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde arriba"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'n')}
+                className="absolute -top-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde abajo"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 's')}
+                className="absolute -bottom-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la izquierda"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'w')}
+                className="absolute -left-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la derecha"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'e')}
+                className="absolute -right-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la esquina superior izquierda"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'nw')}
+                className="absolute -left-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la esquina superior derecha"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'ne')}
+                className="absolute -right-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la esquina inferior izquierda"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'sw')}
+                className="absolute -bottom-2 -left-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
+              />
+              <button
+                type="button"
+                aria-label="Cambiar tamaño desde la esquina inferior derecha"
+                title="Cambiar tamaño"
+                onPointerDown={(event) => handleResizePointerDown(event, 'se')}
+                className="absolute -bottom-2 -right-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
+              />
+            </div>
+          ) : (
+            <div className="absolute inset-x-6 bottom-6 rounded-xl border bg-white/95 px-4 py-3 text-center text-[12px] font-black text-neutral-500 shadow-sm">
+              La vista previa necesita una imagen del producto.
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border p-4 text-[12px] font-bold opacity-80" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+          <span>
+            {productImageUrl
+              ? isUsingDefaultDesignPreview
+                ? 'Este logo es referencial. Si adjuntas una imagen, reemplazará al predeterminado.'
+                : 'Mueve el diseño arrastrándolo. Agrándalo o achícalo tomando cualquier borde o esquina.'
+              : 'Cuando el producto tenga imagen, el diseño aparecerá sobre la prenda.'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -485,7 +651,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                   <h3 className="text-[20px] font-extrabold mb-1" style={{ color: 'var(--text-on-secondary)' }}>{productAllowsCustomization ? 'Diseño o personalización' : 'Comentarios para la tienda'}</h3>
                   <p className="text-[14px] opacity-60">
                     {productAllowsCustomization
-                      ? 'Si quieres agregar un logo, imagen, texto o ejemplo, adjúntalo aquí.'
+                      ? 'Usa el logo predeterminado de la tienda o adjunta tu propia imagen de diseño.'
                       : 'Este producto no recibe archivos de diseño; deja solo indicaciones si las necesitas.'}
                   </p>
                 </div>
@@ -495,8 +661,8 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 {[
-                  { mode: 'none' as const, title: 'Sin diseño personalizado', description: 'Solo cotizar la prenda seleccionada.' },
-                  { mode: 'custom' as const, title: 'Con diseño o referencia', description: 'Adjuntar logo, imagen, PDF o comentario.' },
+                  { mode: 'none' as const, title: 'Logo predeterminado', description: 'Usar el logo de la tienda como referencia.' },
+                  { mode: 'custom' as const, title: 'Subir mi diseño', description: 'Adjuntar logo o imagen en PNG, JPG, JPEG o WEBP.' },
                 ].map(option => (
                   <button
                     key={option.mode}
@@ -524,244 +690,89 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
 
               {designMode === 'custom' ? (
                 <>
-                  <div className="border-2 rounded-2xl p-5 sm:p-8 mb-8 sm:mb-10 flex items-start gap-4 sm:gap-5 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
+                  <div className="border-2 rounded-2xl p-4 sm:p-5 mb-6 flex items-start gap-4 shadow-sm" style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-primary)' }}>
                     <Info size={24} style={{ color: 'var(--accent-on-primary)' }} className="shrink-0 mt-1" />
-                    <p className="text-[15px] font-bold leading-relaxed">
+                    <p className="text-[13px] font-bold leading-relaxed">
                       <span className="uppercase tracking-[0.25em] text-[11px] block mb-2 opacity-65" style={{ color: 'var(--accent-on-primary)' }}>Importante</span>
-                      Puedes enviar un comentario, archivos o ambos. El incremento de 10% se aplica solo si adjuntas archivos de diseño para este producto.
+                      El incremento de 10% se aplica solo si adjuntas una imagen de diseño para este producto.
                     </p>
                   </div>
 
                   <div className="space-y-6">
-                    <div className="rounded-2xl border p-4 sm:p-5" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                    <div className="rounded-2xl border px-4 py-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
                       <input
                         ref={fileInputRef}
                         type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={handleFileSelection}
                       />
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                        <div className="w-full lg:w-[230px] lg:shrink-0">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-black uppercase tracking-wider opacity-70">Imagen de diseño</p>
+                          <p className="mt-1 text-[11px] font-bold opacity-60">
+                            PNG, JPG, JPEG o WEBP. La vista previa se actualiza abajo.
+                          </p>
+                        </div>
+
+                        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                          {uploadedFiles[0] ? (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.97 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2"
+                              style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
+                            >
+                              <ImageIcon size={14} className="shrink-0" style={{ color: 'var(--accent-on-secondary)' }} />
+                              <div className="min-w-0">
+                                <div className="max-w-[220px] truncate text-[11px] font-black">{uploadedFiles[0].name}</div>
+                                <div className="text-[9px] font-bold opacity-60">{fileSizeLabel(uploadedFiles[0])}</div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeFile(0)}
+                                className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border transition-colors hover:text-red-500"
+                                style={{ borderColor: 'rgba(0,0,0,0.08)' }}
+                                title="Quitar imagen"
+                              >
+                                <X size={13} />
+                              </button>
+                            </motion.div>
+                          ) : (
+                            <span className="rounded-xl border border-dashed px-3 py-2 text-[11px] font-black opacity-65" style={{ borderColor: 'rgba(0,0,0,0.12)' }}>
+                              Sin imagen adjunta
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={uploadedFiles.length >= 5}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-4 text-[12px] font-black uppercase tracking-wider transition-opacity enabled:cursor-pointer enabled:hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-45"
+                            disabled={uploadedFiles.length >= 1}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-opacity enabled:cursor-pointer enabled:hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-45"
                             style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
                           >
-                            <Upload size={16} style={{ color: 'var(--accent-on-secondary)' }} />
-                            {uploadedFiles.length >= 5 ? 'Límite alcanzado' : 'Adjuntar diseño'}
-                          </button>
-                          <p className="mt-2 text-center text-[10px] font-bold leading-relaxed opacity-60 lg:text-left">
-                            PNG, JPG, JPEG, WEBP o PDF. Máximo 5 archivos.
-                          </p>
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-3 flex items-center justify-between gap-3">
-                            <label className="text-[11px] font-black uppercase tracking-wider opacity-80">Adjuntos ({uploadedFiles.length}/5)</label>
-                            {uploadedFiles.length > 0 && (
-                              <span className="text-[10px] font-bold opacity-55">
-                                La primera imagen se usa para la vista previa.
-                              </span>
-                            )}
-                          </div>
-                          {uploadedFiles.length > 0 ? (
-                            <div className="grid max-h-[168px] grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-                              {uploadedFiles.map((file, idx) => (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.97 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  key={`${file.name}-${idx}`}
-                                  className="flex items-center justify-between gap-3 rounded-xl border p-3"
-                                  style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
-                                >
-                                  <div className="flex min-w-0 items-center gap-3">
-                                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border bg-white/70" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                                      <FileText size={15} style={{ color: 'var(--accent-on-secondary)' }} />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="truncate text-[12px] font-black">{file.name}</div>
-                                      <div className="text-[10px] font-bold opacity-60">{fileSizeLabel(file)}</div>
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile(idx)}
-                                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors hover:text-red-500"
-                                    style={{ borderColor: 'rgba(0,0,0,0.08)' }}
-                                    title="Quitar archivo"
-                                  >
-                                    <X size={15} />
-                                  </button>
-                                </motion.div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="rounded-xl border border-dashed px-4 py-5 text-center text-[12px] font-bold opacity-65" style={{ borderColor: 'rgba(0,0,0,0.12)' }}>
-                              Aún no hay archivos adjuntos.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border p-5 sm:p-6" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.08)' }}>
-                      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <h4 className="text-[15px] font-black flex items-center gap-2">
-                            <Move size={16} /> Vista previa del producto
-                          </h4>
-                          <p className="mt-1 text-[12px] font-bold opacity-60">
-                            {designPreviewUrl ? 'Arrastra el diseño y toma sus bordes para cambiar el tamaño.' : 'Adjunta una imagen para ubicarla sobre la prenda.'}
-                          </p>
-                        </div>
-                        <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider opacity-70" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
-                          Referencial
-                        </span>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div
-                          ref={previewFrameRef}
-                          className="relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-2xl border bg-white touch-none"
-                          style={{ borderColor: 'rgba(0,0,0,0.08)' }}
-                          onPointerMove={handlePreviewPointerMove}
-                          onPointerUp={stopOverlayInteraction}
-                          onPointerCancel={stopOverlayInteraction}
-                          onPointerLeave={() => setOverlayInteraction(null)}
-                        >
-                          {productImageUrl ? (
-                            <img
-                              src={productImageUrl}
-                              alt={product?.name || 'Producto'}
-                              referrerPolicy="no-referrer"
-                              className="absolute inset-0 h-full w-full object-contain"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-neutral-400">
-                              <ImageIcon size={34} />
-                              <p className="text-[12px] font-bold">Producto sin imagen disponible.</p>
-                            </div>
-                          )}
-
-                          {designPreviewUrl && productImageUrl ? (
-                            <div
-                              role="presentation"
-                              onPointerDown={handleOverlayPointerDown}
-                              className="absolute z-10 select-none rounded-md border-2 border-black/80 shadow-xl touch-none"
-                              style={{
-                                left: `${designOverlay.x}%`,
-                                top: `${designOverlay.y}%`,
-                                width: `${designOverlay.width}%`,
-                                height: `${designOverlay.height}%`,
-                                transform: 'translate(-50%, -50%)',
-                                cursor: overlayInteraction?.type === 'move' ? 'grabbing' : 'grab',
-                                backgroundColor: 'rgba(255,255,255,0.16)',
-                              }}
-                            >
-                              <img
-                                src={designPreviewUrl}
-                                alt="Diseño ubicado sobre el producto"
-                                draggable={false}
-                                className="h-full w-full rounded-md object-contain"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde arriba"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'n')}
-                                className="absolute -top-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde abajo"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 's')}
-                                className="absolute -bottom-2 left-1/2 h-4 w-12 -translate-x-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ns-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la izquierda"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'w')}
-                                className="absolute -left-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la derecha"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'e')}
-                                className="absolute -right-2 top-1/2 h-12 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-black shadow-md cursor-ew-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la esquina superior izquierda"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'nw')}
-                                className="absolute -left-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la esquina superior derecha"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'ne')}
-                                className="absolute -right-2 -top-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la esquina inferior izquierda"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'sw')}
-                                className="absolute -bottom-2 -left-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nesw-resize"
-                              />
-                              <button
-                                type="button"
-                                aria-label="Cambiar tamaño desde la esquina inferior derecha"
-                                title="Cambiar tamaño"
-                                onPointerDown={(event) => handleResizePointerDown(event, 'se')}
-                                className="absolute -bottom-2 -right-2 h-5 w-5 rounded-full border-2 border-white bg-black shadow-md cursor-nwse-resize"
-                              />
-                            </div>
-                          ) : (
-                            <div className="absolute inset-x-6 bottom-6 rounded-xl border bg-white/95 px-4 py-3 text-center text-[12px] font-black text-neutral-500 shadow-sm">
-                              {uploadedFiles.length > 0 ? 'Adjuntaste archivos. Usa una imagen para ubicarla sobre el producto.' : 'Adjunta una imagen y aparecerá aquí sobre la prenda.'}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-3 rounded-2xl border p-4 text-[12px] font-bold opacity-80 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                          <span>
-                            {designPreviewUrl && productImageUrl
-                              ? 'Mueve el diseño arrastrándolo. Agrándalo o achícalo tomando cualquier borde o esquina.'
-                              : 'La vista se activará cuando adjuntes una imagen de diseño.'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 })}
-                            className="shrink-0 rounded-xl border px-4 py-2 text-[11px] font-black uppercase tracking-wider disabled:opacity-40"
-                            disabled={!designPreviewUrl || !productImageUrl}
-                            style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--text-on-secondary)', borderColor: 'rgba(0,0,0,0.08)' }}
-                          >
-                            Restablecer
+                            <Upload size={14} style={{ color: 'var(--accent-on-secondary)' }} />
+                            {uploadedFiles.length >= 1 ? 'Imagen adjunta' : 'Adjuntar imagen'}
                           </button>
                         </div>
                       </div>
                     </div>
+
+                    {renderProductPreview()}
                   </div>
 
                 </>
               ) : (
-                <div className="rounded-2xl border p-5 sm:p-6 flex items-start gap-4" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
-                  <CheckCircle2 size={22} className="shrink-0 mt-0.5" style={{ color: 'var(--accent-on-primary)' }} />
-                  <div>
-                    <h4 className="text-[15px] font-black mb-1">Se cotizará sin archivos de diseño</h4>
-                    <p className="text-[13px] font-bold opacity-65 leading-relaxed">
-                      Esta opción guarda solo la prenda, talla, color y cantidad. Puedes cambiar a "Con diseño" si necesitas adjuntar logo, imagen, PDF o instrucciones especiales.
-                    </p>
+                <div className="space-y-5">
+                  <div className="rounded-2xl border px-4 py-3 flex items-start gap-3" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                    <CheckCircle2 size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--accent-on-primary)' }} />
+                    <div>
+                      <h4 className="text-[14px] font-black mb-1">Se usará el logo predeterminado</h4>
+                      <p className="text-[12px] font-bold opacity-65 leading-relaxed">
+                        Puedes moverlo y ajustar su tamaño sobre la prenda. Si prefieres otro diseño, cambia a "Subir mi diseño".
+                      </p>
+                    </div>
                   </div>
+                  {renderProductPreview()}
                 </div>
               )}
                 </>
@@ -844,7 +855,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                     <div className="flex items-start gap-2">
                       <ImageIcon size={16} className="mt-0.5 shrink-0" />
                       <span className="leading-tight">
-                        {designMode === 'custom' ? 'Incremento por diseño (10%)' : 'Sin diseño personalizado'}
+                        {activeDesignFiles.length > 0 ? 'Incremento por diseño (10%)' : 'Logo predeterminado'}
                       </span>
                     </div>
                   </div>
@@ -854,15 +865,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
                 </div>
               )}
 
-              {discountRate > 0 && (
-                <div className="flex justify-between items-center px-4 py-3 rounded-xl border text-[13px]" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)', color: 'var(--text-on-secondary)' }}>
-                  <div className="flex items-center gap-2 font-bold">
-                    <CheckCircle2 size={16} className="text-emerald-500" />
-                    {applicableDiscount ? discountRuleLabel(applicableDiscount) : 'Descuento vol.'}
-                  </div>
-                  <div className="shrink-0 whitespace-nowrap text-right text-[14px] font-black tabular-nums text-emerald-500">- S/ {money(discountAmount)}</div>
-                </div>
-              )}
             </div>
 
             <div className="space-y-6 pt-6 border-t-2" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>

@@ -85,6 +85,9 @@ export interface StorePublicDTO {
   description: string | null;
   logoUrl: string | null;
   category: string | null;
+  contactPhone?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   tertiaryColor: string | null;
@@ -241,6 +244,7 @@ export interface CartItemResponseDTO {
   lineTotal?: number;
   discountRuleLabel?: string | null;
   hasDesignFee?: boolean;
+  customizable?: boolean;
 }
 
 export interface CartCustomDesignResponseDTO {

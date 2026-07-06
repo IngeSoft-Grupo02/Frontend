@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, DragEvent, useEffect } from 'react';
+import JSZip from 'jszip';
 import { api, type ExistingBulkMerchant, type ExistingBulkStore } from '@/domains/admin/lib/api';
 import { messageFromError } from '@/domains/shared/errors';
 import { Button, Card } from '../UI';
@@ -456,12 +457,20 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function base64ToUint8Array(base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function downloadMerchantsTemplate() {
   const csv = [
     'email,password,firstName,paternalSurname,maternalSurname,documentType,documentNumber,birthDate,phone,gender,ruc',
-    '# INSTRUCCIONES:,min 8 chars,Obligatorio,Obligatorio,Obligatorio,DNI|PASSPORT|FOREIGN_ID_CARD,Sin puntos,yyyy-MM-dd,9 dígitos,MALE|FEMALE|NOT_SPECIFIED,11 dígitos exactos',
-    'test_bulk_merchant1@example.com,Pass1234!,TestBulk,MerchantUno,Demo,DNI,12345678,1988-05-15,987654321,MALE,20100000001',
-    'test_bulk_merchant2@example.com,Pass5678!,TestBulk,MerchantDos,Demo,DNI,87654321,1992-11-20,912345678,FEMALE,20200000002',
+    'comerciante.urbana@example.com,Funciona123@,Luciana,Vega,Rios,DNI,12345678,1988-05-15,987654321,FEMALE,20100000001',
+    'comerciante.luxe@example.com,Funciona123@,Mateo,Salas,Lopez,DNI,87654321,1992-11-20,912345678,MALE,20200000002',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_comerciantes.csv');
 }
@@ -469,30 +478,22 @@ function downloadMerchantsTemplate() {
 function downloadStoresTemplate() {
   const csv = [
     'storeName,categoryId,primaryColor,secondaryColor,tertiaryColor,description,merchantEmail,logoFileName',
-    '# INSTRUCCIONES:,ID de categoría,Color principal,Color secundario,Color terciario,Opcional,Email del comerciante (obligatorio),Nombre exacto del archivo en el ZIP (opcional)',
-    'Mi Tienda Urbana,1,ONYX_BLACK,SLATE,RAW_GOLD,Ropa urbana y accesorios,test_bulk_merchant1@example.com,MiTiendaUrbana.jpg',
-    'Luxe Moda,1,MIDNIGHT,SAGE,COPPER,Moda premium y accesorios,test_bulk_merchant2@example.com,LuxeModa.jpg',
+    'Mi Tienda Urbana,1,ONYX_BLACK,SLATE,RAW_GOLD,Ropa urbana y accesorios,comerciante.urbana@example.com,MiTiendaUrbana.png',
+    'Luxe Moda,1,MIDNIGHT,SAGE,COPPER,Moda premium y accesorios,comerciante.luxe@example.com,LuxeModa.png',
   ].join('\n');
   triggerDownload(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }), 'plantilla_tiendas.csv');
 }
 
-function downloadLogosInstructions() {
-  const txt = [
-    'Instrucciones para el ZIP de logos de tiendas',
-    '==============================================',
-    '',
-    'El ZIP debe contener UNA imagen por tienda.',
-    'El nombre del archivo debe coincidir exactamente con logoFileName en el CSV de tiendas.',
-    'Puedes colocar las imagenes en la raiz del ZIP o dentro de una carpeta como logos/.',
-    '',
-    'Ejemplos:',
-    '  logos/MiTiendaUrbana.jpg  ->  logoFileName MiTiendaUrbana.jpg',
-    '  LuxeModa.jpg              ->  logoFileName LuxeModa.jpg',
-    '',
-    'Formatos permitidos: .jpg  .jpeg  .png  .webp',
-    'Tamaño máximo por imagen: 2 MB',
-  ].join('\n');
-  triggerDownload(new Blob([txt], { type:'text/plain;charset=utf-8;' }), 'instrucciones_logos.txt');
+async function downloadLogosTemplate() {
+  const samplePng = base64ToUint8Array(
+    'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAbElEQVR4nO3QAQ0AAAgDMMXXNCC4hh4k9z0zKQAAvNcA4BoAXAOAawBwDQCuAcA1ALgGAPcOwC0AAADg2gG4BgDXAOAaAFwDgGsAcA0ArgHANQC4BgDXAOAaAFwDgGsAcA0ArgHANQC4BgDXAOAaAFwDgGsAcA0A7gFQxAF/YDTylwAAAABJRU5ErkJggg=='
+  );
+
+  const zip = new JSZip();
+  zip.file('logos/MiTiendaUrbana.png', samplePng);
+  zip.file('logos/LuxeModa.png', samplePng);
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+  triggerDownload(blob, 'plantilla_logos_tiendas.zip');
 }
 
 // ── Simulación backend ────────────────────────────────────────────
@@ -822,8 +823,8 @@ export function CargaMasivaScreen() {
       description:'Sube tiendas con colores permitidos y el correo del comerciante que administrará cada una.',
       icon:Store, accept:'.csv', onDownload:downloadStoresTemplate },
     { key:'images' as BlockKey, label:'Logos de tiendas',
-      description:'Sube un ZIP con los logos. Acepta PNG, JPG o WEBP de hasta 2 MB por imagen.',
-      icon:ImageIcon, accept:'.zip', onDownload:downloadLogosInstructions },
+      description:'Sube un ZIP con logos. Cada nombre debe coincidir con logoFileName del CSV.',
+      icon:ImageIcon, accept:'.zip', onDownload:downloadLogosTemplate },
   ];
 
   // ── Render ────────────────────────────────────────────────────

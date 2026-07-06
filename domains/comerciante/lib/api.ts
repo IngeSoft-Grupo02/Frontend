@@ -416,15 +416,17 @@ const orderStatusFromBackend = (rawStatus: unknown, rawLabel: unknown): Order['s
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+  if (normalized === 'pending_payment' || normalized === 'pago pendiente' || normalized === 'pendiente de pago') return 'Pago pendiente';
+  if (normalized === 'payment_confirmed' || normalized === 'pagado') return 'Pagado';
   if (normalized === 'in_preparation' || normalized === 'en proceso') return 'En proceso';
   if (normalized === 'in_transit' || normalized === 'enviado') return 'Enviado';
   if (normalized === 'delivered' || normalized === 'entregado') return 'Entregado';
   if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado') return 'Cancelado';
-  return 'Pagado'; // PAYMENT_CONFIRMED / Pagado
+  return 'Pago pendiente';
 };
 
 // Detecta enums internos del backend que no deben mostrarse como texto del cliente.
-const INTERNAL_ENUM_TOKENS = /\b(APPROVED|PENDING|REJECTED|PAYMENT_CONFIRMED|IN_PREPARATION|IN_TRANSIT|DELIVERED|CANCELLED)\b/;
+const INTERNAL_ENUM_TOKENS = /\b(APPROVED|PENDING|REJECTED|PENDING_PAYMENT|PAYMENT_CONFIRMED|IN_PREPARATION|IN_TRANSIT|DELIVERED|CANCELLED)\b/;
 
 // Devuelve una descripci\u00f3n real del cliente o '' si est\u00e1 vac\u00eda / es texto t\u00e9cnico de seeds.
 const cleanCustomerDescription = (value: unknown): string => {
@@ -582,6 +584,7 @@ export const mapQuote = (raw: JsonValue): Quote => ({
 });
 
 const ORDER_STATUS_TO_BACKEND: Record<Order['status'], string> = {
+  'Pago pendiente': 'PENDING_PAYMENT',
   'Pagado': 'PAYMENT_CONFIRMED',
   'En proceso': 'IN_PREPARATION',
   'Enviado': 'IN_TRANSIT',
