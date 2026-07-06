@@ -1,0 +1,257 @@
+import { jsPDF } from 'jspdf';
+import { Order, Store } from './types';
+
+const MARGIN = 14;
+const NR = 'No registrado';
+
+export interface ProductSalesSummary {
+  key: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+  orderCount: number;
+}
+
+export const isPaidOrderForReport = (order: Order) =>
+  order.status !== 'Pago pendiente' && order.status !== 'Cancelado';
+
+export const getOrderUnits = (order: Order) =>
+  order.itemsDetail?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) ?? order.items ?? 0;
+
+export const getOrderTotal = (order: Order) => Number(order.finalTotal ?? order.total ?? 0);
+
+export const formatReportMoney = (value: number) =>
+  `S/ ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export const formatReportDate = (value?: string) => {
+  if (!value) return NR;
+  const timestamp = Date.parse(value);
+  if (!Number.isNaN(timestamp)) {
+    return new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(timestamp));
+  }
+  const parts = value.slice(0, 10).split('-');
+  if (parts.length !== 3) return value;
+  const [year, month, day] = parts;
+  return `${day}/${month}/${year}`;
+};
+
+export const buildTopProductSales = (orders: Order[], limit = 5): ProductSalesSummary[] => {
+  const sales = new Map<string, ProductSalesSummary & { orderIds: Set<string> }>();
+
+  orders.forEach((order) => {
+    order.itemsDetail?.forEach((item) => {
+      const key = item.productId || item.productVariantId || item.productName || 'producto-sin-id';
+      const current = sales.get(key) || {
+        key,
+        name: item.productName || 'Producto sin nombre',
+        quantity: 0,
+        revenue: 0,
+        orderCount: 0,
+        orderIds: new Set<string>(),
+      };
+      current.quantity += Number(item.quantity) || 0;
+      current.revenue += Number(item.subTotal ?? (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)) || 0;
+      current.orderIds.add(order.id);
+      current.orderCount = current.orderIds.size;
+      sales.set(key, current);
+    });
+  });
+
+  return Array.from(sales.values())
+    .sort((first, second) => second.quantity - first.quantity || second.revenue - first.revenue)
+    .slice(0, limit)
+    .map(({ orderIds, ...item }) => item);
+};
+
+const safeFileName = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase() || 'tienda';
+
+const shortText = (doc: jsPDF, text: string, maxWidth: number) => {
+  const lines = doc.splitTextToSize(text || NR, maxWidth) as string[];
+  if (lines.length <= 1) return lines[0] || NR;
+  return `${lines[0].replace(/\s+$/g, '')}...`;
+};
+
+const drawHeader = (doc: jsPDF, store: Store) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 18;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(0);
+  doc.text('Reporte comercial', MARGIN, y);
+  y += 7;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(105);
+  doc.text(store.name || NR, MARGIN, y);
+  const generatedAt = new Intl.DateTimeFormat('es-PE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date());
+  doc.text(`Generado: ${generatedAt}`, pageWidth - MARGIN, y, { align: 'right' });
+  y += 8;
+
+  doc.setDrawColor(220);
+  doc.line(MARGIN, y, pageWidth - MARGIN, y);
+  return y + 10;
+};
+
+const drawMetric = (doc: jsPDF, x: number, y: number, width: number, label: string, value: string) => {
+  doc.setDrawColor(224);
+  doc.setFillColor(248, 248, 248);
+  doc.roundedRect(x, y, width, 18, 3, 3, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(110);
+  doc.text(label.toUpperCase(), x + 4, y + 6);
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+  doc.text(value, x + 4, y + 14);
+};
+
+const ensureSpace = (doc: jsPDF, y: number, height: number) => {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  if (y + height <= pageHeight - MARGIN) return y;
+  doc.addPage();
+  return MARGIN;
+};
+
+const drawSectionTitle = (doc: jsPDF, y: number, title: string) => {
+  y = ensureSpace(doc, y, 14);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+  doc.text(title, MARGIN, y);
+  return y + 7;
+};
+
+const drawTopProductsTable = (doc: jsPDF, y: number, topProducts: ProductSalesSummary[]) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const right = pageWidth - MARGIN;
+  y = drawSectionTitle(doc, y, 'Top 5 productos mas vendidos');
+
+  if (topProducts.length === 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text('Aun no hay productos vendidos para construir este ranking.', MARGIN, y);
+    return y + 10;
+  }
+
+  y = ensureSpace(doc, y, 12);
+  doc.setFillColor(238, 236, 229);
+  doc.rect(MARGIN, y - 5, right - MARGIN, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(90);
+  doc.text('#', MARGIN + 2, y);
+  doc.text('Producto', MARGIN + 12, y);
+  doc.text('Unidades', right - 62, y, { align: 'right' });
+  doc.text('Pedidos', right - 35, y, { align: 'right' });
+  doc.text('Vendido', right, y, { align: 'right' });
+  y += 7;
+
+  topProducts.forEach((item, index) => {
+    y = ensureSpace(doc, y, 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(0);
+    doc.text(String(index + 1), MARGIN + 2, y);
+    doc.text(shortText(doc, item.name, 82), MARGIN + 12, y);
+    doc.text(String(item.quantity), right - 62, y, { align: 'right' });
+    doc.text(String(item.orderCount), right - 35, y, { align: 'right' });
+    doc.text(formatReportMoney(item.revenue), right, y, { align: 'right' });
+    y += 7;
+  });
+
+  doc.setDrawColor(220);
+  doc.line(MARGIN, y - 2, right, y - 2);
+  return y + 7;
+};
+
+const drawPaidOrdersTable = (doc: jsPDF, y: number, orders: Order[]) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const right = pageWidth - MARGIN;
+  y = drawSectionTitle(doc, y, 'Cotizaciones pagadas convertidas en pedidos');
+
+  if (orders.length === 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text('Aun no hay pedidos pagados en esta tienda.', MARGIN, y);
+    return y + 10;
+  }
+
+  y = ensureSpace(doc, y, 12);
+  doc.setFillColor(238, 236, 229);
+  doc.rect(MARGIN, y - 5, right - MARGIN, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(90);
+  doc.text('Pedido', MARGIN + 2, y);
+  doc.text('Cliente', MARGIN + 28, y);
+  doc.text('Fecha', MARGIN + 86, y);
+  doc.text('Estado', MARGIN + 116, y);
+  doc.text('Unid.', right - 31, y, { align: 'right' });
+  doc.text('Total', right, y, { align: 'right' });
+  y += 7;
+
+  orders.forEach((order) => {
+    y = ensureSpace(doc, y, 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(0);
+    doc.text(`#${order.id}`, MARGIN + 2, y);
+    doc.text(shortText(doc, order.customer || NR, 54), MARGIN + 28, y);
+    doc.text(formatReportDate(order.createdAt || order.date), MARGIN + 86, y);
+    doc.text(order.status, MARGIN + 116, y);
+    doc.text(String(getOrderUnits(order)), right - 31, y, { align: 'right' });
+    doc.text(formatReportMoney(getOrderTotal(order)), right, y, { align: 'right' });
+    y += 7;
+  });
+
+  return y + 4;
+};
+
+export const generateMerchantSalesReport = (store: Store, paidOrders: Order[], topProducts: ProductSalesSummary[]) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const sortedPaidOrders = [...paidOrders].sort((first, second) => {
+    const firstTime = Date.parse(first.createdAt || first.date || '');
+    const secondTime = Date.parse(second.createdAt || second.date || '');
+    return (Number.isNaN(secondTime) ? 0 : secondTime) - (Number.isNaN(firstTime) ? 0 : firstTime);
+  });
+
+  const totalUnits = sortedPaidOrders.reduce((sum, order) => sum + getOrderUnits(order), 0);
+  const totalAmount = sortedPaidOrders.reduce((sum, order) => sum + getOrderTotal(order), 0);
+  const topProduct = topProducts[0]?.name || 'Sin ventas registradas';
+
+  let y = drawHeader(doc, store);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const metricGap = 4;
+  const metricWidth = (pageWidth - MARGIN * 2 - metricGap * 3) / 4;
+  drawMetric(doc, MARGIN, y, metricWidth, 'Pedidos pagados', String(sortedPaidOrders.length));
+  drawMetric(doc, MARGIN + (metricWidth + metricGap), y, metricWidth, 'Unidades', String(totalUnits));
+  drawMetric(doc, MARGIN + (metricWidth + metricGap) * 2, y, metricWidth, 'Total facturado', formatReportMoney(totalAmount));
+  drawMetric(doc, MARGIN + (metricWidth + metricGap) * 3, y, metricWidth, 'Top producto', shortText(doc, topProduct, metricWidth - 8));
+  y += 28;
+
+  y = drawTopProductsTable(doc, y, topProducts);
+  drawPaidOrdersTable(doc, y, sortedPaidOrders);
+
+  const pageCount = doc.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(130);
+    doc.text(`Pagina ${page} de ${pageCount}`, pageWidth - MARGIN, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+  }
+
+  doc.save(`reporte-comercial-${safeFileName(store.name)}.pdf`);
+};

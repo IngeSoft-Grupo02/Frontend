@@ -1,6 +1,6 @@
 'use client';
 import { useStore } from '@/domains/comerciante/context/StoreContext';
-import { Building2, ChevronDown, FileText, LayoutDashboard, LogOut, Package, Plus, Settings, ShoppingBag, Tag, UploadCloud, User } from 'lucide-react';
+import { BarChart3, Building2, ChevronDown, FileText, LayoutDashboard, LogOut, Package, Plus, Settings, ShoppingBag, Tag, UploadCloud, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -104,6 +104,7 @@ const Sidebar = () => {
     { label: 'Carga masiva', icon: UploadCloud, path: '/comerciante/carga-masiva' },
     { label: 'Cotizaciones', icon: FileText, path: '/comerciante/quotes' },
     { label: 'Pedidos', icon: ShoppingBag, path: '/comerciante/orders' },
+    { label: 'Reportes', icon: BarChart3, path: '/comerciante/reports' },
     { label: 'Descuentos', icon: Tag, path: '/comerciante/discounts' },
     { label: 'Configuración', icon: Settings, path: '/comerciante/settings' },
   ];

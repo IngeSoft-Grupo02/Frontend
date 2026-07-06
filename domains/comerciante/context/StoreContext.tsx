@@ -230,7 +230,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const refreshIntervalMs = React.useMemo(() => {
     if (!pathname) return null;
-    if (pathname.startsWith('/comerciante/quotes') || pathname.startsWith('/comerciante/orders')) return 6000;
+    if (pathname.startsWith('/comerciante/quotes') || pathname.startsWith('/comerciante/orders') || pathname.startsWith('/comerciante/reports')) return 6000;
     if (pathname === '/comerciante' || pathname.startsWith('/comerciante/dashboard')) return 8000;
     if (
       pathname.startsWith('/comerciante/products') ||
