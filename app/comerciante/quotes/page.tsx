@@ -99,6 +99,11 @@ const quoteAppliedDiscount = (quote: Quote) =>
 const quoteFinalAmount = (quote: Quote) =>
     Math.max(0, quotationAmount(quote) - quoteAppliedDiscount(quote));
 
+const quoteDesignFeePercentage = (quote: Quote) =>
+    Number(quote.designFeePercentage
+        ?? quote.items.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
+        ?? 0);
+
 export default function QuotesPage() {
   const { quotes, updateQuote, store, refreshData, products, discounts = [] } = useStore();
 
@@ -224,15 +229,26 @@ export default function QuotesPage() {
     if (!selectedQuote) return { base: 0, customization: 0, subtotal: 0, discountAmount: 0, finalSubtotal: 0, total: 0, customPercentage: 0 };
 
     // 1. Recalculamos la base sumando la cantidad real de los artículos cotizados
-    const base = selectedQuote.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    const base = Number(selectedQuote.productSubtotal ?? selectedQuote.items.reduce(
+      (sum, item) => sum + Number(item.baseSubtotal ?? item.quantity * item.price),
+      0
+    ));
 
     // 2. Calculamos la personalización si aplica
-    const isCustomized = selectedQuote.hasCustomization || (selectedQuote.files && selectedQuote.files.length > 0);
-    const customPercentage = isCustomized ? (store.customizationIncrement || 10) : 0;
-    const customization = base * (customPercentage / 100);
+    const customization = Number(selectedQuote.designFeeTotal ?? selectedQuote.items.reduce(
+      (sum, item) => sum + Number(item.designFeeAmount ?? 0),
+      0
+    ));
+    const customPercentage = customization > 0
+      ? Number(selectedQuote.designFeePercentage
+        ?? selectedQuote.items.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
+        ?? store.designFeePercentage
+        ?? store.customizationIncrement
+        ?? 0)
+      : 0;
 
     // 3. Subtotal antes de descuentos
-    const subtotal = base + customization;
+    const subtotal = Number(selectedQuote.subtotal ?? base + customization);
 
     // 4. Calculamos el descuento
     let discountAmount = 0;
@@ -250,7 +266,7 @@ export default function QuotesPage() {
     const total = finalSubtotal;
 
     return { base, customization, subtotal, discountAmount, finalSubtotal, total, customPercentage };
-  }, [selectedQuote, store.customizationIncrement, selectedDiscount]);
+  }, [selectedQuote, store.designFeePercentage, store.customizationIncrement, selectedDiscount]);
 
   const handleStatusUpdate = async (status: Quote['status'], observations?: string) => {
     if (selectedQuoteId) {
@@ -435,7 +451,7 @@ export default function QuotesPage() {
                             <span className="text-[10px] font-black text-brand-text-muted uppercase">Total</span>
                             {(quote.hasCustomization || (quote.files && quote.files.length > 0)) && (
                                 <div className="flex items-center gap-1 text-[9px] font-bold text-brand-camel uppercase">
-                                  <Layers size={10} /> +{store.customizationIncrement || 10}%
+                                  <Layers size={10} /> +{quoteDesignFeePercentage(quote)}%
                                 </div>
                             )}
                           </div>

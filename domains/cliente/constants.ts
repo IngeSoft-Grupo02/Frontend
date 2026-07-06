@@ -14,7 +14,7 @@ export const STORES: Store[] = [
     color: PrimaryColor.MIDNIGHT, 
     logo: 'S4', 
     whatsapp: '987654321', 
-    designFeePercentage: '10%',
+    designFeePercentage: 10,
     primaryColor: PrimaryColor.MIDNIGHT,
     secondaryColor: SecondaryColor.SLATE,
     tertiaryColor: TertiaryColor.RAW_GOLD
@@ -27,7 +27,7 @@ export const STORES: Store[] = [
     color: PrimaryColor.ESPRESSO, 
     logo: 'UR', 
     whatsapp: '912345678', 
-    designFeePercentage: '15%',
+    designFeePercentage: 15,
     primaryColor: PrimaryColor.ESPRESSO,
     secondaryColor: SecondaryColor.SOFT_TAUPE,
     tertiaryColor: TertiaryColor.COPPER
@@ -40,7 +40,7 @@ export const STORES: Store[] = [
     color: PrimaryColor.ONYX_BLACK, 
     logo: 'DF', 
     whatsapp: '955443322', 
-    designFeePercentage: '20%',
+    designFeePercentage: 10,
     primaryColor: PrimaryColor.ONYX_BLACK,
     secondaryColor: SecondaryColor.SLATE,
     tertiaryColor: TertiaryColor.COBALT_BLUE
@@ -53,7 +53,7 @@ export const STORES: Store[] = [
     color: PrimaryColor.ALABASTER, 
     logo: 'LA', 
     whatsapp: '999888777', 
-    designFeePercentage: '18%',
+    designFeePercentage: 15,
     primaryColor: PrimaryColor.ALABASTER,
     secondaryColor: SecondaryColor.GHOST_WHITE,
     tertiaryColor: TertiaryColor.EMERALD

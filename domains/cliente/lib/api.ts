@@ -164,6 +164,7 @@ export function toStore(dto: StorePublicDTO): Store {
     logo: buildInitials(dto.storeName),
     logoUrl: dto.logoUrl,
     whatsapp: contactPhone,
+    designFeePercentage: dto.designFeePercentage == null ? undefined : Number(dto.designFeePercentage),
   };
 }
 
@@ -249,6 +250,7 @@ export function toCartItems(dto: CartResponseDTO): CartItem[] {
     baseSubtotal: item.baseSubtotal ?? item.price * item.quantity,
     discountAmount: item.discountAmount ?? 0,
     designFeeAmount: item.designFeeAmount ?? 0,
+    designFeePercentage: item.designFeePercentage,
     lineTotal: item.lineTotal ?? item.subtotal ?? item.price * item.quantity,
     discountApplied: item.discountApplied ?? 0,
     discountRuleLabel: item.discountRuleLabel ?? null,
@@ -303,6 +305,7 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     productSubtotal: dto.productSubtotal,
     discountTotal: dto.discountTotal,
     designFeeTotal: dto.designFeeTotal,
+    designFeePercentage: dto.designFeePercentage,
     description: dto.description,
     observations: dto.observations,
     items,
@@ -433,6 +436,9 @@ export function toOrder(dto: OrderResponseDTO): Order {
     finalTotal: dto.finalTotal ?? undefined,
     partialTotal: dto.partialTotal ?? undefined,
     totalDiscount: dto.totalDiscount ?? undefined,
+    productSubtotal: dto.productSubtotal ?? undefined,
+    designFeeTotal: dto.designFeeTotal ?? undefined,
+    designFeePercentage: dto.designFeePercentage ?? undefined,
   };
 }
 

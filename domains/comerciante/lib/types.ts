@@ -18,6 +18,7 @@ export interface Store {
   logoUrl?: string;
   palette?: string;
   description?: string;
+  designFeePercentage?: 5 | 10 | 15;
   customizationIncrement?: 5 | 10 | 15;
   contactEmail?: string;
   contactPhone?: string;
@@ -43,6 +44,12 @@ export interface OrderItemDetail {
   quantity: number;
   unitPrice: number;
   subTotal: number;
+  baseUnitPrice?: number;
+  baseSubtotal?: number;
+  designFeeAmount?: number;
+  designFeePercentage?: number;
+  lineTotal?: number;
+  hasDesignFee?: boolean;
 }
 
 export interface ShippingInfo {
@@ -74,6 +81,9 @@ export interface Order {
   partialTotal?: number;
   totalDiscount?: number;
   finalTotal?: number;
+  productSubtotal?: number;
+  designFeeTotal?: number;
+  designFeePercentage?: number;
   observations?: string;
 }
 
@@ -108,6 +118,12 @@ export interface Quote {
     color?: string;
     unitPrice?: number;
     subTotal?: number;
+    baseUnitPrice?: number;
+    baseSubtotal?: number;
+    designFeeAmount?: number;
+    designFeePercentage?: number;
+    lineTotal?: number;
+    hasDesignFee?: boolean;
     customerDescription?: string | null;
     designs?: {
       name: string;
@@ -123,6 +139,9 @@ export interface Quote {
   message?: string;
   observations?: string;
   hasCustomization?: boolean;
+  productSubtotal?: number;
+  designFeeTotal?: number;
+  designFeePercentage?: number;
   files?: {
     name: string;
     type: string;

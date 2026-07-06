@@ -9,7 +9,7 @@ import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, FileText, ImageIcon, Info,
 import { Store, User, CartItem, View, DesignOverlay } from '../types';
 import { TopBar } from '../components/layout/TopBar';
 import { Button } from '../components/ui/Button';
-import { DESIGN_FEE_RATE, money } from '../lib/pricing';
+import { designFeePercentageLabel, designFeeRate, money } from '../lib/pricing';
 import { resolveStoreLogoUrl } from '../lib/storeLogo';
 
 interface CartProps {
@@ -256,6 +256,8 @@ const CartItemDesignPreview: React.FC<{
 
 export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, onCreateQuotation, onNavigate, onLogout, isSubmitting = false, isLoading = false, cartError, cartAlreadySubmitted = false, itemDesignFiles = {}, onItemDesignFilesChange, onItemDesignDescriptionChange, onItemDesignOverlayChange }) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const currentDesignFeeRate = designFeeRate(store);
+  const currentDesignFeePercentage = designFeePercentageLabel(store);
   const pricedItems = items.map((item) => {
     const allowsCustomization = itemAllowsCustomization(item);
     const localDesignFiles = allowsCustomization ? item.localDesignFiles || itemDesignFiles[item.id] || [] : [];
@@ -264,7 +266,9 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
       : Boolean(item.quoteDescription);
     const hasDesignCharge = allowsCustomization && (Boolean(item.hasDesignFee) || localDesignFiles.length > 0);
     const baseSubtotal = item.baseSubtotal ?? item.price * item.quantity;
-    const designFeeAmount = hasDesignCharge ? baseSubtotal * DESIGN_FEE_RATE : 0;
+    const designFeeAmount = item.designFeeAmount != null && item.designFeeAmount > 0
+      ? item.designFeeAmount
+      : (hasDesignCharge ? baseSubtotal * currentDesignFeeRate : 0);
     const lineTotal = baseSubtotal + designFeeAmount;
     return {
       ...item,
@@ -563,7 +567,7 @@ export const Cart: React.FC<CartProps> = ({ store, user, items, onRemoveItem, on
                     <span className="font-bold">S/ {money(productsSubtotal)}</span>
                   </div>
                   <div className="flex justify-between text-[14px]">
-                    <span className="font-medium opacity-75">Cargo extra por diseño:</span>
+                    <span className="font-medium opacity-75">Cargo extra por diseño ({currentDesignFeePercentage}%):</span>
                     <span className="font-bold">+ S/ {money(designFeeTotal)}</span>
                   </div>
                   {designFeeTotal > 0 && (

@@ -49,6 +49,14 @@ const compareNullableDate = (first?: string, second?: string, direction: 'recien
 
 const getOrderSortDate = (order: Order) => order.createdAt || order.date;
 
+const orderDesignFeePercentage = (order: Order, fallback = 0) =>
+  Number(order.designFeePercentage
+    ?? order.itemsDetail?.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
+    ?? fallback);
+
+const orderDisplayTotal = (order: Order) =>
+  Number(order.finalTotal ?? order.total ?? 0);
+
 export default function OrdersPage() {
   const { orders, updateOrder, store, refreshData } = useStore();
   const storeOrders = useMemo(() =>
@@ -116,7 +124,7 @@ export default function OrdersPage() {
     try {
       setDocNotice('');
       setGeneratingDoc('guia');
-      const result = await generateDispatchGuide(selectedOrder, store, store.customizationIncrement || 10);
+      const result = await generateDispatchGuide(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0));
       if (!result.logoEmbedded && (store.logoUrl || store.logo)) {
         setDocNotice('La guía se generó, pero no se pudo incrustar el logo (posible restricción CORS). Se usó el nombre de la tienda.');
       }
@@ -132,7 +140,7 @@ export default function OrdersPage() {
     try {
       setDocNotice('');
       setGeneratingDoc('comprobante');
-      const result = await generatePaymentReceipt(selectedOrder, store, store.customizationIncrement || 10);
+      const result = await generatePaymentReceipt(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0));
       if (!result.logoEmbedded && (store.logoUrl || store.logo)) {
         setDocNotice('El comprobante se generó, pero no se pudo incrustar el logo (posible restricción CORS). Se usó el nombre de la tienda.');
       }
@@ -358,12 +366,12 @@ export default function OrdersPage() {
                         <span className="text-[11px] font-bold text-brand-text-muted uppercase">{order.items} artículos</span>
                         {order.hasCustomization && (
                           <div className="flex items-center gap-1 text-[9px] font-black text-brand-camel uppercase">
-                            <Layers size={10} /> +{store.customizationIncrement || 10}%
+                            <Layers size={10} /> +{orderDesignFeePercentage(order, store.designFeePercentage || store.customizationIncrement || 0)}%
                           </div>
                         )}
                       </div>
                       <span className="text-[14px] font-black">
-                        S/ {(order.total * (order.hasCustomization ? (1 + (store.customizationIncrement || 10) / 100) : 1)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        S/ {orderDisplayTotal(order).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -431,7 +439,7 @@ export default function OrdersPage() {
                             {selectedOrder.status}
                           </Badge>
                           <span className="text-[13px] font-bold text-brand-text-muted tracking-tight whitespace-nowrap">
-                            Total Facturado: S/ {(selectedOrder.total * (selectedOrder.hasCustomization ? (1 + (store.customizationIncrement || 10) / 100) : 1)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            Total Facturado: S/ {orderDisplayTotal(selectedOrder).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>
@@ -598,8 +606,14 @@ export default function OrdersPage() {
                         <div className="p-5 space-y-2 bg-brand-neutral-light border-t-2 border-brand-neutral-border">
                           <div className="flex justify-between items-center text-[11px] font-black text-brand-text-muted uppercase tracking-wider whitespace-nowrap gap-3">
                             <span>Subtotal de Productos</span>
-                            <span>S/ {(selectedOrder.partialTotal ?? selectedOrder.total).toFixed(2)}</span>
+                            <span>S/ {(selectedOrder.productSubtotal ?? selectedOrder.partialTotal ?? selectedOrder.total).toFixed(2)}</span>
                           </div>
+                          {(selectedOrder.designFeeTotal ?? 0) > 0 && (
+                            <div className="flex justify-between items-center text-[11px] font-black text-brand-camel uppercase tracking-wider whitespace-nowrap gap-3">
+                              <span>Diseño ({orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0)}%)</span>
+                              <span>+ S/ {(selectedOrder.designFeeTotal ?? 0).toFixed(2)}</span>
+                            </div>
+                          )}
                           {(selectedOrder.totalDiscount ?? 0) > 0 && (
                             <div className="flex justify-between items-center text-[11px] font-black text-brand-text-muted uppercase tracking-wider whitespace-nowrap gap-3">
                               <span>Descuento</span>
