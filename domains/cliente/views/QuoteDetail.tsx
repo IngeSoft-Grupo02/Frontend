@@ -118,7 +118,7 @@ export const QuoteDetail: React.FC<QuoteDetailProps> = ({ store, user, quote, on
                         const stockShortage = item.stockShortage ?? (item.stockAvailable == null ? 0 : Math.max(0, item.quantity - item.stockAvailable));
                         const hasStockShortage = stockShortage > 0;
                         return (
-                        <div key={`${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
+                        <div key={item.id ?? `${item.productVariantId}-${item.size}-${item.color}`} className="rounded-xl border p-4 space-y-2" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--text-on-primary)', borderColor: 'rgba(0,0,0,0.05)' }}>
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <div className="font-black text-[13px]">{item.productName || item.product}</div>

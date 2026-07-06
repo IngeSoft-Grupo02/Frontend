@@ -423,6 +423,8 @@ export interface QuotationCreatePayload {
   description?: string | null;
   designs?: File[];
   designAssociations?: ({
+    quotationItemId?: number;
+    cartItemId?: number;
     productVariantId: number;
     overlayX?: number | null;
     overlayY?: number | null;
