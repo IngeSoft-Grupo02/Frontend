@@ -566,7 +566,7 @@ export default function QuotesPage() {
                                   && isImageDesignFile(design)
                               );
                               return (
-                                  <React.Fragment key={idx}>
+                                  <React.Fragment key={item.id ?? `${item.productVariantId || item.product}-${item.variant}-${idx}`}>
                                     <tr className="hover:bg-white transition-colors">
                                       <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
@@ -744,7 +744,7 @@ export default function QuotesPage() {
                                       {insufficientStockItems.slice(0, 3).map((item) => {
                                         const shortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
                                         return (
-                                            <p key={`${item.productVariantId || item.product}-${item.variant}`} className="text-red-200 normal-case tracking-normal">
+                                            <p key={item.id ?? `${item.productVariantId || item.product}-${item.variant}`} className="text-red-200 normal-case tracking-normal">
                                               {item.product}: faltan {shortage} unidades.
                                             </p>
                                         );

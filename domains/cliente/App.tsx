@@ -499,6 +499,7 @@ export default function App() {
     try {
       const allDesigns: File[] = [];
       const associations: ({
+        cartItemId: number;
         productVariantId: number;
         overlayX?: number | null;
         overlayY?: number | null;
@@ -513,6 +514,7 @@ export default function App() {
         for (const file of files) {
           allDesigns.push(file);
           associations.push({
+            cartItemId: Number(itemId),
             productVariantId: Number(cartItem.productVariantId),
             overlayX: cartItem.designOverlay?.x ?? null,
             overlayY: cartItem.designOverlay?.y ?? null,
