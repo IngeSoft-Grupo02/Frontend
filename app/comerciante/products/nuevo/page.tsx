@@ -630,8 +630,7 @@ function ProductFormPageContent() {
               </div>
             </Card>
           </div>
-
-          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <Card title="Vista Previa en Tienda">
               <div className="bg-brand-neutral-light rounded-[28px] border border-brand-neutral-border overflow-hidden shadow-xl">
                 <div className="bg-white p-3 border-b border-brand-neutral-border flex items-center justify-between">
@@ -716,11 +715,28 @@ function ProductFormPageContent() {
                   </div>
                 ))}
                 <div className="pt-4 border-t border-brand-neutral-border space-y-3">
-                  <Button type="button" variant="ghost" className="w-full h-11 font-extrabold" onClick={() => handleSave(true)} disabled={isSaving}>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-full h-11 font-extrabold hover:bg-brand-neutral-light transition-colors" 
+                    onClick={() => handleSave(true)} 
+                    disabled={isSaving}
+                  >
                     {isSaving && saveIntent === 'draft' ? <><Loader2 size={16} className="animate-spin mr-2" /> Cargando...</> : <><Save size={16} className="mr-2" /> Guardar borrador</>}
                   </Button>
-                  <Button type="button" className="w-full gap-2 h-12 font-extrabold shadow-xl shadow-brand-black/20" onClick={() => handleSave(false)} disabled={isSaving}>
-                    {isSaving && saveIntent === 'publish' ? <><Loader2 size={16} className="animate-spin" /> Cargando...</> : <><Check size={18} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>}
+                  
+                  {/* Botón de Actualizar / Publicar Mejorado */}
+                  <Button 
+                    type="button" 
+                    className="w-full gap-2 h-14 text-[15px] font-black text-white bg-black hover:bg-zinc-800 shadow-[0_8px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_25px_rgba(0,0,0,0.4)] transform transition-all duration-300 hover:-translate-y-1 rounded-xl active:scale-[0.98]" 
+                    onClick={() => handleSave(false)} 
+                    disabled={isSaving}
+                  >
+                    {isSaving && saveIntent === 'publish' ? (
+                      <><Loader2 size={20} className="animate-spin" /> Procesando...</>
+                    ) : (
+                      <><Check size={20} strokeWidth={3} /> {`${editId ? 'Actualizar' : 'Publicar'} catálogo`}</>
+                    )}
                   </Button>
                 </div>
               </div>

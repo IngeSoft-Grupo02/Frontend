@@ -535,7 +535,7 @@ export default function BulkUploadPage() {
           <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-widest leading-none">Productos · Importación</p>
           <h1 className="text-[42px] font-extrabold tracking-tight text-brand-black leading-none">Carga masiva de productos</h1>
           <p className="text-brand-text-muted text-[14px] font-medium max-w-2xl leading-relaxed">
-            Sube un CSV con productos y variantes. Si el CSV referencia imágenes, adjunta también un ZIP con esos archivos.
+            Sube la plantilla con productos y variantes. Si la plantilla referencia imágenes, adjunta también un ZIP con esos archivos.
           </p>
         </header>
 
@@ -553,7 +553,7 @@ export default function BulkUploadPage() {
               <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-camel"></div>
               <div>
                 <h3 className="text-[11px] font-extrabold text-brand-text-muted uppercase tracking-widest mb-1">01 · Archivo de productos</h3>
-                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">CSV de productos</h2>
+                <h2 className="text-[22px] font-extrabold tracking-tight text-brand-black uppercase">plantilla de productos</h2>
                 <p className="text-[12px] text-brand-text-muted font-bold opacity-60">Una fila por talla/color · repite el nombre para agrupar variantes del mismo producto</p>
               </div>
 
@@ -612,7 +612,7 @@ export default function BulkUploadPage() {
                     {isProcessingCsv ? <Loader2 size={32} className="animate-spin" /> : <RefreshCcw size={32} />}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[15px] font-black text-brand-black">Arrastra tu CSV aquí o haz clic para seleccionar</p>
+                    <p className="text-[15px] font-black text-brand-black">Arrastra tu plantilla aquí o haz clic para seleccionar</p>
                     <p className="text-[11px] uppercase font-black tracking-widest text-brand-text-muted opacity-60">CSV hasta 10MB · máximo 500 productos por archivo</p>
                   </div>
                   {csvStatus === 'error' && (
@@ -639,7 +639,7 @@ export default function BulkUploadPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant="outline" className="h-6 font-black border-brand-neutral-border text-brand-text-muted !text-[9px]">OPCIONAL</Badge>
-                  <p className="text-[9px] font-bold text-brand-text-muted uppercase text-right leading-none max-w-[120px]">Obligatorio solo si el CSV referencia imágenes</p>
+                  <p className="text-[9px] font-bold text-brand-text-muted uppercase text-right leading-none max-w-[120px]">Obligatorio solo si la plantilla referencia imágenes</p>
                 </div>
               </div>
 
@@ -702,7 +702,7 @@ export default function BulkUploadPage() {
                     {isProcessingZip ? <Loader2 size={32} className="animate-spin" /> : <Archive size={32} />}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[15px] font-black text-brand-black">Arrastra tu ZIP aquí o haz clic para seleccionar</p>
+                    <p className="text-[15px] font-black text-brand-black">Arrastra tu carpeta ZIP aquí o haz clic para seleccionar</p>
                     <p className="text-[11px] uppercase font-black tracking-widest text-brand-text-muted opacity-60">ZIP hasta 50MB · imágenes PNG, JPG, JPEG o WEBP · máx. 2MB por imagen</p>
                   </div>
                   {zipStatus === 'error' && (
@@ -745,7 +745,7 @@ export default function BulkUploadPage() {
                     <AlertCircle size={40} />
                   </div>
                   <div className="text-center space-y-2">
-                    <h4 className="text-[18px] font-black tracking-tight uppercase">Esperando CSV</h4>
+                    <h4 className="text-[18px] font-black tracking-tight uppercase">Esperando archivo</h4>
                     <p className="text-[13px] text-brand-text-muted font-bold max-w-[340px] leading-relaxed uppercase tracking-tighter opacity-70">
                       Al subir el archivo, el sistema auditará automáticamente la integridad de los datos de productos y variantes.
                     </p>
@@ -782,7 +782,7 @@ export default function BulkUploadPage() {
           <div className="space-y-5 lg:sticky lg:top-24 self-start">
             <Card title="Guía de carga" subtitle="Plantilla y ZIP" className="!p-6">
               <p className="text-[12px] text-brand-text-muted mb-5 leading-relaxed font-bold">
-                Descarga la plantilla CSV y, si usas imágenes, prepara un ZIP con nombres iguales a los de la columna IMAGENES.
+                Descarga la plantilla y, si usas imágenes, prepara un ZIP con nombres iguales a los de la columna IMAGENES.
               </p>
 
               <div className="space-y-3">
@@ -818,7 +818,7 @@ export default function BulkUploadPage() {
               </div>
 
               <div className="mt-6 space-y-3">
-                <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-60">Columnas del CSV</p>
+                <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-60">Columnas de la plantilla</p>
                 <div className="flex flex-wrap gap-2">
                   {['NOMBRE', 'DESCRIPCION', 'PRECIO', 'COSTO', 'PERSONALIZABLE', 'TALLA', 'COLOR', 'STOCK', 'IMAGENES'].map(tag => (
                     <Badge key={tag} variant="outline" className="h-6 !px-3 font-black bg-brand-neutral-light !border-brand-neutral-border text-[9px]">{tag}</Badge>

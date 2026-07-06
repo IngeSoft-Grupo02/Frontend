@@ -12,6 +12,17 @@ export interface ProductSalesSummary {
   orderCount: number;
 }
 
+export interface PaidOrderItemReportRow {
+  key: string;
+  orderId: string;
+  productName: string;
+  variant: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  missingDetail?: boolean;
+}
+
 export const isPaidOrderForReport = (order: Order) =>
   order.status !== 'Pago pendiente' && order.status !== 'Cancelado';
 
@@ -62,6 +73,39 @@ export const buildTopProductSales = (orders: Order[], limit = 5): ProductSalesSu
     .slice(0, limit)
     .map(({ orderIds, ...item }) => item);
 };
+
+const variantText = (size?: string, color?: string) => {
+  const parts = [size, color].filter(Boolean);
+  return parts.length > 0 ? parts.join(' / ') : NR;
+};
+
+export const buildPaidOrderItemRows = (orders: Order[]): PaidOrderItemReportRow[] =>
+  orders.flatMap((order) => {
+    if (!order.itemsDetail || order.itemsDetail.length === 0) {
+      return [
+        {
+          key: `${order.id}-sin-detalle`,
+          orderId: order.id,
+          productName: 'Detalle de productos no registrado',
+          variant: 'Revisar el detalle del pedido',
+          quantity: getOrderUnits(order),
+          unitPrice: 0,
+          subtotal: getOrderTotal(order),
+          missingDetail: true,
+        },
+      ];
+    }
+
+    return order.itemsDetail.map((item, index) => ({
+      key: `${order.id}-${item.productVariantId || item.productId || index}`,
+      orderId: order.id,
+      productName: item.productName || 'Producto sin nombre',
+      variant: variantText(item.size, item.color),
+      quantity: Number(item.quantity) || 0,
+      unitPrice: Number(item.unitPrice) || 0,
+      subtotal: Number(item.subTotal) || 0,
+    }));
+  });
 
 const safeFileName = (value: string) =>
   value
@@ -175,10 +219,48 @@ const drawTopProductsTable = (doc: jsPDF, y: number, topProducts: ProductSalesSu
   return y + 7;
 };
 
+const drawTopProductsChart = (doc: jsPDF, y: number, topProducts: ProductSalesSummary[]) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const right = pageWidth - MARGIN;
+  y = drawSectionTitle(doc, y, 'Grafico de productos mas vendidos');
+
+  if (topProducts.length === 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text('Aun no hay ventas para graficar.', MARGIN, y);
+    return y + 10;
+  }
+
+  const maxQuantity = Math.max(...topProducts.map(item => item.quantity), 1);
+  const labelX = MARGIN;
+  const barX = MARGIN + 66;
+  const barWidth = right - barX - 18;
+
+  topProducts.forEach((item, index) => {
+    y = ensureSpace(doc, y, 12);
+    const currentBarWidth = Math.max(5, (item.quantity / maxQuantity) * barWidth);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(0);
+    doc.text(`${index + 1}. ${shortText(doc, item.name, 58)}`, labelX, y + 3);
+    doc.setFillColor(238, 236, 229);
+    doc.roundedRect(barX, y - 2, barWidth, 6, 2, 2, 'F');
+    doc.setFillColor(0, 0, 0);
+    doc.roundedRect(barX, y - 2, currentBarWidth, 6, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(String(item.quantity), right, y + 3, { align: 'right' });
+    y += 10;
+  });
+
+  return y + 4;
+};
+
 const drawPaidOrdersTable = (doc: jsPDF, y: number, orders: Order[]) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const right = pageWidth - MARGIN;
-  y = drawSectionTitle(doc, y, 'Cotizaciones pagadas convertidas en pedidos');
+  y = drawSectionTitle(doc, y, 'Pedidos pagados');
 
   if (orders.length === 0) {
     doc.setFont('helvetica', 'normal');
@@ -219,6 +301,50 @@ const drawPaidOrdersTable = (doc: jsPDF, y: number, orders: Order[]) => {
   return y + 4;
 };
 
+const drawPaidOrderItemsTable = (doc: jsPDF, y: number, rows: PaidOrderItemReportRow[]) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const right = pageWidth - MARGIN;
+  y = drawSectionTitle(doc, y, 'Detalle de items pagados');
+
+  if (rows.length === 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text('Aun no hay items pagados para mostrar.', MARGIN, y);
+    return y + 10;
+  }
+
+  y = ensureSpace(doc, y, 12);
+  doc.setFillColor(238, 236, 229);
+  doc.rect(MARGIN, y - 5, right - MARGIN, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(90);
+  doc.text('Pedido', MARGIN + 2, y);
+  doc.text('Producto', MARGIN + 24, y);
+  doc.text('Variante', MARGIN + 86, y);
+  doc.text('Cant.', right - 55, y, { align: 'right' });
+  doc.text('P. unit.', right - 26, y, { align: 'right' });
+  doc.text('Subtotal', right, y, { align: 'right' });
+  y += 7;
+
+  rows.forEach((row) => {
+    y = ensureSpace(doc, y, 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.2);
+    doc.setTextColor(row.missingDetail ? 150 : 0);
+    doc.text(`#${row.orderId}`, MARGIN + 2, y);
+    doc.text(shortText(doc, row.productName, 58), MARGIN + 24, y);
+    doc.text(shortText(doc, row.variant, 42), MARGIN + 86, y);
+    doc.text(String(row.quantity), right - 55, y, { align: 'right' });
+    doc.text(row.missingDetail ? '-' : formatReportMoney(row.unitPrice), right - 26, y, { align: 'right' });
+    doc.text(formatReportMoney(row.subtotal), right, y, { align: 'right' });
+    y += 7;
+  });
+
+  return y + 4;
+};
+
 export const generateMerchantSalesReport = (store: Store, paidOrders: Order[], topProducts: ProductSalesSummary[]) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const sortedPaidOrders = [...paidOrders].sort((first, second) => {
@@ -226,6 +352,7 @@ export const generateMerchantSalesReport = (store: Store, paidOrders: Order[], t
     const secondTime = Date.parse(second.createdAt || second.date || '');
     return (Number.isNaN(secondTime) ? 0 : secondTime) - (Number.isNaN(firstTime) ? 0 : firstTime);
   });
+  const paidOrderItems = buildPaidOrderItemRows(sortedPaidOrders);
 
   const totalUnits = sortedPaidOrders.reduce((sum, order) => sum + getOrderUnits(order), 0);
   const totalAmount = sortedPaidOrders.reduce((sum, order) => sum + getOrderTotal(order), 0);
@@ -241,8 +368,10 @@ export const generateMerchantSalesReport = (store: Store, paidOrders: Order[], t
   drawMetric(doc, MARGIN + (metricWidth + metricGap) * 3, y, metricWidth, 'Top producto', shortText(doc, topProduct, metricWidth - 8));
   y += 28;
 
+  y = drawTopProductsChart(doc, y, topProducts);
   y = drawTopProductsTable(doc, y, topProducts);
-  drawPaidOrdersTable(doc, y, sortedPaidOrders);
+  y = drawPaidOrdersTable(doc, y, sortedPaidOrders);
+  drawPaidOrderItemsTable(doc, y, paidOrderItems);
 
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
