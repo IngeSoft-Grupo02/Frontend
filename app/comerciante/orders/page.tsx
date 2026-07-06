@@ -590,8 +590,9 @@ export default function OrdersPage() {
                             <tbody className="divide-y border-brand-neutral-border">
                               {selectedOrder.itemsDetail.map((item, idx) => {
                                 const variantLabel = [item.size, item.color].filter(Boolean).join(' · ');
+                                const shouldWarnStock = selectedOrder.status === 'Pago pendiente';
                                 const stockShortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
-                                const hasStockShortage = stockShortage > 0;
+                                const hasStockShortage = shouldWarnStock && stockShortage > 0;
                                 return (
                                   <tr key={idx} className="hover:bg-brand-neutral-light/40 transition-colors">
                                     <td className="px-4 py-3">
@@ -604,14 +605,14 @@ export default function OrdersPage() {
                                         ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
                                         : (
                                             <div className="flex flex-col items-center gap-1">
-                                              <span className={hasStockShortage ? 'text-red-600' : item.stock === 0 ? 'text-red-500' : item.stock <= 5 ? 'text-orange-500' : ''}>
+                                              <span className={hasStockShortage ? 'text-red-600' : shouldWarnStock && item.stock === 0 ? 'text-red-500' : shouldWarnStock && item.stock <= 5 ? 'text-orange-500' : ''}>
                                                 {item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span>
                                               </span>
                                               {hasStockShortage ? (
                                                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-600">
                                                   Faltan {stockShortage}
                                                 </span>
-                                              ) : Number(item.reservedStock || 0) > 0 ? (
+                                              ) : shouldWarnStock && Number(item.reservedStock || 0) > 0 ? (
                                                 <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700">
                                                   {item.reservedStock} reservadas
                                                 </span>

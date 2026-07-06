@@ -155,7 +155,7 @@ export default function QuotesPage() {
   }, [selectedQuote]);
 
   const insufficientStockItems = useMemo(() => {
-    if (!selectedQuote) return [];
+    if (!selectedQuote || selectedQuote.status !== 'Pendiente') return [];
     return selectedQuote.items.filter(
         (item) => {
           const shortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
@@ -557,8 +557,9 @@ export default function QuotesPage() {
                             <tbody className="divide-y border-brand-neutral-border">
                             {selectedQuote.items.map((item, idx) => {
                               const productImageUrl = item.productImageUrl || (item.productId ? productImageById.get(item.productId) : undefined);
+                              const shouldWarnStock = selectedQuote.status === 'Pendiente';
                               const stockShortage = item.stockShortage ?? (item.stock == null ? 0 : Math.max(0, item.quantity - item.stock));
-                              const hasStockShortage = stockShortage > 0;
+                              const hasStockShortage = shouldWarnStock && stockShortage > 0;
                               const positionedDesign = (item.designs || []).find((design) =>
                                   productImageUrl
                                   && design.overlayX != null
@@ -599,7 +600,7 @@ export default function QuotesPage() {
                                             ? <span className="text-[11px] font-bold text-brand-text-muted opacity-50 normal-case">No registrado</span>
                                             : (
                                                 <div className="flex flex-col items-center gap-1">
-                                                  <span className={hasStockShortage ? 'text-red-600' : item.stock <= 5 ? 'text-orange-500' : ''}>
+                                                  <span className={hasStockShortage ? 'text-red-600' : shouldWarnStock && item.stock <= 5 ? 'text-orange-500' : ''}>
                                                     {item.stock} <span className="text-[10px] text-brand-text-muted uppercase font-bold ml-0.5">uds</span>
                                                   </span>
                                                   {hasStockShortage && (
@@ -607,7 +608,7 @@ export default function QuotesPage() {
                                                         Faltan {stockShortage}
                                                       </span>
                                                   )}
-                                                  {!hasStockShortage && Number(item.reservedStock || 0) > 0 && (
+                                                  {shouldWarnStock && !hasStockShortage && Number(item.reservedStock || 0) > 0 && (
                                                       <span className="text-[9px] font-bold text-brand-text-muted normal-case">
                                                         {item.reservedStock} reservadas
                                                       </span>
