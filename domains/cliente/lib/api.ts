@@ -305,7 +305,8 @@ export function toQuote(dto: QuotationResponseDTO): Quote {
     productSubtotal: dto.productSubtotal,
     discountTotal: dto.discountTotal,
     designFeeTotal: dto.designFeeTotal,
-    designFeePercentage: dto.designFeePercentage,
+    designFeePercentage: dto.designFeePercentageApplied ?? dto.designFeePercentage,
+    designFeePercentageApplied: dto.designFeePercentageApplied ?? dto.designFeePercentage,
     description: dto.description,
     observations: dto.observations,
     items,
@@ -438,7 +439,8 @@ export function toOrder(dto: OrderResponseDTO): Order {
     totalDiscount: dto.totalDiscount ?? undefined,
     productSubtotal: dto.productSubtotal ?? undefined,
     designFeeTotal: dto.designFeeTotal ?? undefined,
-    designFeePercentage: dto.designFeePercentage ?? undefined,
+    designFeePercentage: dto.designFeePercentageApplied ?? dto.designFeePercentage ?? undefined,
+    designFeePercentageApplied: dto.designFeePercentageApplied ?? dto.designFeePercentage ?? undefined,
   };
 }
 

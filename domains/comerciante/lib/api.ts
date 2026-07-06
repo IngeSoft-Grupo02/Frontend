@@ -497,7 +497,8 @@ export const mapOrder = (raw: JsonValue): Order => {
     finalTotal: raw.finalTotal != null ? Number(raw.finalTotal) : undefined,
     productSubtotal: raw.productSubtotal != null ? Number(raw.productSubtotal) : undefined,
     designFeeTotal: raw.designFeeTotal != null ? Number(raw.designFeeTotal) : undefined,
-    designFeePercentage: raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
+    designFeePercentage: raw.designFeePercentageApplied != null ? Number(raw.designFeePercentageApplied) : raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
+    designFeePercentageApplied: raw.designFeePercentageApplied != null ? Number(raw.designFeePercentageApplied) : raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
     hasCustomization: Number(raw.designFeeTotal ?? 0) > 0 || itemsDetail?.some(item => item.hasDesignFee) || undefined,
     observations: cleanCustomerDescription(raw.observations) || undefined
   };
@@ -605,7 +606,8 @@ export const mapQuote = (raw: JsonValue): Quote => ({
   hasCustomization: raw.hasCustomization === true || undefined,
   productSubtotal: raw.productSubtotal != null ? Number(raw.productSubtotal) : undefined,
   designFeeTotal: raw.designFeeTotal != null ? Number(raw.designFeeTotal) : undefined,
-  designFeePercentage: raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
+  designFeePercentage: raw.designFeePercentageApplied != null ? Number(raw.designFeePercentageApplied) : raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
+  designFeePercentageApplied: raw.designFeePercentageApplied != null ? Number(raw.designFeePercentageApplied) : raw.designFeePercentage != null ? Number(raw.designFeePercentage) : undefined,
   files: mapQuoteFiles(raw),
   customerEmail: raw.customerEmail || undefined,
   customerPhone: raw.customerPhone || undefined,

@@ -210,6 +210,12 @@ export default function App() {
     if (options.showLoading) setIsCartLoading(true);
     try {
       const cart = await fetchCart(slug, token);
+      if (cart.designFeePercentage != null && Number.isFinite(Number(cart.designFeePercentage))) {
+        const nextDesignFeePercentage = Number(cart.designFeePercentage);
+        setSelectedStore((current) => current && current.slug === slug
+          ? { ...current, designFeePercentage: nextDesignFeePercentage }
+          : current);
+      }
       const mappedItems = toCartItems(cart);
       const persistedFiles = await loadDraftItemDesignFiles(slug, mappedItems.map((item) => item.id));
       setItemDesignFiles((current) => {

@@ -49,10 +49,14 @@ const compareNullableDate = (first?: string, second?: string, direction: 'recien
 
 const getOrderSortDate = (order: Order) => order.createdAt || order.date;
 
-const orderDesignFeePercentage = (order: Order, fallback = 0) =>
-  Number(order.designFeePercentage
+const orderDesignFeePercentage = (order: Order, fallback?: number) => {
+  const percentage = order.designFeePercentageApplied
+    ?? order.designFeePercentage
     ?? order.itemsDetail?.find(item => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
-    ?? fallback);
+    ?? fallback;
+  const value = Number(percentage);
+  return Number.isFinite(value) ? value : null;
+};
 
 const orderDisplayTotal = (order: Order) =>
   Number(order.finalTotal ?? order.total ?? 0);
@@ -124,7 +128,7 @@ export default function OrdersPage() {
     try {
       setDocNotice('');
       setGeneratingDoc('guia');
-      const result = await generateDispatchGuide(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0));
+      const result = await generateDispatchGuide(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement));
       if (!result.logoEmbedded && (store.logoUrl || store.logo)) {
         setDocNotice('La guía se generó, pero no se pudo incrustar el logo (posible restricción CORS). Se usó el nombre de la tienda.');
       }
@@ -140,7 +144,7 @@ export default function OrdersPage() {
     try {
       setDocNotice('');
       setGeneratingDoc('comprobante');
-      const result = await generatePaymentReceipt(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0));
+      const result = await generatePaymentReceipt(selectedOrder, store, orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement));
       if (!result.logoEmbedded && (store.logoUrl || store.logo)) {
         setDocNotice('El comprobante se generó, pero no se pudo incrustar el logo (posible restricción CORS). Se usó el nombre de la tienda.');
       }
@@ -366,7 +370,7 @@ export default function OrdersPage() {
                         <span className="text-[11px] font-bold text-brand-text-muted uppercase">{order.items} artículos</span>
                         {order.hasCustomization && (
                           <div className="flex items-center gap-1 text-[9px] font-black text-brand-camel uppercase">
-                            <Layers size={10} /> +{orderDesignFeePercentage(order, store.designFeePercentage || store.customizationIncrement || 0)}%
+                            <Layers size={10} /> {orderDesignFeePercentage(order, store.designFeePercentage || store.customizationIncrement) != null ? `+${orderDesignFeePercentage(order, store.designFeePercentage || store.customizationIncrement)}%` : 'Diseño'}
                           </div>
                         )}
                       </div>
@@ -610,7 +614,7 @@ export default function OrdersPage() {
                           </div>
                           {(selectedOrder.designFeeTotal ?? 0) > 0 && (
                             <div className="flex justify-between items-center text-[11px] font-black text-brand-camel uppercase tracking-wider whitespace-nowrap gap-3">
-                              <span>Diseño ({orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement || 0)}%)</span>
+                              <span>Diseño{orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement) != null ? ` (${orderDesignFeePercentage(selectedOrder, store.designFeePercentage || store.customizationIncrement)}%)` : ''}</span>
                               <span>+ S/ {(selectedOrder.designFeeTotal ?? 0).toFixed(2)}</span>
                             </div>
                           )}

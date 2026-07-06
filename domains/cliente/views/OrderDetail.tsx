@@ -45,6 +45,14 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
     { label: 'Entregado', status: currentStep >= 4 ? 'completed' : 'pending', date: currentStep >= 4 ? order.date : 'Pendiente', icon: CheckCircle2 },
   ];
   const isPendingPayment = order.status === 'Pago pendiente';
+  const designFeeTotal = order.designFeeTotal ?? order.itemsDetail?.reduce((sum, item) => sum + Number(item.designFeeAmount ?? 0), 0) ?? 0;
+  const designFeePercentage = order.designFeePercentageApplied
+    ?? order.designFeePercentage
+    ?? order.itemsDetail?.find((item) => Number(item.designFeeAmount ?? 0) > 0)?.designFeePercentage
+    ?? store.designFeePercentage;
+  const partialTotal = order.partialTotal ?? Math.max(0, order.amount / 1.18);
+  const productSubtotal = order.productSubtotal ?? Math.max(0, partialTotal - designFeeTotal);
+  const igvTotal = Math.max(0, order.amount - partialTotal);
 
   return (
     <div className="min-h-screen pb-20 transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -184,16 +192,16 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({ store, user, order, on
               <h3 className="text-[14px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--text-on-secondary)' }}>Resumen de cuenta</h3>
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between text-[14px] font-bold">
-                  <span className="opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Subtotal</span>
-                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ {(order.amount / 1.18).toFixed(2)}</span>
+                  <span className="opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Subtotal productos</span>
+                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ {productSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[14px] font-bold">
-                  <span className="opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Incremento Diseño</span>
-                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ 0.00</span>
+                  <span className="opacity-60" style={{ color: 'var(--text-on-secondary)' }}>Incremento Diseño ({designFeePercentage}%)</span>
+                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ {designFeeTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[14px] font-bold">
                   <span className="opacity-60" style={{ color: 'var(--text-on-secondary)' }}>IGV (18%)</span>
-                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ {(order.amount - (order.amount / 1.18)).toFixed(2)}</span>
+                  <span style={{ color: 'var(--text-on-secondary)' }}>S/ {igvTotal.toFixed(2)}</span>
                 </div>
                 <div className="pt-4 border-t flex justify-between items-center" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                   <span className="text-[16px] font-black uppercase tracking-widest" style={{ color: 'var(--text-on-secondary)' }}>{isPendingPayment ? 'Total por pagar' : 'Total pagado'}</span>
