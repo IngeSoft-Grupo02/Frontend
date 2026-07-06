@@ -164,7 +164,7 @@ export const Payment: React.FC<PaymentProps> = ({ store, user, order, customerTo
                   fullWidth
                   className="py-5 text-[15px] font-black shadow-xl cursor-pointer"
                   style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }}
-                  onClick={() => onGoToShipping?.(order) ?? onNavigate(View.MY_ORDERS)}
+                  onClick={() => onGoToShipping ? onGoToShipping(order) : onNavigate(View.MY_ORDERS)}
                 >
                   <span className="flex items-center justify-center gap-2">
                     <MapPin size={18} /> Registrar dirección de envío
