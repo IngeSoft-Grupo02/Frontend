@@ -157,6 +157,7 @@ export function toStore(dto: StorePublicDTO): Store {
     storeName: dto.storeName,
     description: dto.description || '',
     category: dto.category || '',
+    status: dto.status || dto.storeStatus || 'ACTIVE',
     color: primaryColor,
     primaryColor,
     secondaryColor,

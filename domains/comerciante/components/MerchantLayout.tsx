@@ -97,6 +97,12 @@ const Sidebar = () => {
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const storeCategoryLabel = store.categoryName || store.type || 'Sin categoría';
   const logoUrl = store.logoUrl || store.logo;
+  const visibleStores = stores.filter((item) => item.status !== 'Inactiva');
+  const statusDotClass = store.status === 'Activa'
+    ? 'bg-green-500'
+    : store.status === 'Suspendida'
+      ? 'bg-amber-500'
+      : 'bg-red-500';
 
   const navItems = [
     { label: 'Panel', icon: LayoutDashboard, path: '/comerciante/dashboard' },
@@ -134,14 +140,14 @@ const Sidebar = () => {
                 {storeCategoryLabel}
               </span>
               <span className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white border border-brand-neutral-border px-3 py-1.5 text-[10px] font-black text-brand-text-muted uppercase tracking-wider">
-                  <span className={`w-1.5 h-1.5 rounded-full ${store.status === 'Activa' ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass}`} />
                   {store.status}
               </span>
             </div>
           </div>
           {showStoreDropdown && (
             <div className="absolute top-full left-0 right-0 mt-[-24px] bg-white border border-brand-neutral-border rounded-2xl shadow-xl z-[60] py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-              {stores.map(s => (
+              {visibleStores.map(s => (
                 <button 
                   key={s.id} 
                   onClick={() => { selectStore(s); setShowStoreDropdown(false); }}

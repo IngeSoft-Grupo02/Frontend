@@ -36,6 +36,7 @@ interface CatalogProps {
 }
 
 type SortOption = 'recent' | 'oldest' | 'price-asc' | 'price-desc';
+type CustomizableFilter = 'all' | 'customizable' | 'standard';
 const PRODUCTS_PER_PAGE = 21;
 
 function PersonalizableBadge({ product, className = '' }: { product: Product; className?: string }) {
@@ -81,11 +82,26 @@ function ProductVisual({ product, index, className = '' }: { product: Product; i
   );
 }
 
+const productSizes = (product: Product) => {
+  const source = product.variants?.length
+    ? product.variants.map((variant) => variant.size)
+    : product.sizes;
+  return source.map((size) => String(size || '').trim().toUpperCase()).filter(Boolean);
+};
+
+const productColors = (product: Product) => {
+  const source = product.variants?.length
+    ? product.variants.map((variant) => variant.color)
+    : product.colors;
+  return source.map((color) => String(color || '').trim()).filter(Boolean);
+};
+
 export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLogout, onSelectProduct, cartCount, initialShowFullCatalog = false }) => {
   const [showFullCatalog, setShowFullCatalog] = useState(initialShowFullCatalog);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [customizableFilter, setCustomizableFilter] = useState<CustomizableFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
@@ -135,19 +151,27 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
     onRefresh: () => loadProducts(true),
   });
 
-  const availableSizes = useMemo(() => Array.from(new Set(products.flatMap((product) => product.sizes.map(s => s.trim().toUpperCase())))).filter(Boolean).sort(), [products]);
-  const availableColors = useMemo(() => Array.from(new Set(products.flatMap((product) => product.colors))).sort(), [products]);
+  const availableSizes = useMemo(() => Array.from(new Set(products.flatMap(productSizes))).sort(), [products]);
+  const availableColors = useMemo(() => Array.from(new Set(products.flatMap(productColors))).sort((a, b) => getColorLabel(a).localeCompare(getColorLabel(b))), [products]);
 
   // Backend soporta search por nombre; talla/color/ordenamiento son filtros locales sobre productos cargados.
   const storeProducts = useMemo(() => {
     let filtered = products;
 
+    if (customizableFilter !== 'all') {
+      filtered = filtered.filter((product) =>
+        customizableFilter === 'customizable'
+          ? product.customizable !== false
+          : product.customizable === false
+      );
+    }
+
     if (selectedSizes.length > 0) {
-      filtered = filtered.filter((product) => product.sizes.some((size) => selectedSizes.includes(size.trim().toUpperCase())));
+      filtered = filtered.filter((product) => productSizes(product).some((size) => selectedSizes.includes(size)));
     }
 
     if (selectedColors.length > 0) {
-      filtered = filtered.filter((product) => product.colors.some((color) => selectedColors.includes(color)));
+      filtered = filtered.filter((product) => productColors(product).some((color) => selectedColors.includes(color)));
     }
 
     return [...filtered].sort((a, b) => {
@@ -157,7 +181,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
       if (sortBy === 'oldest') return a.createdAt - b.createdAt;
       return 0;
     });
-  }, [products, selectedSizes, selectedColors, sortBy]);
+  }, [products, customizableFilter, selectedSizes, selectedColors, sortBy]);
 
   const displayedProducts = useMemo(() => {
     return showFullCatalog ? storeProducts : storeProducts.slice(0, 3);
@@ -172,7 +196,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedSizes, selectedColors, sortBy, showFullCatalog]);
+  }, [searchQuery, customizableFilter, selectedSizes, selectedColors, sortBy, showFullCatalog]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -181,6 +205,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
   const clearFilters = () => {
     setSelectedSizes([]);
     setSelectedColors([]);
+    setCustomizableFilter('all');
     setSearchQuery('');
   };
 
@@ -383,6 +408,30 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
                         <button key={option.id} onClick={() => setSortBy(option.id as SortOption)} className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-between cursor-pointer" style={sortBy === option.id ? { color: 'var(--text-on-tertiary)', backgroundColor: 'var(--color-tertiary)' } : { color: '#0F1011', opacity: 0.8 }}>
                           {option.label}
                           {sortBy === option.id && <Check size={14} style={{ color: 'var(--text-on-tertiary)' }} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-8 rounded-[32px] shadow-sm border" style={{ backgroundColor: '#FFFFFF', color: '#0F1011', borderColor: 'rgba(0,0,0,0.08)' }}>
+                    <h3 className="text-[12px] font-black uppercase tracking-widest mb-6" style={{ color: 'var(--accent-on-light)' }}>Tipo de producto</h3>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'all', label: 'Todos' },
+                        { id: 'customizable', label: 'Personalizables' },
+                        { id: 'standard', label: 'Sin personalización' },
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setCustomizableFilter(option.id as CustomizableFilter)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-all border cursor-pointer text-left"
+                          style={customizableFilter === option.id
+                            ? { backgroundColor: 'var(--color-tertiary)', borderColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)' }
+                            : { backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.08)', color: '#0F1011' }}
+                        >
+                          {option.label}
+                          {customizableFilter === option.id && <Check size={14} style={{ color: 'var(--text-on-tertiary)' }} />}
                         </button>
                       ))}
                     </div>

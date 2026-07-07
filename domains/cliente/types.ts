@@ -77,6 +77,7 @@ export interface Store {
   slug?: string;
   storeName?: string;
   logoUrl?: string | null;
+  status?: string | null;
 }
 
 // DTO real expuesto por GET /stores/public y GET /stores/public/{slug}
@@ -90,6 +91,8 @@ export interface StorePublicDTO {
   contactPhone?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
+  status?: string | null;
+  storeStatus?: string | null;
   designFeePercentage?: number | null;
   primaryColor: string | null;
   secondaryColor: string | null;

@@ -47,15 +47,19 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
     };
   }, []);
 
-  const categories = Array.from(new Set(stores.map((store) => store.category).filter(Boolean)));
+  const visibleStores = stores.filter((store) => {
+    const status = String(store.status || 'ACTIVE').trim().toUpperCase();
+    return status === 'ACTIVE' || status === 'ACTIVA';
+  });
+  const categories = Array.from(new Set(visibleStores.map((store) => store.category).filter(Boolean)));
   const categoryCounts = categories.reduce<Record<string, number>>((counts, category) => {
-    counts[category] = stores.filter(store => store.category === category).length;
+    counts[category] = visibleStores.filter(store => store.category === category).length;
     return counts;
   }, {});
 
   const filteredStores = selectedCategories.length === 0
-    ? stores
-    : stores.filter(store => selectedCategories.includes(store.category));
+    ? visibleStores
+    : visibleStores.filter(store => selectedCategories.includes(store.category));
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((current) =>
@@ -112,7 +116,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
           <div className="flex items-end justify-between gap-3 pb-4 border-b border-black/10">
             <div>
               <h2 className="text-[22px] font-extrabold tracking-tight">Categorías</h2>
-              <p className="text-[12px] font-bold text-neutral-500">{filteredStores.length} de {stores.length} tiendas</p>
+              <p className="text-[12px] font-bold text-neutral-500">{filteredStores.length} de {visibleStores.length} tiendas</p>
             </div>
             {selectedCategories.length > 0 && (
               <button
@@ -177,7 +181,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onSelectStore, onNavigate,
           {!loading && !error && filteredStores.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
               <p className="text-[14px] font-semibold opacity-60">
-                {stores.length === 0 ? 'No hay tiendas disponibles por el momento.' : 'No hay tiendas en estas categorías.'}
+                {visibleStores.length === 0 ? 'No hay tiendas disponibles por el momento.' : 'No hay tiendas en estas categorías.'}
               </p>
             </div>
           )}

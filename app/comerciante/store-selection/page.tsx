@@ -19,6 +19,7 @@ export default function StoreSelectionPage() {
   const getStoreCategory = (store: Store) => store.categoryName || store.type || 'Sin categoría';
   const getStoreColor = (store: Store) => store.palette || '#5D634B';
   const getStoreLogo = (store: Store) => store.logoUrl || store.logo || '';
+  const visibleStores = stores.filter((store) => store.status !== 'Inactiva');
 
   useEffect(() => {
     if (isAuthInitialized && !isAuthenticated) {
@@ -46,7 +47,7 @@ export default function StoreSelectionPage() {
           <button onClick={() => router.push('/comerciante/stores/new')} className="bg-brand-black text-white px-8 py-4 rounded-2xl text-[13px] font-black flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10"><Plus size={18} /> Crear Nueva Tienda</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {stores.map((store, index) => (
+          {visibleStores.map((store, index) => (
             <motion.div key={store.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-white rounded-[24px] border border-brand-neutral-border overflow-hidden card-shadow group flex flex-col">
               <div className="h-[200px] p-8 flex flex-col justify-between relative overflow-hidden transition-all group-hover:opacity-95" style={{ backgroundColor: getStoreColor(store) }}>
                 <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 text-white"><LayoutGrid size={80} strokeWidth={1} /></div>
@@ -74,7 +75,7 @@ export default function StoreSelectionPage() {
             </motion.div>
           ))}
         </div>
-        {stores.length === 0 && (
+        {visibleStores.length === 0 && (
           <div className="bg-white rounded-[28px] border border-brand-neutral-border card-shadow p-10 flex flex-col items-center text-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-brand-neutral-light border border-brand-neutral-border flex items-center justify-center text-brand-black">
               <StoreIcon size={24} />

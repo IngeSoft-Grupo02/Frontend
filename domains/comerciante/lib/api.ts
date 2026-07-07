@@ -270,6 +270,13 @@ const normalizeDesignFeePercentage = (value: unknown): 5 | 10 | 15 => {
   return numeric === 5 || numeric === 10 || numeric === 15 ? numeric : 10;
 };
 
+const storeStatusFromBackend = (value: unknown): Store['status'] => {
+  const status = String(value || '').trim().toUpperCase();
+  if (status === 'INACTIVE' || status === 'INACTIVA') return 'Inactiva';
+  if (status === 'SUSPENDED' || status === 'SUSPENDIDA') return 'Suspendida';
+  return 'Activa';
+};
+
 const storePayload = (store: Store | Omit<Store, 'id'>) => ({
   name: store.name,
   description: store.description,
@@ -295,7 +302,7 @@ export const mapStore = (raw: JsonValue): Store => {
     type: categoryName,
     categoryId: raw.categoryId ?? raw.category?.id,
     categoryName,
-    status: raw.status === 'Inactiva' || raw.status === 'INACTIVE' ? 'Inactiva' : 'Activa',
+    status: storeStatusFromBackend(raw.status),
     logo: raw.logoUrl,
     logoUrl: raw.logoUrl,
     palette: colorHex(primaryColor, PRIMARY_COLOR_HEX, raw.palette || '#000000'),

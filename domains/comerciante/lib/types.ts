@@ -13,7 +13,7 @@ export interface Store {
   type: string;
   categoryId?: number;
   categoryName?: string;
-  status: 'Activa' | 'Inactiva';
+  status: 'Activa' | 'Suspendida' | 'Inactiva';
   logo?: string;
   logoUrl?: string;
   palette?: string;
