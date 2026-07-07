@@ -333,6 +333,7 @@ export default function App() {
         productVariantId: variant.id,
         quantity: Number(row.quantity),
         separateItem: Boolean(customerDescription || hasDesignFiles),
+        selectedProductImageUrl: item.productImageUrl || null,
       });
 
       const addedItem = newestItemForVariant(latestCart, variant.id);

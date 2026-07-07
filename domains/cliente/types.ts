@@ -272,6 +272,7 @@ export interface CartItemRequestDTO {
   productVariantId?: number;
   quantity: number;
   separateItem?: boolean;
+  selectedProductImageUrl?: string | null;
 }
 
 export interface CustomDesignRequestDTO {

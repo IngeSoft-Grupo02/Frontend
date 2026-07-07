@@ -25,11 +25,13 @@ interface ProductDetailProps {
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, product, onNavigate, onLogout, cartCount, onProductUpdated }) => {
   const [latestProduct, setLatestProduct] = React.useState(product);
+  const [selectedImageUrl, setSelectedImageUrl] = React.useState<string | null>(null);
   const [imageFailed, setImageFailed] = React.useState(false);
   const [productUnavailable, setProductUnavailable] = React.useState(false);
 
   React.useEffect(() => {
     setLatestProduct(product);
+    setSelectedImageUrl(null);
     setImageFailed(false);
     setProductUnavailable(false);
   }, [product]);
@@ -54,9 +56,27 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
     },
   });
 
-  const imageUrl = latestProduct.image || latestProduct.imageUrls?.[0];
-  const gallery = latestProduct.imageUrls?.length ? latestProduct.imageUrls : [];
+  const gallery = React.useMemo(() => {
+    const urls = [
+      latestProduct.image,
+      ...(latestProduct.imageUrls || []),
+    ]
+      .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+      .map((url) => url.trim());
+    return Array.from(new Set(urls));
+  }, [latestProduct.image, latestProduct.imageUrls]);
+  const imageUrl = selectedImageUrl && gallery.includes(selectedImageUrl) ? selectedImageUrl : gallery[0];
   const stock = latestProduct.stock ?? latestProduct.variants?.reduce((sum, variant) => sum + variant.stock, 0) ?? 0;
+
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
+
+  React.useEffect(() => {
+    if (selectedImageUrl && !gallery.includes(selectedImageUrl)) {
+      setSelectedImageUrl(null);
+    }
+  }, [gallery, selectedImageUrl]);
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: '#FFFFFF', color: '#0F1011' }}>
@@ -91,9 +111,23 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
             </motion.div>
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {(gallery.length ? gallery.slice(0, 4) : [null, null, null, null]).map((url, index) => (
-                <div key={`${url || 'fallback'}-${index}`} className="aspect-square border rounded-xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: index % 3 === 0 ? 'var(--color-primary)' : index % 3 === 1 ? 'var(--color-secondary)' : 'var(--color-tertiary)', borderColor: 'rgba(0,0,0,0.08)' }}>
+                <button
+                  key={`${url || 'fallback'}-${index}`}
+                  type="button"
+                  disabled={!url}
+                  onClick={() => {
+                    if (url) setSelectedImageUrl(url);
+                  }}
+                  aria-label={url ? `Ver imagen ${index + 1} de ${latestProduct.name}` : `Imagen ${index + 1} no disponible`}
+                  className={`aspect-square border rounded-xl overflow-hidden flex items-center justify-center transition-all ${url ? 'cursor-pointer hover:opacity-90' : 'cursor-default opacity-70'}`}
+                  style={{
+                    backgroundColor: index % 3 === 0 ? 'var(--color-primary)' : index % 3 === 1 ? 'var(--color-secondary)' : 'var(--color-tertiary)',
+                    borderColor: url && url === imageUrl ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.08)',
+                    boxShadow: url && url === imageUrl ? '0 0 0 2px var(--color-tertiary)' : 'none',
+                  }}
+                >
                   {url ? <img src={url} alt={`${latestProduct.name} ${index + 1}`} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" /> : <FileText size={22} className="opacity-40" />}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -175,6 +209,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ store, user, produ
                 style={{ backgroundColor: 'var(--color-tertiary)', color: 'var(--text-on-tertiary)', borderColor: 'transparent' }}
                 onClick={() => {
                   if (productUnavailable) return;
+                  if (imageUrl) {
+                    onProductUpdated?.({ ...latestProduct, image: imageUrl });
+                  }
                   if (!user) onNavigate(View.AUTH_LOGIN);
                   else onNavigate(View.REQUEST_QUOTE);
                 }}

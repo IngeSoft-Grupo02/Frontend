@@ -35,6 +35,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   ]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [designOverlay, setDesignOverlay] = useState({ x: 50, y: 42, width: 24, height: 18 });
+  const [selectedProductImageUrl, setSelectedProductImageUrl] = useState<string | null>(null);
   const [overlayInteraction, setOverlayInteraction] = useState<OverlayInteraction>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -144,30 +145,36 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
   };
 
   const quantity = rows.reduce((acc, row) => acc + (row.quantity || 0), 0);
-  const productImageUrl = React.useMemo(() => {
-    if (!product) return null;
+  const productImages = React.useMemo(() => {
+    if (!product) return [];
     const rawProduct = product as Product & Record<string, unknown>;
     const rawImages = rawProduct.images;
-    const imageFromImages = Array.isArray(rawImages)
+    const imagesFromRawImages = Array.isArray(rawImages)
       ? rawImages
           .map((entry) => {
             if (typeof entry === 'string') return entry;
             if (entry && typeof entry === 'object' && 'url' in entry) return String((entry as { url?: unknown }).url || '');
             return '';
           })
-          .find(Boolean)
-      : null;
+      : [];
     const candidates = [
       product.image,
-      product.imageUrls?.find(Boolean),
+      ...(product.imageUrls || []),
       typeof rawProduct.imageUrl === 'string' ? rawProduct.imageUrl : null,
       typeof rawProduct.productImageUrl === 'string' ? rawProduct.productImageUrl : null,
       typeof rawProduct.mainImageUrl === 'string' ? rawProduct.mainImageUrl : null,
       typeof rawProduct.thumbnailUrl === 'string' ? rawProduct.thumbnailUrl : null,
-      imageFromImages,
+      ...imagesFromRawImages,
     ];
-    return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0) || null;
+    return Array.from(new Set(
+      candidates
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .map((value) => value.trim()),
+    ));
   }, [product]);
+  const productImageUrl = selectedProductImageUrl && productImages.includes(selectedProductImageUrl)
+    ? selectedProductImageUrl
+    : productImages[0] || null;
   const productAllowsCustomization = product?.customizable !== false;
   const storeLogoUrl = React.useMemo(() => resolveStoreLogoUrl(store), [store]);
   const generatedStoreLogoUrl = React.useMemo(() => {
@@ -212,6 +219,11 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
       setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 });
     }
   }, [productAllowsCustomization, product?.id]);
+
+  React.useEffect(() => {
+    setSelectedProductImageUrl(null);
+    setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 });
+  }, [product?.id]);
 
   const clampPercent = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
@@ -310,10 +322,13 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
     setAddError(null);
     setIsAddingToCart(true);
     try {
-      const hasVisualOverlay = activeFiles.some((file) => file.type.startsWith('image/')) && Boolean(productImageUrl);
+      const hasVisualOverlay = productAllowsCustomization
+        && designMode === 'custom'
+        && Boolean(activeDesignPreviewUrl && productImageUrl);
       await onAddToCart({
         productId: product.id,
         productName: product.name,
+        productImageUrl,
         quantity,
         specs: activeSpecs,
         rows,
@@ -358,6 +373,35 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ store, user, product
       </div>
 
       <div className="space-y-4">
+        {productImages.length > 1 && (
+          <div className="rounded-2xl border p-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="text-[11px] font-black uppercase tracking-wider opacity-75">Imagen base</span>
+              <span className="text-[10px] font-bold opacity-55">El diseño se ubicará sobre la imagen elegida.</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+              {productImages.map((url, index) => (
+                <button
+                  key={`${url}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedProductImageUrl(url);
+                    setDesignOverlay({ x: 50, y: 42, width: 24, height: 18 });
+                  }}
+                  className="aspect-square overflow-hidden rounded-xl border bg-white transition-all hover:opacity-90"
+                  style={{
+                    borderColor: url === productImageUrl ? 'var(--color-tertiary)' : 'rgba(0,0,0,0.08)',
+                    boxShadow: url === productImageUrl ? '0 0 0 2px var(--color-tertiary)' : 'none',
+                  }}
+                  aria-label={`Usar imagen ${index + 1} como base del diseño`}
+                >
+                  <img src={url} alt={`Imagen base ${index + 1}`} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div
           ref={previewFrameRef}
           className="relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-2xl border bg-white touch-none"
