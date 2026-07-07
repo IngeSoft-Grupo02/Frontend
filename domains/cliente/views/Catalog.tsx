@@ -135,7 +135,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
     onRefresh: () => loadProducts(true),
   });
 
-  const availableSizes = useMemo(() => Array.from(new Set(products.flatMap((product) => product.sizes))).sort(), [products]);
+  const availableSizes = useMemo(() => Array.from(new Set(products.flatMap((product) => product.sizes.map(s => s.trim().toUpperCase())))).filter(Boolean).sort(), [products]);
   const availableColors = useMemo(() => Array.from(new Set(products.flatMap((product) => product.colors))).sort(), [products]);
 
   // Backend soporta search por nombre; talla/color/ordenamiento son filtros locales sobre productos cargados.
@@ -143,7 +143,7 @@ export const Catalog: React.FC<CatalogProps> = ({ store, user, onNavigate, onLog
     let filtered = products;
 
     if (selectedSizes.length > 0) {
-      filtered = filtered.filter((product) => product.sizes.some((size) => selectedSizes.includes(size)));
+      filtered = filtered.filter((product) => product.sizes.some((size) => selectedSizes.includes(size.trim().toUpperCase())));
     }
 
     if (selectedColors.length > 0) {
