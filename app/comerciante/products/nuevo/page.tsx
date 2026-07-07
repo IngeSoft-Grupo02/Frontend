@@ -158,7 +158,7 @@ function ProductFormPageContent() {
     const description = formData.description.trim();
     const price = Number(formData.price || 0);
     const normalizedBlocks = formData.inventoryBlocks.map(block => {
-      const size = block.talla.trim();
+      const size = block.talla.trim().toUpperCase();
       const existingColors = new Set(Object.keys(currentProduct?.sizeColorStock?.[size] || {}));
       const relevantStock = Object.fromEntries(
         Object.entries(block.stock)
@@ -264,7 +264,7 @@ function ProductFormPageContent() {
   };
 
   const updateTallaName = (index: number, name: string) => {
-    const filteredName = name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '');
+    const filteredName = name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '').toUpperCase();
     const newBlocks = [...formData.inventoryBlocks];
     newBlocks[index].talla = filteredName;
     setFormData({ ...formData, inventoryBlocks: newBlocks });

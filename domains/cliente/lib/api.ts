@@ -211,7 +211,7 @@ export function toProduct(dto: ProductPublicDTO, storeSlug: string): Product {
   const variants = dto.variants || [];
   const imageUrls = dto.imageUrls || [];
   const colors = unique(variants.map((variant) => String(variant.color)));
-  const sizes = unique(variants.map((variant) => variant.size));
+  const sizes = unique(variants.map((variant) => (variant.size || '').trim().toUpperCase())).filter(s => s.length > 0);
 
   return {
     id: String(dto.id),
