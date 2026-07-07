@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith(ADMIN_ROUTES.users)) return { title: 'Gestión de usuarios', subtitle: 'Control de acceso por rol y tenant' };
     if (pathname === ADMIN_ROUTES.bulk) return { title: 'Carga masiva', subtitle: 'Sube uno o varios archivos en una misma operación.' };
     if (pathname.startsWith(ADMIN_ROUTES.categories)) return { title: 'Categorías', subtitle: 'Estandarización transversal para todas las tiendas' };
-    if (pathname === ADMIN_ROUTES.audit) return { title: 'Auditoría y logs', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
+    if (pathname === ADMIN_ROUTES.audit) return { title: 'Auditoría', subtitle: 'Monitoreo crítico, trazabilidad y exportación' };
     return { title: 'Kingstore', subtitle: 'Plataforma administrativa' };
   };
 
